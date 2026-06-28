@@ -1,0 +1,55 @@
+# =============================================================
+# .gitignore — Hábitos (Tauri 2 + Vue 3 + Vite + Rust)
+# =============================================================
+
+# ── Node / Vite ──────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ── Editor / OS ──────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.tsbuildinfo
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Env / secrets ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Rust / Cargo ─────────────────────────────────────────────
+# (NO ignorar Cargo.lock — para aplicaciones Tauri se commitea
+#  para builds reproducibles. Solo para librerías se ignora.)
+src-tauri/target/
+**/*.rs.bk
+
+# ── Tauri ────────────────────────────────────────────────────
+src-tauri/gen/schemas/
+
+# ── Configuraciones locales de herramientas ──────────────────
+.opencode/
+.playwright/
+.cache/
+
+# ── Misc ─────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.orig
