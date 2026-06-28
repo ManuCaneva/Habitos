@@ -232,6 +232,25 @@ export const useHabitsStore = defineStore("habits", () => {
     lastError.value = null;
   }
 
+  async function loadInitialData(): Promise<void> {
+    loading.value = true;
+    lastError.value = null;
+    try {
+      const rows = await db.listHabits(true);
+      habits.value = rows.map(rowToHabit);
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 60);
+      const from = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
+      const to = todayLocalDate();
+      const logRows = await db.listLogsInRange(from, to);
+      logs.value = logRows.map(rowToHabitLog);
+    } catch (e) {
+      lastError.value = errMsg(e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     // estado
     habits,
@@ -253,6 +272,8 @@ export const useHabitsStore = defineStore("habits", () => {
     loadLogsForRange,
     checkIn,
     undoCheckIn,
+    // boot
+    loadInitialData,
     // lógica de dominio
     isHabitDueOn,
     isHabitDueToday,

@@ -1,0 +1,125 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-canvas: 255 255 255;
+    --color-surface-1: 247 248 248;
+    --color-surface-2: 238 240 242;
+    --color-surface-3: 228 230 233;
+    --color-surface-4: 216 218 223;
+    --color-hairline: 228 230 233;
+    --color-hairline-strong: 197 200 206;
+    --color-hairline-tertiary: 168 172 180;
+    --color-ink: 14 15 18;
+    --color-ink-muted: 44 45 53;
+    --color-ink-subtle: 98 102 109;
+    --color-ink-tertiary: 138 143 152;
+    --color-primary: 94 106 210;
+    --color-primary-hover: 77 89 192;
+    --color-primary-focus: 94 105 209;
+    --color-brand-secure: 122 127 173;
+    --color-success: 29 138 54;
+    --color-overlay: 0 0 0;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-canvas: 1 1 2;
+    --color-surface-1: 14 15 18;
+    --color-surface-2: 24 25 30;
+    --color-surface-3: 34 35 42;
+    --color-surface-4: 44 45 53;
+    --color-hairline: 35 37 42;
+    --color-hairline-strong: 57 59 66;
+    --color-hairline-tertiary: 74 77 86;
+    --color-ink: 247 248 248;
+    --color-ink-muted: 208 214 224;
+    --color-ink-subtle: 138 143 152;
+    --color-ink-tertiary: 98 102 109;
+    --color-primary: 94 106 210;
+    --color-primary-hover: 130 143 255;
+    --color-primary-focus: 94 105 209;
+    --color-brand-secure: 122 127 173;
+    --color-success: 39 166 68;
+    --color-overlay: 0 0 0;
+  }
+
+  html {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-focus/50 ring-offset-2 ring-offset-canvas;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    @apply bg-primary/30 text-ink;
+  }
+}
+
+@layer components {
+  .surface-1 {
+    @apply bg-surface-1 border border-hairline;
+  }
+
+  .surface-2 {
+    @apply bg-surface-2 border border-hairline-strong;
+  }
+
+  .surface-3 {
+    @apply bg-surface-3;
+  }
+
+  .surface-4 {
+    @apply bg-surface-4;
+  }
+
+  .display-xl,
+  .display-lg,
+  .display-md,
+  .headline,
+  .card-title,
+  .subhead,
+  .body-lg,
+  .body,
+  .body-sm,
+  .caption,
+  .button,
+  .eyebrow,
+  .mono {
+    font-feature-settings: "ss01", "ss02", "cv11";
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

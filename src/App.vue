@@ -1,69 +1,60 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useHabitsStore } from "./stores/habits";
+import { computed, onMounted } from "vue";
+import { Sun, Moon } from "lucide-vue-next";
+import { useHabitsStore } from "@/stores/habits";
+import { useUiStore } from "@/stores/ui";
+import { useTheme } from "@/composables/useTheme";
+import Text from "@/components/ui/Text.vue";
+import IconButton from "@/components/ui/IconButton.vue";
+import TopBar from "@/components/layout/TopBar.vue";
+import TabBar from "@/components/layout/TabBar.vue";
+import TodayView from "@/views/TodayView.vue";
+import ArchivedView from "@/views/ArchivedView.vue";
+import SettingsView from "@/views/SettingsView.vue";
+import HabitFormModal from "@/components/habits/HabitFormModal.vue";
 
 const store = useHabitsStore();
-const status = ref<string>("Inicializando…");
+const ui = useUiStore();
+const { isDark, toggleDark } = useTheme();
 
-onMounted(async () => {
-  try {
-    await store.loadHabits();
-    status.value = `Cargados ${store.activeHabits.length} hábitos activos.`;
-  } catch (e) {
-    status.value = `Error: ${String(e)}`;
-  }
+onMounted(() => {
+  store.loadInitialData();
 });
 
-async function seedTestHabit() {
-  try {
-    await store.createHabit({
-      name: "Leer 20 minutos",
-      description: "Prueba inicial",
-      color: "#5e6ad2",
-      frequency: { type: "daily", target_per_period: 1 },
-    });
-    status.value = `Creado. Total activos: ${store.activeHabits.length}`;
-  } catch (e) {
-    status.value = `Error creando: ${String(e)}`;
-  }
-}
+const themeIcon = computed(() => (isDark.value ? Sun : Moon));
+const themeLabel = computed(() =>
+  isDark.value ? "Cambiar a tema claro" : "Cambiar a tema oscuro",
+);
 </script>
 
 <template>
-  <main class="container">
-    <h1>Hábitos — smoke test</h1>
-    <p>{{ status }}</p>
-    <button type="button" @click="seedTestHabit">Crear hábito de prueba</button>
-    <ul>
-      <li v-for="h in store.activeHabits" :key="h.id">
-        <span :style="{ color: h.color }">●</span>
-        {{ h.name }} — racha: {{ store.currentStreak(h.id) }}
-      </li>
-    </ul>
-  </main>
-</template>
+  <div class="min-h-screen bg-canvas text-ink flex flex-col">
+    <header
+      class="flex items-center justify-between px-6 py-3 border-b border-hairline bg-canvas"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-headline text-primary" aria-hidden="true">◉</span>
+        <Text variant="card-title" weight="600">Hábitos</Text>
+      </div>
+      <IconButton
+        :label="themeLabel"
+        variant="ghost"
+        size="md"
+        @click="toggleDark()"
+      >
+        <component :is="themeIcon" :size="16" />
+      </IconButton>
+    </header>
 
-<style scoped>
-.container {
-  padding: 24px;
-  font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
-  color: #f7f8f8;
-  background: #010102;
-  min-height: 100vh;
-}
-button {
-  padding: 8px 14px;
-  background: #5e6ad2;
-  color: #fff;
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-}
-ul {
-  list-style: none;
-  padding: 0;
-}
-li {
-  padding: 8px 0;
-}
-</style>
+    <TopBar v-if="ui.viewMode !== 'settings'" />
+    <TabBar />
+
+    <div class="flex-1">
+      <TodayView v-if="ui.viewMode === 'today'" />
+      <ArchivedView v-else-if="ui.viewMode === 'archived'" />
+      <SettingsView v-else-if="ui.viewMode === 'settings'" />
+    </div>
+
+    <HabitFormModal />
+  </div>
+</template>

@@ -72,27 +72,36 @@ impl Db {
     }
 
     fn run_migrations(&self) -> DbResult<()> {
+        const V: i64 = 1;
         let conn = self.conn.lock().unwrap();
+
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS schema_version (
+                version    INTEGER PRIMARY KEY,
+                applied_at TEXT    NOT NULL
+             );",
+        )
+        .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
+
+        let already_applied: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = ?1)",
+                params![V],
+                |r| r.get(0),
+            )
+            .unwrap_or(false);
+
+        if already_applied {
+            return Ok(());
+        }
 
         conn.execute_batch(include_str!("migrations/001_init.sql"))
             .map_err(|e| DbError::Migration(format!("001_init.sql: {e}")))?;
 
-        // Registrar la versión (idempotente: solo si no está)
-        let applied: i64 = conn
-            .query_row(
-                "SELECT COALESCE(MAX(version), 0) FROM schema_version",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap_or(0);
-
-        if applied < 1 {
-            let now = now_iso8601();
-            conn.execute(
-                "INSERT INTO schema_version (version, applied_at) VALUES (?1, ?2)",
-                params![1_i64, now],
-            )?;
-        }
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+            params![V, now_iso8601()],
+        )?;
 
         Ok(())
     }
