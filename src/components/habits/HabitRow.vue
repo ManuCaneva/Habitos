@@ -17,7 +17,7 @@ const streak = computed(() => habits.currentStreak(props.habit.id));
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
 
 async function toggleCheck() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = habits.getTodayDate();
   if (checked.value) {
     await habits.undoCheckIn(props.habit.id, today);
   } else {

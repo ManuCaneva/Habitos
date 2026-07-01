@@ -228,6 +228,10 @@ export const useHabitsStore = defineStore("habits", () => {
     return streak;
   }
 
+  function getTodayDate(): string {
+    return todayLocalDate();
+  }
+
   function clearError(): void {
     lastError.value = null;
   }
@@ -278,6 +282,7 @@ export const useHabitsStore = defineStore("habits", () => {
     isHabitDueOn,
     isHabitDueToday,
     currentStreak,
+    getTodayDate,
     clearError,
   };
 });

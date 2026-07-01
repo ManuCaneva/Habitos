@@ -26,9 +26,11 @@ interface UpdateHabitInput {
 }
 
 interface CreateLogInput {
-  draft: CreateHabitLogDraft;
   id: string;
+  habit_id: string;
+  log_date: string;
   completed_at: string;
+  note: string | null;
   created_at: string;
 }
 
@@ -99,9 +101,11 @@ export async function createLog(
     throw new Error("createLog: log_date es obligatorio (calcular en el store)");
   }
   const input: CreateLogInput = {
-    draft: validated,
     id,
+    habit_id: validated.habit_id,
+    log_date: validated.log_date,
     completed_at,
+    note: validated.note ?? null,
     created_at,
   };
   const raw = await invoke<unknown>("create_log", { input });

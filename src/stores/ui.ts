@@ -31,6 +31,8 @@ export const useUiStore = defineStore("ui", () => {
     stored.value = v;
   });
 
+  const sidebarCollapsed = useStorage<boolean>("habitos.sidebarCollapsed", false);
+
   const createHabitOpen = ref(false);
   const editingHabitId = ref<string | null>(null);
   const menuOpenForHabitId = ref<string | null>(null);
@@ -40,6 +42,10 @@ export const useUiStore = defineStore("ui", () => {
   function setViewMode(mode: ViewMode) {
     viewMode.value = mode;
     menuOpenForHabitId.value = null;
+  }
+
+  function toggleSidebar() {
+    sidebarCollapsed.value = !sidebarCollapsed.value;
   }
 
   function openCreate() {
@@ -69,11 +75,13 @@ export const useUiStore = defineStore("ui", () => {
 
   return {
     viewMode,
+    sidebarCollapsed,
     createHabitOpen,
     editingHabitId,
     menuOpenForHabitId,
     isEditing,
     setViewMode,
+    toggleSidebar,
     openCreate,
     openEdit,
     closeModal,

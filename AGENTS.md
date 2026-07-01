@@ -19,6 +19,15 @@ Este proyecto usa **TDD estricto**. Antes de tocar código de implementación, e
 5. Refactorizar con confianza.
 6. Correr `npm run build` para confirmar tipos y producción.
 
+### Principios de tests desacoplados
+
+- **Aislamiento**: Cada test debe ser independiente. No dependas del orden de ejecución ni de estado compartido.
+- **Sin hardcodear**: Usá datos de prueba generados o fixtures, no valores mágicos copiados del código.
+- **Mocking explícito**: Mockeá dependencias externas (Tauri, localStorage, APIs) con `vi.mock()`. No toques el sistema real.
+- **Tests en archivos separados**: `foo.ts` → `foo.test.ts` en el mismo directorio. Nunca mezcles tests con implementación.
+- **Props y emits testeables**: En componentes Vue, probá comportamiento vía props/emit, no accediendo a estado interno.
+- **Cobertura de edge cases**: Probá límites, errores, y casos borde, no solo el happy path.
+
 ### Cuándo no aplica TDD
 
 - Cambios puramente de UI (texto, color, espaciado) que no tienen lógica testeable.
@@ -83,7 +92,7 @@ No levantar el runtime de Tauri en tests unitarios. Tests de integración que ab
 src/
   components/
     ui/          primitivos reusables (Button, Input, Modal, etc)
-    layout/      chrome de la app (TopBar, TabBar)
+    layout/      chrome de la app (Sidebar)
     habits/      específicos del dominio
   composables/   hooks Vue reutilizables
   lib/           helpers puros (no componentes)
@@ -100,6 +109,19 @@ docs/
   AGENTS.md         este archivo
   README_example.md template de README (no se commitea en producción)
 ```
+
+## Definition of Done
+
+Antes de considerar una tarea completa:
+
+1. **Objetivo claro**: La tarea tiene un resultado específico y medible. No hagas más de lo pedido.
+2. **Tests pasan**: `npm run test` verde (si aplica).
+3. **Build pasa**: `npm run build` sin errores.
+4. **Código limpio**: Sin TODOs, código comentado, o lógica muerta.
+5. **Documentación actualizada**: Si cambiaste arquitectura o convenciones, actualizá AGENTS.md o docs relevantes.
+6. **No rompas nada existente**: Si agregaste funcionalidad, verificá que no rompa tests o comportamiento previo.
+
+**Regla de oro del scope**: Si el usuario pidió X, entregá X. No agregues Y "porque está bueno" o Z "para el futuro". Si creés que falta algo, preguntá antes de hacerlo.
 
 ## Antes de hacer un commit
 
