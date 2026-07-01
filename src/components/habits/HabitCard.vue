@@ -29,7 +29,7 @@ async function toggleCheck() {
 </script>
 
 <template>
-  <div class="bg-surface-1 rounded-lg border border-hairline p-5">
+  <div class="bg-surface-1 rounded-lg border border-hairline p-5 group">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
         <span
