@@ -96,6 +96,10 @@
     @apply bg-surface-4;
   }
 
+  .glass {
+    @apply backdrop-blur-sm bg-surface-2/60 border border-hairline rounded-lg;
+  }
+
   .display-xl,
   .display-lg,
   .display-md,
