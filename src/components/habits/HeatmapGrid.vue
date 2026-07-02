@@ -21,7 +21,7 @@ const gridStyle = computed(() => ({
 <template>
   <div
     data-testid="heatmap-grid"
-    class="grid gap-1"
+    class="grid gap-0.5"
     :style="gridStyle"
   >
     <div
@@ -29,7 +29,7 @@ const gridStyle = computed(() => ({
       :key="cell.date"
       data-testid="heatmap-cell"
       :class="[
-        'w-2.5 h-2.5 rounded-sm',
+        'w-2 h-2 rounded-full',
         cell.isEmpty ? 'empty' : '',
         cell.completed ? 'completed' : '',
         !cell.isEmpty && !cell.completed ? 'bg-surface-2' : '',

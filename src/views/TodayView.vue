@@ -13,15 +13,20 @@ const logs = computed(() => habits.logs);
 
 <template>
   <div class="w-full max-w-sm" data-testid="habits-panel">
-    <EmptyState v-if="list.length === 0" />
-    <div v-else class="flex flex-col gap-4">
-      <HabitCard
-        v-for="habit in list"
-        :key="habit.id"
-        :habit="habit"
-        :logs="logs.filter((l) => l.habit_id === habit.id)"
-      />
-      <NewHabitCard />
+    <div
+      data-testid="habits-container"
+      class="bg-surface-2 rounded-2xl p-3 flex flex-col gap-2"
+    >
+      <EmptyState v-if="list.length === 0" />
+      <template v-else>
+        <HabitCard
+          v-for="habit in list"
+          :key="habit.id"
+          :habit="habit"
+          :logs="logs.filter((l) => l.habit_id === habit.id)"
+        />
+        <NewHabitCard />
+      </template>
     </div>
   </div>
 </template>

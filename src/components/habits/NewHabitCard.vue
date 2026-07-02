@@ -23,12 +23,12 @@ function onKeydown(e: KeyboardEvent) {
     role="button"
     tabindex="0"
     aria-label="Crear nuevo hábito"
-    class="bg-surface-1 rounded-lg border border-hairline border-dashed p-4
+    class="border-t border-dashed border-hairline
            flex flex-col items-center justify-center gap-2
-           min-h-[120px] cursor-pointer
+           min-h-[88px] py-4 cursor-pointer
            text-ink-muted
            transition-colors duration-150 ease-out
-           hover:bg-surface-2 hover:text-ink hover:border-hairline-strong
+           hover:bg-surface-3/30 hover:text-ink
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
     @click="onClick"
     @keydown="onKeydown"

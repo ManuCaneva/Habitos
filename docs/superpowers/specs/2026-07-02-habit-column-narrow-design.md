@@ -17,42 +17,53 @@ El panel actual (`max-w-3xl` ≈ 768px) genera mucho espacio horizontal vacío e
 ### 1. `src/views/TodayView.vue`
 
 - Contenedor del panel: `max-w-3xl` → `max-w-sm` (384px). Se mantiene `w-full` y se omite `mx-auto` (la columna queda pegada a la sidebar).
-- **Eliminar** el panel header completo (`bg-surface-1 rounded-lg border border-hairline` con título "Hábitos" + IconButton "+").
-- Lista de hábitos: las cards van directo, sin el wrapper card. Padding del contenedor de la lista: `p-0` (no necesita padding porque las cards ya tienen su propio padding).
-- Al final de la lista (cuando hay al menos un hábito), agregar `<NewHabitCard />` como última card.
-- Cuando no hay hábitos, mantener `EmptyState` (que ya tiene su propio CTA para crear el primero).
+- **Eliminar** el panel header completo (título "Hábitos" + IconButton "+").
+- **Agregar** un contenedor interno: `bg-surface-2 rounded-2xl p-3 flex flex-col gap-2` que envuelve toda la lista + el `NewHabitCard`. Este contenedor le da al "apartado de hábitos" un fondo distinto y bordes redondeados, como pidió el usuario.
+- Cuando `list.length === 0`, `EmptyState` se renderiza adentro del contenedor (para que el fondo del panel también lo envuelva).
+- Al final de la lista (cuando hay al menos un hábito), `<NewHabitCard />` queda como último item adentro del contenedor.
 - Imports: quitar `Text`, `IconButton`, `Plus` (de lucide). Agregar `NewHabitCard`.
 
 ### 2. `src/components/habits/HabitCard.vue`
 
-- Padding interno: `p-5` (20px) → `p-4` (16px) para que la card no se vea inflada en columna angosta.
-- Check button: `w-7 h-7` → `w-8 h-8` (32px), más cómodo para tap.
+- **Quitar** `bg-surface-1 rounded-lg border border-hairline` del outer. La card ya no es una "card" elevada: es una fila sobre el `bg-surface-2` del panel contenedor.
+- **Agregar** `border-b border-hairline last:border-b-0` para separar visualmente las filas (la última no tiene borde inferior).
+- Padding interno: `p-5` (20px) → `px-3 py-3.5` (más compacto, las cards van más pegadas).
 - Estructura interna sin cambios: header row (color dot + name | check + menu) y heatmap debajo.
 - Color dot sigue siendo el "icono" (mantiene `w-3 h-3 rounded-full`).
 - Agregar `truncate` al nombre del hábito (con `title` attr) para evitar overflow con nombres largos.
 - `mb-3` del header row se mantiene.
 
-### 3. `src/components/habits/HeatmapGrid.vue`
+### 3. `src/components/habits/HabitCard.vue` — Check button con `+`
 
-- Orientación: pasar de **5 cols × 7 rows** (transpuesto) a **7 cols × 5 rows** (vista de calendario natural).
+- Tamaño: `w-7 h-7` (28px) → `w-9 h-9` (36px), más cómodo de tap y más prominente.
+- **Unchecked**: `border border-hairline-strong hover:border-primary` con un **Lucide Plus** (`:size="18"`, stroke 2) adentro en `text-ink-muted`. Sin fondo.
+- **Checked**: `bg-primary border-primary` con un **Lucide Check** (`:size="18"`, stroke 3) adentro en `text-white`.
+- Misma `aria-label` dinámica ("Marcar hábito" / "Desmarcar hábito").
+- Menu button al lado, mismo tamaño (`w-9 h-9`) para alinear con el check.
+
+### 4. `src/components/habits/HeatmapGrid.vue`
+
+- Orientación: **7 cols × 5 rows** (vista de calendario natural, ya aplicado).
 - `gridTemplateColumns: repeat(7, minmax(0, 1fr))` — siempre 7 columnas.
-- Cell size: `w-4 h-4` (16px) → `w-2.5 h-2.5` (10px).
-- `gap-1` (4px) se mantiene.
-- Dimensiones finales: 7×10 + 6×4 = **94px** de ancho × 5×10 + 4×4 = **66px** de alto.
+- Cell size: `w-2.5 h-2.5 rounded-sm` (10px cuadrado) → `w-2 h-2 rounded-full` (**8px círculo**).
+- Gap: `gap-1` (4px) → `gap-0.5` (2px) — más "pegados".
+- Dimensiones finales: 7×8 + 6×2 = **68px** de ancho × 5×8 + 4×2 = **48px** de alto.
 - `buildHeatmapGrid()` no necesita cambios — ya itera cronológicamente y el grid CSS auto-flow los acomoda por filas. Las cells de padding (vacías al inicio para alinear por semana) quedan arriba-izquierda; "today" queda abajo-derecha.
-- El test de "35 celdas para 30 días" sigue válido (no cambia el conteo).
 
-### 4. `src/components/habits/NewHabitCard.vue` (nuevo)
+### 5. `src/components/habits/NewHabitCard.vue` (nuevo / simplificado)
 
-Card al final de la lista con la misma forma que una `HabitCard` (mismo `bg-surface-1 border border-hairline rounded-lg p-4`). Contenido:
+Como ahora vive adentro del panel `bg-surface-2`, **ya no necesita su propio bg/border sólido**. Cambios:
 
-- Centrada vertical y horizontal (`flex flex-col items-center justify-center`).
-- Icono `Plus` grande (`w-6 h-6` con stroke 2) en `text-ink-muted`.
-- Texto "Nuevo hábito" debajo en `body` weight 500, `text-ink-muted`.
-- Hover: `hover:bg-surface-2`, icon y texto a `text-ink`.
+- **Quitar** `bg-surface-1 border border-hairline border-dashed`.
+- **Agregar** `border-t border-dashed border-hairline` para separarse visualmente del último hábito (sin armar una card propia).
+- Padding: `p-4` → `py-4` (sin padding horizontal, ya está en el panel).
+- Centrada vertical y horizontal (`flex flex-col items-center justify-center gap-2`).
+- Icono `Plus` (`w-6 h-6` con stroke 2) en `text-ink-muted`.
+- Texto "Nuevo hábito" en `body` weight 500, `text-ink-muted`.
+- Hover: `hover:bg-surface-3/30`, icon y texto a `text-ink`.
 - Click: dispara `ui.openCreate()`.
-- Accesibilidad: `aria-label="Crear nuevo hábito"`, `role="button"`, `data-testid="new-habit-card"`.
-- Altura mínima: igual a una `HabitCard` promedio (~110-130px) para que la lista no "salte" cuando se agrega el primer hábito.
+- Accesibilidad: `aria-label="Crear nuevo hábito"`, `role="button"`, `data-testid="new-habit-card"`, `keydown` para Enter/Space.
+- Altura mínima: `min-h-[88px]` (reducida, ya no necesita ser una "card" alta).
 
 ## Lo que NO cambia
 

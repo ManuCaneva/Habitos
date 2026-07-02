@@ -38,4 +38,17 @@ describe("NewHabitCard", () => {
     const card = wrapper.find("[data-testid='new-habit-card']");
     expect(card.attributes("aria-label")).toBe("Crear nuevo hábito");
   });
+
+  it("card no tiene bg-surface-1 ni border sólido (vive adentro del panel)", () => {
+    const wrapper = mount(NewHabitCard);
+    const card = wrapper.find("[data-testid='new-habit-card']");
+    expect(card.classes()).not.toContain("bg-surface-1");
+  });
+
+  it("card tiene border-t border-dashed (separador del último hábito)", () => {
+    const wrapper = mount(NewHabitCard);
+    const card = wrapper.find("[data-testid='new-habit-card']");
+    expect(card.classes()).toContain("border-t");
+    expect(card.classes()).toContain("border-dashed");
+  });
 });

@@ -4,13 +4,15 @@ import { createPinia, setActivePinia } from "pinia";
 import HabitCard from "./HabitCard.vue";
 import type { Habit } from "@/schemas/habits";
 
+const habitsStoreMock = {
+  completedToday: new Set<string>(),
+  checkIn: vi.fn(),
+  undoCheckIn: vi.fn(),
+  getTodayDate: () => "2026-07-01",
+};
+
 vi.mock("@/stores/habits", () => ({
-  useHabitsStore: () => ({
-    completedToday: new Set<string>(),
-    checkIn: vi.fn(),
-    undoCheckIn: vi.fn(),
-    getTodayDate: () => "2026-07-01",
-  }),
+  useHabitsStore: () => habitsStoreMock,
 }));
 
 vi.mock("@/stores/ui", () => ({
@@ -23,6 +25,7 @@ vi.mock("@/stores/ui", () => ({
 describe("HabitCard", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    habitsStoreMock.completedToday = new Set<string>();
   });
 
   const mockHabit: Habit = {
@@ -55,13 +58,34 @@ describe("HabitCard", () => {
     expect(checkinButton.exists()).toBe(true);
   });
 
-  it("botón de check-in es w-8 h-8 (32px)", () => {
+  it("botón de check-in es w-9 h-9 (36px, prominente)", () => {
     const wrapper = mount(HabitCard, {
       props: { habit: mockHabit, logs: [] },
     });
     const checkinButton = wrapper.find("[data-testid='checkin-button']");
-    expect(checkinButton.classes()).toContain("w-8");
-    expect(checkinButton.classes()).toContain("h-8");
+    expect(checkinButton.classes()).toContain("w-9");
+    expect(checkinButton.classes()).toContain("h-9");
+  });
+
+  it("check-in unchecked muestra icono + (Plus)", () => {
+    const wrapper = mount(HabitCard, {
+      props: { habit: mockHabit, logs: [] },
+    });
+    const checkinButton = wrapper.find("[data-testid='checkin-button']");
+    const svg = checkinButton.find("svg");
+    expect(svg.exists()).toBe(true);
+    expect(svg.classes().join(" ")).toMatch(/lucide-plus/);
+  });
+
+  it("check-in checked muestra icono Check y fondo primary", () => {
+    habitsStoreMock.completedToday = new Set<string>(["h1"]);
+    const wrapper = mount(HabitCard, {
+      props: { habit: mockHabit, logs: [] },
+    });
+    const checkinButton = wrapper.find("[data-testid='checkin-button']");
+    expect(checkinButton.classes()).toContain("bg-primary");
+    const svg = checkinButton.find("svg");
+    expect(svg.classes().join(" ")).toMatch(/lucide-check/);
   });
 
   it("renderiza botón de menú", () => {
@@ -80,12 +104,21 @@ describe("HabitCard", () => {
     expect(heatmap.exists()).toBe(true);
   });
 
-  it("card tiene padding p-4 (compacto para columna angosta)", () => {
+  it("card no tiene bg-surface-1 ni border sólido (es fila, no card elevada)", () => {
     const wrapper = mount(HabitCard, {
       props: { habit: mockHabit, logs: [] },
     });
     const root = wrapper.find("[data-testid='habit-card']");
-    expect(root.classes()).toContain("p-4");
-    expect(root.classes()).not.toContain("p-5");
+    expect(root.classes()).not.toContain("bg-surface-1");
+    expect(root.classes()).not.toContain("border");
+  });
+
+  it("card tiene border-b border-hairline (separador entre filas)", () => {
+    const wrapper = mount(HabitCard, {
+      props: { habit: mockHabit, logs: [] },
+    });
+    const root = wrapper.find("[data-testid='habit-card']");
+    expect(root.classes()).toContain("border-b");
+    expect(root.classes()).toContain("border-hairline");
   });
 });

@@ -23,14 +23,32 @@ describe("HeatmapGrid", () => {
     expect(style).toMatch(/grid-template-columns:\s*repeat\(7/);
   });
 
-  it("celdas son w-2.5 h-2.5 (10px, compactas)", () => {
+  it("celdas son w-2 h-2 (8px, compactas)", () => {
     const logs: HabitLog[] = [];
     const wrapper = mount(HeatmapGrid, {
       props: { logs, color: "#5e6ad2", days: 30 },
     });
     const cell = wrapper.find("[data-testid='heatmap-cell']");
-    expect(cell.classes()).toContain("w-2.5");
-    expect(cell.classes()).toContain("h-2.5");
+    expect(cell.classes()).toContain("w-2");
+    expect(cell.classes()).toContain("h-2");
+  });
+
+  it("celdas son rounded-full (círculos, look clean)", () => {
+    const logs: HabitLog[] = [];
+    const wrapper = mount(HeatmapGrid, {
+      props: { logs, color: "#5e6ad2", days: 30 },
+    });
+    const cell = wrapper.find("[data-testid='heatmap-cell']");
+    expect(cell.classes()).toContain("rounded-full");
+  });
+
+  it("grid usa gap-0.5 (2px, puntos pegados)", () => {
+    const logs: HabitLog[] = [];
+    const wrapper = mount(HeatmapGrid, {
+      props: { logs, color: "#5e6ad2", days: 30 },
+    });
+    const grid = wrapper.find("[data-testid='heatmap-grid']");
+    expect(grid.classes()).toContain("gap-0.5");
   });
 
   it("celdas completadas tienen el color del hábito", () => {

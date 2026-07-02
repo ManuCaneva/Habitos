@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Check, MoreHorizontal } from "lucide-vue-next";
+import { Check, MoreHorizontal, Plus } from "lucide-vue-next";
 import { useHabitsStore } from "@/stores/habits";
 import { useUiStore } from "@/stores/ui";
 import type { Habit, HabitLog } from "@/schemas/habits";
@@ -31,7 +31,7 @@ async function toggleCheck() {
 <template>
   <div
     data-testid="habit-card"
-    class="bg-surface-1 rounded-lg border border-hairline p-4 group"
+    class="border-b border-hairline last:border-b-0 px-3 py-3.5 group"
   >
     <div class="flex items-center justify-between mb-3 gap-2">
       <div class="flex items-center gap-2 min-w-0">
@@ -53,23 +53,24 @@ async function toggleCheck() {
           data-testid="checkin-button"
           type="button"
           :class="[
-            'shrink-0 w-8 h-8 rounded-md border flex items-center justify-center',
+            'shrink-0 w-9 h-9 rounded-md border flex items-center justify-center',
             'transition-all duration-150 active:scale-95',
             checked
               ? 'bg-primary border-primary text-white'
-              : 'border-hairline-strong hover:border-primary',
+              : 'border-hairline-strong text-ink-muted hover:border-primary hover:text-ink',
           ]"
           :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
           :title="checked ? 'Desmarcar' : 'Marcar'"
           @click="toggleCheck"
         >
-          <Check v-if="checked" :size="16" :stroke-width="3" />
+          <Check v-if="checked" :size="18" :stroke-width="3" />
+          <Plus v-else :size="18" :stroke-width="2" />
         </button>
         <button
           data-testid="menu-button"
           type="button"
           :class="[
-            'shrink-0 w-8 h-8 rounded-md flex items-center justify-center',
+            'shrink-0 w-9 h-9 rounded-md flex items-center justify-center',
             'transition-opacity duration-150',
             'text-ink-tertiary hover:text-ink hover:bg-surface-2',
             isMenuOpen

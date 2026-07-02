@@ -70,4 +70,12 @@ describe("TodayView", () => {
     const newCard = wrapper.findComponent(NewHabitCard);
     expect(newCard.exists()).toBe(true);
   });
+
+  it("tiene panel contenedor con bg-surface-2 y rounded-2xl", () => {
+    const wrapper = mount(TodayView);
+    const panel = wrapper.find("[data-testid='habits-container']");
+    expect(panel.exists()).toBe(true);
+    expect(panel.classes()).toContain("bg-surface-2");
+    expect(panel.classes()).toContain("rounded-2xl");
+  });
 });
