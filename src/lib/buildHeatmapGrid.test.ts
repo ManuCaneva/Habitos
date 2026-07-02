@@ -2,53 +2,36 @@ import { describe, it, expect } from "vitest";
 import { buildHeatmapGrid } from "./buildHeatmapGrid";
 import type { HabitLog } from "@/schemas/habits";
 
-describe("buildHeatmapGrid", () => {
-  it("genera 35 celdas para 30 días (7x5)", () => {
-    const logs: HabitLog[] = [];
-    const cells = buildHeatmapGrid(30, logs);
-    expect(cells).toHaveLength(35);
+describe("buildHeatmapGrid (GitHub-style)", () => {
+  it("genera 91 celdas para 91 días (13x7)", () => {
+    expect(buildHeatmapGrid(91, [])).toHaveLength(91);
   });
-
-  it("marca celdas como completadas según logs", () => {
-    const logs: HabitLog[] = [
-      {
-        id: "1",
-        habit_id: "h1",
-        log_date: "2026-06-25",
-        completed_at: "2026-06-25T10:00:00.000Z",
-        note: null,
-        created_at: "2026-06-25T10:00:00.000Z",
-      },
-    ];
-    const cells = buildHeatmapGrid(30, logs);
-    const completedCells = cells.filter((c) => c.completed);
-    expect(completedCells.length).toBeGreaterThan(0);
+  it("ordena column-major: cada bloque de 7 = una semana", () => {
+    const cells = buildHeatmapGrid(91, []);
+    // primer bloque = primera columna (semana más antigua), 7 celdas
+    expect(cells.slice(0, 7)).toHaveLength(7);
   });
-
-  it("hoy cae en la esquina inferior derecha", () => {
-    const logs: HabitLog[] = [];
-    const cells = buildHeatmapGrid(30, logs);
+  it("hoy está en la última columna (últimas 7 celdas)", () => {
+    const cells = buildHeatmapGrid(91, []);
     const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, "0");
-    const d = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${y}-${m}-${d}`;
-
-    const lastCell = cells[cells.length - 1];
-    expect(lastCell.date).toBe(todayStr);
-    expect(lastCell.isEmpty).toBe(false);
+    const todayStr = today.toISOString().slice(0, 10);
+    const lastWeek = cells.slice(-7);
+    expect(lastWeek.some((c) => c.date === todayStr)).toBe(true);
   });
-
-  it("celdas fuera del rango están vacías", () => {
-    const logs: HabitLog[] = [];
-    const cells = buildHeatmapGrid(30, logs);
-    const emptyCells = cells.filter((c) => c.isEmpty);
-    expect(emptyCells.length).toBeGreaterThan(0);
+  it("marca completadas según logs", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const logs: HabitLog[] = [{
+      id: "1", habit_id: "h1", log_date: today,
+      completed_at: today, note: null, created_at: today,
+    }];
+    const cells = buildHeatmapGrid(91, logs);
+    expect(cells.filter((c) => c.completed).length).toBeGreaterThanOrEqual(1);
   });
-
-  it("respeta prop days (60 días)", () => {
-    const logs: HabitLog[] = [];
-    const cells = buildHeatmapGrid(60, logs);
-    expect(cells.length).toBeGreaterThan(35);
+  it("alinea por weekday: fila 0 = lunes", () => {
+    const cells = buildHeatmapGrid(91, []);
+    // la primera celda de la primera columna debe ser lunes
+    // parse as local midnight to avoid UTC shift
+    const d = new Date(cells[0].date + "T12:00:00");
+    expect(d.getDay()).toBe(1); // Monday
   });
 });

@@ -6,8 +6,7 @@ export interface GridCell {
   isEmpty: boolean;
 }
 
-function getTodayDate(): string {
-  const d = new Date();
+function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -15,36 +14,29 @@ function getTodayDate(): string {
 }
 
 export function buildHeatmapGrid(days: number, logs: HabitLog[]): GridCell[] {
-  const today = getTodayDate();
-  const todayDate = new Date(today + "T00:00:00");
-
+  const completed = new Set(logs.map((l) => l.log_date));
   const totalWeeks = Math.ceil(days / 7);
-  const totalCells = totalWeeks * 7;
 
-  const startDate = new Date(todayDate);
-  startDate.setDate(startDate.getDate() - (totalCells - 1));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayDow = (today.getDay() + 6) % 7; // 0=Mon..6=Sun
 
-  const completedDates = new Set(logs.map((l) => l.log_date));
+  const start = new Date(today);
+  start.setDate(start.getDate() - (totalWeeks - 1) * 7 - todayDow);
 
   const cells: GridCell[] = [];
-
-  for (let i = 0; i < totalCells; i++) {
-    const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + i);
-
-    const y = currentDate.getFullYear();
-    const m = String(currentDate.getMonth() + 1).padStart(2, "0");
-    const d = String(currentDate.getDate()).padStart(2, "0");
-    const dateStr = `${y}-${m}-${d}`;
-
-    const isInRange = i >= (totalCells - days);
-
-    cells.push({
-      date: dateStr,
-      completed: isInRange && completedDates.has(dateStr),
-      isEmpty: !isInRange,
-    });
+  for (let w = 0; w < totalWeeks; w++) {
+    for (let d = 0; d < 7; d++) {
+      const cellDate = new Date(start);
+      cellDate.setDate(start.getDate() + w * 7 + d);
+      const dateStr = toLocalDateStr(cellDate);
+      const inRange = cellDate <= today;
+      cells.push({
+        date: dateStr,
+        completed: inRange && completed.has(dateStr),
+        isEmpty: !inRange,
+      });
+    }
   }
-
   return cells;
 }
