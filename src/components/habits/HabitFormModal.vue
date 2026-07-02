@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { useUiStore } from "@/stores/ui";
 import { useHabitsStore } from "@/stores/habits";
 import { HABIT_COLORS, DEFAULT_HABIT_COLOR } from "@/lib/habitColors";
+import { HABIT_ICONS, DEFAULT_HABIT_ICON } from "@/lib/icons";
 import Modal from "@/components/ui/Modal.vue";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
@@ -20,6 +21,7 @@ const isEdit = computed(() => editing.value !== null);
 
 const name = ref("");
 const color = ref<string>(DEFAULT_HABIT_COLOR);
+const icon = ref<string>(DEFAULT_HABIT_ICON);
 const error = ref<string | null>(null);
 const saving = ref(false);
 
@@ -30,9 +32,11 @@ watch(
       if (editing.value) {
         name.value = editing.value.name;
         color.value = editing.value.color;
+        icon.value = editing.value.icon ?? DEFAULT_HABIT_ICON;
       } else {
         name.value = "";
         color.value = DEFAULT_HABIT_COLOR;
+        icon.value = DEFAULT_HABIT_ICON;
       }
       error.value = null;
     }
@@ -53,11 +57,13 @@ async function handleSubmit(e: Event) {
       await habits.updateHabit(editing.value.id, {
         name: trimmed,
         color: color.value,
+        icon: icon.value,
       });
     } else {
       await habits.createHabit({
         name: trimmed,
         color: color.value,
+        icon: icon.value,
         frequency: { type: "daily", target_per_period: 1 },
       });
     }
@@ -88,6 +94,30 @@ async function handleSubmit(e: Event) {
           maxlength="100"
           required
         />
+
+        <div class="flex flex-col gap-2">
+          <Text variant="body-sm" color="muted">Ícono</Text>
+          <div class="grid grid-cols-8 gap-1">
+            <button
+              v-for="i in HABIT_ICONS"
+              :key="i.value"
+              data-testid="icon-option"
+              type="button"
+              :title="i.name"
+              :aria-label="i.name"
+              :aria-pressed="icon === i.value"
+              :class="[
+                'p-2 rounded-md flex items-center justify-center',
+                icon === i.value
+                  ? 'selected bg-primary text-white'
+                  : 'bg-surface-1 text-ink',
+              ]"
+              @click="icon = i.value"
+            >
+              <component :is="i.icon" :size="18" />
+            </button>
+          </div>
+        </div>
 
         <div class="flex flex-col gap-2">
           <Text variant="body-sm" color="muted">Color</Text>
