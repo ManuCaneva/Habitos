@@ -232,6 +232,10 @@ export const useHabitsStore = defineStore("habits", () => {
     return todayLocalDate();
   }
 
+  function streakFor(habitId: string): number {
+    return currentStreak(habitId);
+  }
+
   function clearError(): void {
     lastError.value = null;
   }
@@ -243,7 +247,7 @@ export const useHabitsStore = defineStore("habits", () => {
       const rows = await db.listHabits(true);
       habits.value = rows.map(rowToHabit);
       const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - 60);
+      fromDate.setDate(fromDate.getDate() - 90);
       const from = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
       const to = todayLocalDate();
       const logRows = await db.listLogsInRange(from, to);
@@ -282,6 +286,7 @@ export const useHabitsStore = defineStore("habits", () => {
     isHabitDueOn,
     isHabitDueToday,
     currentStreak,
+    streakFor,
     getTodayDate,
     clearError,
   };
