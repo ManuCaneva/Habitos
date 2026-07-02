@@ -1,90 +1,54 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Check, MoreHorizontal, Plus } from "lucide-vue-next";
+import { Check, Plus, MoreHorizontal } from "lucide-vue-next";
+import type { Habit, HabitLog } from "@/schemas/habits";
 import { useHabitsStore } from "@/stores/habits";
 import { useUiStore } from "@/stores/ui";
-import type { Habit, HabitLog } from "@/schemas/habits";
-import Text from "@/components/ui/Text.vue";
+import { iconFor } from "@/lib/icons";
+import HabitContextMenu from "./HabitContextMenu.vue";
 import HeatmapGrid from "./HeatmapGrid.vue";
 
-const props = defineProps<{
-  habit: Habit;
-  logs: HabitLog[];
-}>();
-
+const props = defineProps<{ habit: Habit; logs: HabitLog[] }>();
 const habits = useHabitsStore();
 const ui = useUiStore();
 
 const checked = computed(() => habits.completedToday.has(props.habit.id));
+const icon = computed(() => iconFor(props.habit.icon));
+const streak = computed(() => habits.streakFor(props.habit.id));
+const subtitle = computed(() => (streak.value > 0 ? `Racha de ${streak.value}` : "Sin racha"));
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
 
-async function toggleCheck() {
-  const today = habits.getTodayDate();
-  if (checked.value) {
-    await habits.undoCheckIn(props.habit.id, today);
-  } else {
-    await habits.checkIn(props.habit.id);
-  }
+function toggleCheck() {
+  if (checked.value) habits.undoCheckIn(props.habit.id, habits.getTodayDate());
+  else habits.checkIn(props.habit.id);
 }
 </script>
 
 <template>
-  <div
-    data-testid="habit-card"
-    class="border-b border-hairline last:border-b-0 px-3 py-3.5 group"
-  >
-    <div class="flex items-center justify-between mb-3 gap-2">
-      <div class="flex items-center gap-2 min-w-0">
-        <span
-          data-testid="color-dot"
-          :style="{ backgroundColor: habit.color }"
-          class="w-3 h-3 rounded-full shrink-0"
-          aria-hidden="true"
-        />
-        <Text
-          variant="body-lg"
-          weight="500"
-          class="truncate"
-          :title="habit.name"
-        >{{ habit.name }}</Text>
-      </div>
+  <div data-testid="habit-card" class="glass p-3 group relative">
+    <div class="flex items-center gap-3 mb-3">
+      <span data-testid="habit-icon" class="text-white shrink-0">
+        <component :is="icon.icon" :size="20" :stroke-width="2" />
+      </span>
+      <button data-testid="habit-title" class="min-w-0 flex-1 text-left" @click="ui.openEdit(habit.id)">
+        <div class="font-semibold text-ink truncate">{{ habit.name }}</div>
+        <div class="text-sm text-ink-muted opacity-70">{{ subtitle }}</div>
+      </button>
       <div class="flex items-center gap-1 shrink-0">
-        <button
-          data-testid="checkin-button"
-          type="button"
-          :class="[
-            'shrink-0 w-9 h-9 rounded-md border flex items-center justify-center',
-            'transition-all duration-150 active:scale-95',
-            checked
-              ? 'bg-primary border-primary text-white'
-              : 'border-hairline-strong text-ink-muted hover:border-primary hover:text-ink',
-          ]"
-          :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
-          :title="checked ? 'Desmarcar' : 'Marcar'"
-          @click="toggleCheck"
-        >
-          <Check v-if="checked" :size="18" :stroke-width="3" />
-          <Plus v-else :size="18" :stroke-width="2" />
+        <button data-testid="checkin-button" :class="['w-9 h-9 flex items-center justify-center transition-all active:scale-95',
+          checked ? 'rounded-md' : 'rounded-full border-2']"
+          :style="checked ? { backgroundColor: habit.color } : { borderColor: habit.color }"
+          :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'" @click="toggleCheck">
+          <Check v-if="checked" :size="18" :stroke-width="3" class="text-white" />
+          <Plus v-else :size="18" :stroke-width="2" class="text-white" />
         </button>
-        <button
-          data-testid="menu-button"
-          type="button"
-          :class="[
-            'shrink-0 w-9 h-9 rounded-md flex items-center justify-center',
-            'transition-opacity duration-150',
-            'text-ink-tertiary hover:text-ink hover:bg-surface-2',
-            isMenuOpen
-              ? 'opacity-100 bg-surface-2 text-ink'
-              : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
-          ]"
-          aria-label="Más opciones"
-          title="Más opciones"
-          @click="ui.toggleMenu(habit.id)"
-        >
-          <MoreHorizontal :size="16" />
+        <button data-testid="menu-button" class="w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100"
+          aria-label="Más opciones" @click="ui.toggleMenu(habit.id)">
+          <MoreHorizontal :size="18" />
         </button>
       </div>
     </div>
-    <HeatmapGrid :logs="logs" :color="habit.color" :days="30" />
+    <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
+    <HeatmapGrid :logs="logs" :color="habit.color" :days="91" />
   </div>
 </template>

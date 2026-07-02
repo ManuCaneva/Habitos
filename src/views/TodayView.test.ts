@@ -25,6 +25,7 @@ vi.mock("@/stores/habits", () => ({
     getTodayDate: () => "2026-01-01",
     checkIn: vi.fn(),
     undoCheckIn: vi.fn(),
+    streakFor: vi.fn(() => 0),
   }),
 }));
 
