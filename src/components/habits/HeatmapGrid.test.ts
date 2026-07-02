@@ -13,6 +13,26 @@ describe("HeatmapGrid", () => {
     expect(cells).toHaveLength(35);
   });
 
+  it("usa 7 columnas (vista de calendario)", () => {
+    const logs: HabitLog[] = [];
+    const wrapper = mount(HeatmapGrid, {
+      props: { logs, color: "#5e6ad2", days: 30 },
+    });
+    const grid = wrapper.find("[data-testid='heatmap-grid']");
+    const style = grid.attributes("style") ?? "";
+    expect(style).toMatch(/grid-template-columns:\s*repeat\(7/);
+  });
+
+  it("celdas son w-2.5 h-2.5 (10px, compactas)", () => {
+    const logs: HabitLog[] = [];
+    const wrapper = mount(HeatmapGrid, {
+      props: { logs, color: "#5e6ad2", days: 30 },
+    });
+    const cell = wrapper.find("[data-testid='heatmap-cell']");
+    expect(cell.classes()).toContain("w-2.5");
+    expect(cell.classes()).toContain("h-2.5");
+  });
+
   it("celdas completadas tienen el color del hábito", () => {
     const logs: HabitLog[] = [
       {

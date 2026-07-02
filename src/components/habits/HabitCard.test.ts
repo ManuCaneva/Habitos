@@ -55,6 +55,15 @@ describe("HabitCard", () => {
     expect(checkinButton.exists()).toBe(true);
   });
 
+  it("botón de check-in es w-8 h-8 (32px)", () => {
+    const wrapper = mount(HabitCard, {
+      props: { habit: mockHabit, logs: [] },
+    });
+    const checkinButton = wrapper.find("[data-testid='checkin-button']");
+    expect(checkinButton.classes()).toContain("w-8");
+    expect(checkinButton.classes()).toContain("h-8");
+  });
+
   it("renderiza botón de menú", () => {
     const wrapper = mount(HabitCard, {
       props: { habit: mockHabit, logs: [] },
@@ -69,5 +78,14 @@ describe("HabitCard", () => {
     });
     const heatmap = wrapper.findComponent({ name: "HeatmapGrid" });
     expect(heatmap.exists()).toBe(true);
+  });
+
+  it("card tiene padding p-4 (compacto para columna angosta)", () => {
+    const wrapper = mount(HabitCard, {
+      props: { habit: mockHabit, logs: [] },
+    });
+    const root = wrapper.find("[data-testid='habit-card']");
+    expect(root.classes()).toContain("p-4");
+    expect(root.classes()).not.toContain("p-5");
   });
 });

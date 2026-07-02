@@ -29,23 +29,31 @@ async function toggleCheck() {
 </script>
 
 <template>
-  <div class="bg-surface-1 rounded-lg border border-hairline p-5 group">
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center gap-2">
+  <div
+    data-testid="habit-card"
+    class="bg-surface-1 rounded-lg border border-hairline p-4 group"
+  >
+    <div class="flex items-center justify-between mb-3 gap-2">
+      <div class="flex items-center gap-2 min-w-0">
         <span
           data-testid="color-dot"
           :style="{ backgroundColor: habit.color }"
           class="w-3 h-3 rounded-full shrink-0"
           aria-hidden="true"
         />
-        <Text variant="body-lg" weight="500">{{ habit.name }}</Text>
+        <Text
+          variant="body-lg"
+          weight="500"
+          class="truncate"
+          :title="habit.name"
+        >{{ habit.name }}</Text>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 shrink-0">
         <button
           data-testid="checkin-button"
           type="button"
           :class="[
-            'shrink-0 w-7 h-7 rounded-md border flex items-center justify-center',
+            'shrink-0 w-8 h-8 rounded-md border flex items-center justify-center',
             'transition-all duration-150 active:scale-95',
             checked
               ? 'bg-primary border-primary text-white'
@@ -61,7 +69,7 @@ async function toggleCheck() {
           data-testid="menu-button"
           type="button"
           :class="[
-            'shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
+            'shrink-0 w-8 h-8 rounded-md flex items-center justify-center',
             'transition-opacity duration-150',
             'text-ink-tertiary hover:text-ink hover:bg-surface-2',
             isMenuOpen

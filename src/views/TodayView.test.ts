@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import TodayView from "./TodayView.vue";
+import NewHabitCard from "@/components/habits/NewHabitCard.vue";
 
 vi.mock("@/stores/habits", () => ({
   useHabitsStore: () => ({
@@ -51,5 +52,22 @@ describe("TodayView", () => {
     const panel = wrapper.find("[data-testid='habits-panel']");
     expect(panel.classes()).not.toContain("max-w-2xl");
     expect(panel.classes()).not.toContain("mx-auto");
+  });
+
+  it("panel usa max-w-sm (columna angosta phone-like)", () => {
+    const wrapper = mount(TodayView);
+    const panel = wrapper.find("[data-testid='habits-panel']");
+    expect(panel.classes()).toContain("max-w-sm");
+  });
+
+  it("no tiene header con título 'Hábitos'", () => {
+    const wrapper = mount(TodayView);
+    expect(wrapper.text()).not.toContain("Hábitos");
+  });
+
+  it("renderiza NewHabitCard al final de la lista", () => {
+    const wrapper = mount(TodayView);
+    const newCard = wrapper.findComponent(NewHabitCard);
+    expect(newCard.exists()).toBe(true);
   });
 });
