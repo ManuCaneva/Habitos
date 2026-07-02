@@ -15,3 +15,12 @@ export const HABIT_COLORS: readonly HabitColor[] = [
 ] as const;
 
 export const DEFAULT_HABIT_COLOR = HABIT_COLORS[0].value;
+
+export function shadeFor(color: string, intensity: 0 | 1): string {
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const alpha = intensity === 1 ? 1 : 0.15;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
