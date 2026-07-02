@@ -15,7 +15,7 @@ const logs = computed(() => habits.logs);
   <div class="w-full max-w-sm" data-testid="habits-panel">
     <div
       data-testid="habits-container"
-      class="bg-surface-2 rounded-2xl p-3 flex flex-col gap-2"
+      class="flex flex-col gap-2"
     >
       <EmptyState v-if="list.length === 0" />
       <template v-else>
