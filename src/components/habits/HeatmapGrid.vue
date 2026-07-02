@@ -9,12 +9,12 @@ const props = withDefaults(
   { days: 91 }
 );
 const cells = computed(() => buildHeatmapGrid(props.days, props.logs));
-const todayStr = new Date().toISOString().slice(0, 10);
+const todayStr = computed(() => new Date().toISOString().slice(0, 10));
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
   if (c.isEmpty) return "background: transparent";
   const intensity = c.completed ? 1 : 0;
   const base = shadeFor(props.color, intensity as 0 | 1);
-  return c.date === todayStr && c.completed
+  return c.date === todayStr.value && c.completed
     ? `background: ${base}; box-shadow: 0 0 0 1px ${shadeFor(props.color, 1)}`
     : `background: ${base}`;
 }

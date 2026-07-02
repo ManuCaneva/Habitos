@@ -18,9 +18,9 @@ const streak = computed(() => habits.streakFor(props.habit.id));
 const subtitle = computed(() => (streak.value > 0 ? `Racha de ${streak.value}` : "Sin racha"));
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
 
-function toggleCheck() {
-  if (checked.value) habits.undoCheckIn(props.habit.id, habits.getTodayDate());
-  else habits.checkIn(props.habit.id);
+async function toggleCheck() {
+  if (checked.value) await habits.undoCheckIn(props.habit.id, habits.getTodayDate());
+  else await habits.checkIn(props.habit.id);
 }
 </script>
 

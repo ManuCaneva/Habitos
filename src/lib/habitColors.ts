@@ -18,6 +18,7 @@ export const DEFAULT_HABIT_COLOR = HABIT_COLORS[0].value;
 
 export function shadeFor(color: string, intensity: 0 | 1): string {
   const hex = color.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return "rgba(0, 0, 0, 0)";
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
