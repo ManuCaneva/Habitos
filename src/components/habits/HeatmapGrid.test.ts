@@ -1,94 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import HeatmapGrid from "./HeatmapGrid.vue";
-import type { HabitLog } from "@/schemas/habits";
 
 describe("HeatmapGrid", () => {
-  it("renderiza 35 celdas para 30 días", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const cells = wrapper.findAll("[data-testid='heatmap-cell']");
-    expect(cells).toHaveLength(35);
+  it("rendera 91 celdas para 91 días", () => {
+    const w = mount(HeatmapGrid, { props: { logs: [], color: "#5e6ad2", days: 91 } });
+    expect(w.findAll("[data-testid='heat-cell']")).toHaveLength(91);
   });
-
-  it("usa 7 columnas (vista de calendario)", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const grid = wrapper.find("[data-testid='heatmap-grid']");
-    const style = grid.attributes("style") ?? "";
-    expect(style).toMatch(/grid-template-columns:\s*repeat\(7/);
+  it("usa 13 columnas y 7 filas", () => {
+    const w = mount(HeatmapGrid, { props: { logs: [], color: "#5e6ad2", days: 91 } });
+    const grid = w.find("[data-testid='heat-grid']");
+    expect(grid.attributes('style')).toContain('repeat(13');
+    expect(grid.attributes('style')).toContain('repeat(7');
   });
-
-  it("celdas son w-2 h-2 (8px, compactas)", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
+  it("celda completada usa shadeFor al 100%", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const w = mount(HeatmapGrid, {
+      props: { logs: [{ id: "1", habit_id: "h", log_date: today, completed_at: today, note: null, created_at: today }], color: "#5e6ad2", days: 91 },
     });
-    const cell = wrapper.find("[data-testid='heatmap-cell']");
-    expect(cell.classes()).toContain("w-2");
-    expect(cell.classes()).toContain("h-2");
-  });
-
-  it("celdas son rounded-full (círculos, look clean)", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const cell = wrapper.find("[data-testid='heatmap-cell']");
-    expect(cell.classes()).toContain("rounded-full");
-  });
-
-  it("grid usa gap-0.5 (2px, puntos pegados)", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const grid = wrapper.find("[data-testid='heatmap-grid']");
-    expect(grid.classes()).toContain("gap-0.5");
-  });
-
-  it("celdas completadas tienen el color del hábito", () => {
-    const logs: HabitLog[] = [
-      {
-        id: "1",
-        habit_id: "h1",
-        log_date: "2026-06-25",
-        completed_at: "2026-06-25T10:00:00.000Z",
-        note: null,
-        created_at: "2026-06-25T10:00:00.000Z",
-      },
-    ];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const completedCells = wrapper.findAll("[data-testid='heatmap-cell'].completed");
-    expect(completedCells.length).toBeGreaterThan(0);
-    const style = completedCells[0].attributes("style");
-    expect(style).toContain("background-color");
-  });
-
-  it("celdas no completadas tienen bg-surface-2", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const nonCompletedCells = wrapper
-      .findAll("[data-testid='heatmap-cell']")
-      .filter((c) => !c.classes().includes("completed") && !c.classes().includes("empty"));
-    expect(nonCompletedCells.length).toBeGreaterThan(0);
-    expect(nonCompletedCells[0].classes()).toContain("bg-surface-2");
-  });
-
-  it("celdas vacías son transparentes", () => {
-    const logs: HabitLog[] = [];
-    const wrapper = mount(HeatmapGrid, {
-      props: { logs, color: "#5e6ad2", days: 30 },
-    });
-    const emptyCells = wrapper.findAll("[data-testid='heatmap-cell'].empty");
-    expect(emptyCells.length).toBeGreaterThan(0);
+    const filled = w.find("[data-testid='heat-cell'][style*='rgba(94, 106, 210, 1)']");
+    expect(filled.exists()).toBe(true);
   });
 });
