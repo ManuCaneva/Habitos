@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { Check, MoreHorizontal } from "lucide-vue-next";
 import { useHabitsStore } from "@/stores/habits";
 import { useUiStore } from "@/stores/ui";
+import { iconFor } from "@/lib/icons";
 import type { Habit } from "@/schemas/habits";
 import Text from "@/components/ui/Text.vue";
 import HabitContextMenu from "./HabitContextMenu.vue";
@@ -13,6 +14,7 @@ const habits = useHabitsStore();
 const ui = useUiStore();
 
 const checked = computed(() => habits.completedToday.has(props.habit.id));
+const icon = computed(() => iconFor(props.habit.icon));
 const streak = computed(() => habits.currentStreak(props.habit.id));
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
 
@@ -44,11 +46,9 @@ const archivedLabel = computed(() => {
         isMenuOpen && 'bg-surface-1',
       ]"
     >
-      <span
-        :style="{ backgroundColor: habit.color }"
-        class="w-2.5 h-2.5 rounded-full shrink-0"
-        aria-hidden="true"
-      />
+      <span data-testid="habit-icon" class="text-white shrink-0">
+        <component :is="icon.icon" :size="18" :stroke-width="2" />
+      </span>
       <button
         type="button"
         class="flex-1 text-left min-w-0"
