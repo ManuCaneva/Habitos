@@ -6,6 +6,14 @@ export interface GridCell {
   isEmpty: boolean;
 }
 
+export const HISTORY_COLS = 28;
+
+export interface BuildGridOptions {
+  days: number;
+  logs: HabitLog[];
+  cols?: number;
+}
+
 function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -13,30 +21,32 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function buildHeatmapGrid(days: number, logs: HabitLog[]): GridCell[] {
+export function buildHeatmapGrid({ days, logs, cols }: BuildGridOptions): GridCell[] {
+  const c = cols ?? HISTORY_COLS;
   const completed = new Set(logs.map((l) => l.log_date));
-  const totalWeeks = Math.ceil(days / 7);
+  const rows = Math.ceil(days / c);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayDow = (today.getDay() + 6) % 7; // 0=Mon..6=Sun
 
-  const start = new Date(today);
-  start.setDate(start.getDate() - (totalWeeks - 1) * 7 - todayDow);
-
-  const cells: GridCell[] = [];
-  for (let w = 0; w < totalWeeks; w++) {
-    for (let d = 0; d < 7; d++) {
-      const cellDate = new Date(start);
-      cellDate.setDate(start.getDate() + w * 7 + d);
-      const dateStr = toLocalDateStr(cellDate);
-      const inRange = cellDate <= today;
-      cells.push({
-        date: dateStr,
-        completed: inRange && completed.has(dateStr),
-        isEmpty: !inRange,
-      });
-    }
+  const realCells: GridCell[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = toLocalDateStr(d);
+    realCells.push({ date: dateStr, completed: completed.has(dateStr), isEmpty: false });
   }
-  return cells;
+
+  const emptyCell: GridCell = { date: "", completed: false, isEmpty: true };
+  const flat: GridCell[] = [];
+  for (let r = 0; r < rows; r++) {
+    const start = days - (r + 1) * c;
+    const rowStart = Math.max(0, start);
+    const rowEnd = Math.min(days, start + c);
+    const rowCells = realCells.slice(rowStart, rowEnd);
+    const padCount = c - rowCells.length;
+    for (const cell of rowCells) flat.push(cell);
+    for (let p = 0; p < padCount; p++) flat.push(emptyCell);
+  }
+  return flat;
 }

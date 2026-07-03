@@ -1,37 +1,67 @@
 import { describe, it, expect } from "vitest";
-import { buildHeatmapGrid } from "./buildHeatmapGrid";
+import { buildHeatmapGrid, HISTORY_COLS } from "./buildHeatmapGrid";
 import type { HabitLog } from "@/schemas/habits";
 
-describe("buildHeatmapGrid (GitHub-style)", () => {
-  it("genera 91 celdas para 91 días (13x7)", () => {
-    expect(buildHeatmapGrid(91, [])).toHaveLength(91);
+function todayLocalStr(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+function dateStrOffset(daysAgo: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - daysAgo);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+describe("buildHeatmapGrid (row-major)", () => {
+  it("expone HISTORY_COLS = 28", () => {
+    expect(HISTORY_COLS).toBe(28);
   });
-  it("ordena column-major: cada bloque de 7 = una semana", () => {
-    const cells = buildHeatmapGrid(91, []);
-    // primer bloque = primera columna (semana más antigua), 7 celdas
-    expect(cells.slice(0, 7)).toHaveLength(7);
+
+  it("genera ceil(days/cols)*cols celdas con padding", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    expect(cells).toHaveLength(Math.ceil(91 / 28) * 28);
   });
-  it("hoy está en la última columna (últimas 7 celdas)", () => {
-    const cells = buildHeatmapGrid(91, []);
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    const lastWeek = cells.slice(-7);
-    expect(lastWeek.some((c) => c.date === todayStr)).toBe(true);
+
+  it("usa HISTORY_COLS por defecto cuando se omite cols", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [] });
+    expect(cells).toHaveLength(Math.ceil(91 / HISTORY_COLS) * HISTORY_COLS);
   });
-  it("marca completadas según logs", () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const logs: HabitLog[] = [{
-      id: "1", habit_id: "h1", log_date: today,
-      completed_at: today, note: null, created_at: today,
-    }];
-    const cells = buildHeatmapGrid(91, logs);
-    expect(cells.filter((c) => c.completed).length).toBeGreaterThanOrEqual(1);
+
+  it("hoy es la última celda real de la fila 0 (índice cols-1)", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    expect(cells[27].date).toBe(todayLocalStr());
+    expect(cells[27].isEmpty).toBe(false);
   });
-  it("alinea por weekday: fila 0 = lunes", () => {
-    const cells = buildHeatmapGrid(91, []);
-    // la primera celda de la primera columna debe ser lunes
-    // parse as local midnight to avoid UTC shift
-    const d = new Date(cells[0].date + "T12:00:00");
-    expect(d.getDay()).toBe(1); // Monday
+
+  it("fila 0 = ventana más reciente (hace 27 días → hoy)", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    expect(cells[0].date).toBe(dateStrOffset(27));
+    expect(cells[27].date).toBe(dateStrOffset(0));
+  });
+
+  it("isEmpty solo en el padding derecho de la última fila", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    const emptyIndices = cells
+      .map((c, i) => (c.isEmpty ? i : -1))
+      .filter((i) => i >= 0);
+    expect(emptyIndices).toHaveLength(21);
+    emptyIndices.forEach((i) => expect(i).toBeGreaterThanOrEqual(91));
+  });
+
+  it("marca completada según logs (hoy)", () => {
+    const today = todayLocalStr();
+    const logs: HabitLog[] = [
+      { id: "1", habit_id: "h1", log_date: today, completed_at: today, note: null, created_at: today },
+    ];
+    const cells = buildHeatmapGrid({ days: 91, logs, cols: 28 });
+    expect(cells[27].completed).toBe(true);
+    expect(cells[27].date).toBe(today);
+  });
+
+  it("días viejos no completados aparecen como completed=false", () => {
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    expect(cells[0].completed).toBe(false);
+    expect(cells[0].isEmpty).toBe(false);
   });
 });
