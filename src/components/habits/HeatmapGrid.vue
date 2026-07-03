@@ -1,28 +1,43 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { HabitLog } from "@/schemas/habits";
-import { buildHeatmapGrid } from "@/lib/buildHeatmapGrid";
+import { buildHeatmapGrid, HISTORY_COLS } from "@/lib/buildHeatmapGrid";
 import { shadeFor } from "@/lib/habitColors";
 
 const props = withDefaults(
-  defineProps<{ logs: HabitLog[]; color: string; days?: number }>(),
-  { days: 91 }
+  defineProps<{ logs: HabitLog[]; color: string; days?: number; cols?: number }>(),
+  { days: 91, cols: HISTORY_COLS }
 );
-const cells = computed(() => buildHeatmapGrid(props.days, props.logs));
-const todayStr = computed(() => new Date().toISOString().slice(0, 10));
+
+const cells = computed(() =>
+  buildHeatmapGrid({ days: props.days, logs: props.logs, cols: props.cols })
+);
+
+const now = new Date();
+const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
   if (c.isEmpty) return "background: transparent";
   const intensity = c.completed ? 1 : 0;
-  const base = shadeFor(props.color, intensity as 0 | 1);
-  return c.date === todayStr.value && c.completed
+  const base = shadeFor(props.color, intensity);
+  return c.date === todayStr && c.completed
     ? `background: ${base}; box-shadow: 0 0 0 1px ${shadeFor(props.color, 1)}`
     : `background: ${base}`;
 }
 </script>
+
 <template>
-  <div data-testid="heat-grid" class="grid gap-0.5"
-       style="grid-template-columns: repeat(13, minmax(0,1fr)); grid-template-rows: repeat(7, minmax(0,1fr)); grid-auto-flow: column;">
-    <div v-for="(c, i) in cells" :key="i" data-testid="heat-cell"
-         class="w-2 h-2 rounded-sm" :style="cellStyle(c)" />
+  <div
+    data-testid="heat-grid"
+    class="grid gap-0.5"
+    :style="{ gridTemplateColumns: `repeat(${props.cols}, minmax(0,1fr))` }"
+  >
+    <div
+      v-for="(c, i) in cells"
+      :key="i"
+      data-testid="heat-cell"
+      class="w-2.5 h-2.5 rounded-sm"
+      :style="cellStyle(c)"
+    />
   </div>
 </template>
