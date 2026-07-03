@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { buildHeatmapGrid, HISTORY_COLS } from "./buildHeatmapGrid";
 import type { HabitLog } from "@/schemas/habits";
 
@@ -14,6 +14,10 @@ function dateStrOffset(daysAgo: number): string {
 }
 
 describe("buildHeatmapGrid (row-major)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("expone HISTORY_COLS = 28", () => {
     expect(HISTORY_COLS).toBe(28);
   });
@@ -63,5 +67,67 @@ describe("buildHeatmapGrid (row-major)", () => {
     const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
     expect(cells[0].completed).toBe(false);
     expect(cells[0].isEmpty).toBe(false);
+  });
+
+  it("days=0 produce un array vacío (sin filas)", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 0, logs: [], cols: 28 });
+    expect(cells).toEqual([]);
+  });
+
+  it("days=1 produce 28 celdas (1 real + 27 padding)", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 1, logs: [], cols: 28 });
+    expect(cells).toHaveLength(28);
+    const real = cells.filter((c) => !c.isEmpty);
+    const padding = cells.filter((c) => c.isEmpty);
+    expect(real).toHaveLength(1);
+    expect(padding).toHaveLength(27);
+    expect(real[0].completed).toBe(false);
+  });
+
+  it("days=90 produce 4 filas con 22 celdas de padding en la última", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 90, logs: [], cols: 28 });
+    expect(cells).toHaveLength(112);
+    const emptyCount = cells.filter((c) => c.isEmpty).length;
+    expect(emptyCount).toBe(22);
+    const realCount = cells.filter((c) => !c.isEmpty).length;
+    expect(realCount).toBe(90);
+  });
+
+  it("days=120 produce 5 filas con 20 celdas de padding en la última", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 120, logs: [], cols: 28 });
+    expect(cells).toHaveLength(140);
+    const emptyCount = cells.filter((c) => c.isEmpty).length;
+    expect(emptyCount).toBe(20);
+    const realCount = cells.filter((c) => !c.isEmpty).length;
+    expect(realCount).toBe(120);
+  });
+
+  it("days=91 sin logs: 91 reales completed=false + 21 padding en última fila", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    expect(cells).toHaveLength(112);
+    const real = cells.filter((c) => !c.isEmpty);
+    const padding = cells.filter((c) => c.isEmpty);
+    expect(real).toHaveLength(91);
+    expect(padding).toHaveLength(21);
+    real.forEach((c) => expect(c.completed).toBe(false));
+    padding.forEach((c) => expect(c.isEmpty).toBe(true));
+  });
+
+  it("days=7 produce 1 fila con 7 reales al inicio + 21 padding al final", () => {
+    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+    const cells = buildHeatmapGrid({ days: 7, logs: [], cols: 28 });
+    expect(cells).toHaveLength(28);
+    const first7 = cells.slice(0, 7);
+    const last21 = cells.slice(7, 28);
+    first7.forEach((c) => expect(c.isEmpty).toBe(false));
+    last21.forEach((c) => {
+      expect(c.isEmpty).toBe(true);
+      expect(c.completed).toBe(false);
+    });
   });
 });

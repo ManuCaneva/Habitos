@@ -13,14 +13,13 @@ const cells = computed(() =>
   buildHeatmapGrid({ days: props.days, logs: props.logs, cols: props.cols })
 );
 
-const now = new Date();
-const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+const todayStr = computed(() => new Date().toISOString().slice(0, 10));
 
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
   if (c.isEmpty) return "background: transparent";
-  const intensity = c.completed ? 1 : 0;
+  const intensity: 0 | 1 = c.completed ? 1 : 0;
   const base = shadeFor(props.color, intensity);
-  return c.date === todayStr && c.completed
+  return c.date === todayStr.value && c.completed
     ? `background: ${base}; box-shadow: 0 0 0 1px ${shadeFor(props.color, 1)}`
     : `background: ${base}`;
 }
