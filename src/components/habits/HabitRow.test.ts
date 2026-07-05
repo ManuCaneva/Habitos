@@ -3,9 +3,14 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import HabitRow from "./HabitRow.vue";
 import type { Habit } from "@/schemas/habits";
+import { ref } from "vue";
+import { shadeFor } from "@/lib/habitColors";
 
+const completedToday = ref<Set<string>>(new Set());
 const habitsMock = {
-  completedToday: new Set<string>(),
+  get completedToday() {
+    return completedToday.value;
+  },
   checkIn: vi.fn(),
   undoCheckIn: vi.fn(),
   getTodayDate: () => "2026-07-01",
@@ -31,7 +36,7 @@ const base: Habit = {
 describe("HabitRow", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    habitsMock.completedToday = new Set();
+    completedToday.value = new Set();
     vi.clearAllMocks();
   });
 
@@ -66,5 +71,41 @@ describe("HabitRow", () => {
     uiMock.menuOpenForHabitId = "h2";
     const w = mount(HabitRow, { props: { habit: base } });
     expect(w.find("[data-testid='habit-row']").classes()).not.toContain("z-10");
+  });
+
+  describe("feedback visual al marcar", () => {
+    it("fila tiene backgroundColor tintado con el color del hábito cuando está checked", async () => {
+      const w = mount(HabitRow, { props: { habit: base } });
+      expect(w.find("[data-testid='habit-row']").attributes("style") ?? "").not.toContain(
+        shadeFor(base.color, 0.25),
+      );
+      completedToday.value = new Set([base.id]);
+      await w.vm.$nextTick();
+      const rowStyle = w.find("[data-testid='habit-row']").attributes("style") ?? "";
+      expect(rowStyle).toContain(shadeFor(base.color, 0.25));
+    });
+
+    it("botón check usa el color del hábito cuando está checked (no bg-primary)", async () => {
+      const w = mount(HabitRow, { props: { habit: base } });
+      const btn = w.find("[data-testid='check-button']");
+      expect(btn.classes()).not.toContain("bg-primary");
+      completedToday.value = new Set([base.id]);
+      await w.vm.$nextTick();
+      const btnStyle = w.find("[data-testid='check-button']").attributes("style") ?? "";
+      expect(btnStyle).toContain(base.color);
+    });
+  });
+
+  describe("reactividad a prop changes", () => {
+    it("re-rendera el color del hábito cuando la prop habit.color cambia", async () => {
+      const w = mount(HabitRow, { props: { habit: base } });
+      expect(w.text()).toContain("Meditar");
+      await w.setProps({
+        habit: { ...base, color: "#eb5757", name: "Correr" },
+      });
+      expect(w.text()).toContain("Correr");
+      const titleButton = w.find("button.flex-1");
+      expect(titleButton.attributes("style") ?? "").not.toContain("#eb5757");
+    });
   });
 });

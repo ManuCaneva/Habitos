@@ -3,7 +3,7 @@ import { onMounted } from "vue";
 import { useHabitsStore } from "@/stores/habits";
 import { useUiStore } from "@/stores/ui";
 import Sidebar from "@/components/layout/Sidebar.vue";
-import TodayView from "@/views/TodayView.vue";
+import DashboardView from "@/components/dashboard/DashboardView.vue";
 import ArchivedView from "@/views/ArchivedView.vue";
 import SettingsView from "@/views/SettingsView.vue";
 import HabitFormModal from "@/components/habits/HabitFormModal.vue";
@@ -22,7 +22,7 @@ onMounted(() => {
 
     <div class="flex-1 flex flex-col min-w-0">
       <div class="flex-1 px-3 py-4">
-        <TodayView v-if="ui.viewMode === 'today'" />
+        <DashboardView v-if="ui.viewMode === 'dashboard'" />
         <ArchivedView v-else-if="ui.viewMode === 'archived'" />
         <SettingsView v-else-if="ui.viewMode === 'settings'" />
       </div>

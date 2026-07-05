@@ -24,8 +24,8 @@ function onKeydown(e: KeyboardEvent) {
     tabindex="0"
     aria-label="Crear nuevo hábito"
     class="border-t border-dashed border-hairline
-           flex flex-col items-center justify-center gap-2
-           min-h-[88px] py-4 cursor-pointer
+           flex flex-col items-center justify-center gap-1.5
+           min-h-[44px] py-2 cursor-pointer
            text-ink-muted
            transition-colors duration-150 ease-out
            hover:bg-surface-3/30 hover:text-ink
@@ -33,7 +33,7 @@ function onKeydown(e: KeyboardEvent) {
     @click="onClick"
     @keydown="onKeydown"
   >
-    <Plus :size="24" :stroke-width="2" aria-hidden="true" />
-    <Text variant="body" weight="500">Nuevo hábito</Text>
+    <Plus :size="16" :stroke-width="2" aria-hidden="true" />
+    <Text variant="body-sm" weight="500">Nuevo hábito</Text>
   </div>
 </template>

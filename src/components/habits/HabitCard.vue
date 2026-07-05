@@ -27,18 +27,18 @@ async function toggleCheck() {
 </script>
 
 <template>
-  <div data-testid="habit-card" :class="['glass p-1.5 group relative', isMenuOpen && 'z-10']">
-    <div class="flex items-center gap-1.5 mb-1.5">
+  <div data-testid="habit-card" :class="['glass p-2 group relative', isMenuOpen && 'z-10']">
+    <div class="flex items-center gap-1.5 mb-1">
       <span data-testid="habit-icon" class="text-white shrink-0">
-        <component :is="icon.icon" :size="18" :stroke-width="2" />
+        <component :is="icon.icon" :size="14" :stroke-width="2" />
       </span>
       <button
         data-testid="habit-title"
         class="min-w-0 flex-1 text-left"
         @click="ui.openEdit(habit.id)"
       >
-        <div class="font-semibold text-ink truncate">{{ habit.name }}</div>
-        <div data-testid="habit-subtitle" class="text-xs text-ink-muted">
+        <div class="font-medium text-body-sm text-ink truncate">{{ habit.name }}</div>
+        <div data-testid="habit-subtitle" class="text-caption text-ink-muted">
           {{ subtitle }}
         </div>
       </button>
@@ -67,6 +67,6 @@ async function toggleCheck() {
       </div>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
-    <HeatmapGrid :logs="logs" :color="habit.color" :days="91" />
+    <HeatmapGrid :logs="logs" :color="habit.color" :days="364" />
   </div>
 </template>

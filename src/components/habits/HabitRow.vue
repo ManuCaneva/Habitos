@@ -4,6 +4,7 @@ import { Check, MoreHorizontal } from "lucide-vue-next";
 import { useHabitsStore } from "@/stores/habits";
 import { useUiStore } from "@/stores/ui";
 import { iconFor } from "@/lib/icons";
+import { shadeFor } from "@/lib/habitColors";
 import type { Habit } from "@/schemas/habits";
 import Text from "@/components/ui/Text.vue";
 import HabitContextMenu from "./HabitContextMenu.vue";
@@ -37,12 +38,18 @@ const archivedLabel = computed(() => {
 </script>
 
 <template>
-  <div data-testid="habit-row" :class="['relative group', isMenuOpen && 'z-10']">
+  <div
+    data-testid="habit-row"
+    :class="['relative group', isMenuOpen && 'z-10']"
+    :style="checked
+      ? { backgroundColor: shadeFor(habit.color, 0.25), boxShadow: `inset 3px 0 0 0 ${habit.color}` }
+      : {}"
+  >
     <div
       :class="[
         'flex items-center gap-3 px-6 py-3 transition-colors duration-150',
         'border-b border-hairline last:border-b-0',
-        'hover:bg-surface-1',
+        !checked && 'hover:bg-surface-1',
         isMenuOpen && 'bg-surface-1',
       ]"
     >
@@ -85,10 +92,11 @@ const archivedLabel = computed(() => {
         :class="[
           'shrink-0 w-7 h-7 rounded-md border flex items-center justify-center',
           'transition-all duration-150 active:scale-95',
-          checked
-            ? 'bg-primary border-primary text-white'
-            : 'border-hairline-strong hover:border-primary',
+          checked ? 'text-white' : 'border-hairline-strong hover:border-primary',
         ]"
+        :style="checked
+          ? { backgroundColor: habit.color, borderColor: habit.color }
+          : {}"
         :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
         :title="checked ? 'Desmarcar' : 'Marcar'"
         @click="toggleCheck"

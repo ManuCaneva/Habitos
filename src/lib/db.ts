@@ -19,12 +19,6 @@ import {
   UpdateHabitDraftSchema,
 } from "../schemas/habits";
 
-interface UpdateHabitInput {
-  id: string;
-  patch: UpdateHabitDraft;
-  updated_at: string;
-}
-
 interface CreateLogInput {
   id: string;
   habit_id: string;
@@ -73,7 +67,16 @@ export async function updateHabit(
   updated_at: string,
 ): Promise<HabitRow> {
   const validated = UpdateHabitDraftSchema.parse(patch);
-  const input: UpdateHabitInput = { id, patch: validated, updated_at };
+  const input = {
+    id,
+    name: validated.name,
+    description: validated.description ?? undefined,
+    icon: validated.icon ?? undefined,
+    color: validated.color,
+    frequency: validated.frequency,
+    sort_order: validated.sort_order,
+    updated_at,
+  };
   const raw = await invoke<unknown>("update_habit", { input });
   return HabitRowSchema.parse(raw);
 }

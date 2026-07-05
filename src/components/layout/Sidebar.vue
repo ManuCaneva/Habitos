@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Sun, Moon, PanelLeftClose, PanelLeftOpen, CheckSquare, Archive, Settings } from "lucide-vue-next";
+import { Sun, Moon, PanelLeftClose, PanelLeftOpen, CheckSquare, Archive, Settings, Pencil } from "lucide-vue-next";
 import { useUiStore, type ViewMode } from "@/stores/ui";
 import { useTheme } from "@/composables/useTheme";
 import Text from "@/components/ui/Text.vue";
@@ -15,7 +15,7 @@ interface NavItem {
 }
 
 const navItems: readonly NavItem[] = [
-  { id: "today", label: "Hoy", icon: CheckSquare },
+  { id: "dashboard", label: "Dashboard", icon: CheckSquare },
   { id: "archived", label: "Archivados", icon: Archive },
   { id: "settings", label: "Settings", icon: Settings },
 ] as const;
@@ -68,6 +68,21 @@ const collapseIcon = computed(() =>
     </nav>
 
     <div class="px-1 py-1.5 flex flex-col gap-0.5 border-t border-hairline">
+      <button
+        type="button"
+        :class="[
+          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-caption font-medium',
+          ui.editMode
+            ? 'bg-surface-2 text-ink'
+            : 'text-ink-muted hover:text-ink hover:bg-surface-1',
+        ]"
+        aria-label="Modo edición"
+        title="Modo edición"
+        @click="ui.toggleEditMode()"
+      >
+        <Pencil :size="18" class="shrink-0" />
+        <span v-if="!ui.sidebarCollapsed" class="truncate">Modo Edición</span>
+      </button>
       <button
         type="button"
         class="flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-caption font-medium"

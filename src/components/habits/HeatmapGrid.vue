@@ -1,41 +1,68 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { HabitLog } from "@/schemas/habits";
-import { buildHeatmapGrid, HISTORY_COLS } from "@/lib/buildHeatmapGrid";
+import { buildHeatmapGrid, HISTORY_ROWS } from "@/lib/buildHeatmapGrid";
 import { shadeFor } from "@/lib/habitColors";
+import { useHeatmapCols } from "@/composables/useHeatmapCols";
 
 const props = withDefaults(
-  defineProps<{ logs: HabitLog[]; color: string; days?: number; cols?: number }>(),
-  { days: 91, cols: HISTORY_COLS }
+  defineProps<{ logs: HabitLog[]; color: string; days?: number }>(),
+  { days: 364 }
 );
+
+const containerRef = ref<HTMLElement | null>(null);
+const dataCols = computed(() => Math.ceil(props.days / HISTORY_ROWS));
+const { cols, actualCellSize } = useHeatmapCols({ containerRef, dataCols: dataCols.value, cellSize: 10, gap: 2 });
 
 const cells = computed(() =>
-  buildHeatmapGrid({ days: props.days, logs: props.logs, cols: props.cols })
+  buildHeatmapGrid({ days: cols.value * HISTORY_ROWS, logs: props.logs, rows: HISTORY_ROWS })
 );
 
-const todayStr = computed(() => new Date().toISOString().slice(0, 10));
+const todayStr = computed(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+});
 
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
-  if (c.isEmpty) return "background: rgb(255 255 255 / 0.03)";
-  const intensity: 0 | 1 = c.completed ? 1 : 0;
-  const base = shadeFor(props.color, intensity);
-  return c.date === todayStr.value && c.completed
-    ? `background: ${base}; box-shadow: 0 0 0 1px ${shadeFor(props.color, 1)}`
-    : `background: ${base}`;
+  const baseStyle: Record<string, string> = {
+    width: `${actualCellSize.value}px`,
+    height: `${actualCellSize.value}px`,
+  };
+  
+  if (c.isEmpty) {
+    baseStyle.background = "transparent";
+  } else {
+    const intensity = c.completed ? 1 : 0.15;
+    const base = shadeFor(props.color, intensity);
+    if (c.date === todayStr.value && c.completed) {
+      baseStyle.background = base;
+      baseStyle.boxShadow = `0 0 0 1px ${shadeFor(props.color, 1)}`;
+    } else {
+      baseStyle.background = base;
+    }
+  }
+  
+  return baseStyle;
 }
 </script>
 
 <template>
   <div
+    ref="containerRef"
     data-testid="heat-grid"
-    class="grid gap-px"
-    :style="{ gridTemplateColumns: `repeat(${props.cols}, minmax(0,1fr))` }"
+    class="grid overflow-hidden"
+    :style="{ 
+      gridTemplateColumns: `repeat(${cols}, ${actualCellSize}px)`, 
+      gridTemplateRows: `repeat(${HISTORY_ROWS}, ${actualCellSize}px)`,
+      gridAutoFlow: 'column',
+      gap: '2px'
+    }"
   >
     <div
       v-for="(c, i) in cells"
       :key="i"
       data-testid="heat-cell"
-      class="aspect-square rounded-[2px]"
+      class="rounded-[2px] transition-colors duration-200"
       :style="cellStyle(c)"
     />
   </div>

@@ -158,8 +158,19 @@ export const useHabitsStore = defineStore("habits", () => {
     const now = nowIsoUtc();
     const id = uuidv4();
     const row = await db.createLog(fullDraft, id, now, now);
-    const log = rowToHabitLog(row);
-    // dedup optimista — si ya existía para esa fecha, reemplazamos
+    let log: HabitLog;
+    try {
+      log = rowToHabitLog(row);
+    } catch {
+      log = {
+        id: row.id,
+        habit_id: row.habit_id,
+        log_date: row.log_date,
+        completed_at: row.completed_at,
+        note: row.note ?? null,
+        created_at: row.created_at,
+      };
+    }
     logs.value = [
       log,
       ...logs.value.filter((l) => !(l.habit_id === habitId && l.log_date === log_date)),
@@ -251,7 +262,15 @@ export const useHabitsStore = defineStore("habits", () => {
       const from = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
       const to = todayLocalDate();
       const logRows = await db.listLogsInRange(from, to);
-      logs.value = logRows.map(rowToHabitLog);
+      const validLogs: HabitLog[] = [];
+      for (const row of logRows) {
+        try {
+          validLogs.push(rowToHabitLog(row));
+        } catch (e) {
+          console.warn("[loadInitialData] Log inválido ignorado:", row, e);
+        }
+      }
+      logs.value = validLogs;
     } catch (e) {
       lastError.value = errMsg(e);
     } finally {

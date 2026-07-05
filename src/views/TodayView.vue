@@ -4,6 +4,7 @@ import { useHabitsStore } from "@/stores/habits";
 import HabitCard from "@/components/habits/HabitCard.vue";
 import NewHabitCard from "@/components/habits/NewHabitCard.vue";
 import EmptyState from "@/components/habits/EmptyState.vue";
+import HabitSection from "@/components/habits/HabitSection.vue";
 
 const habits = useHabitsStore();
 
@@ -12,13 +13,10 @@ const logs = computed(() => habits.logs);
 </script>
 
 <template>
-  <div class="w-full max-w-md" data-testid="habits-panel">
-    <div
-      data-testid="habits-container"
-      class="flex flex-col gap-1"
-    >
+  <div class="w-[15%] self-start" data-testid="habits-panel">
+    <HabitSection>
       <EmptyState v-if="list.length === 0" />
-      <template v-else>
+      <div v-else class="flex flex-col gap-1">
         <HabitCard
           v-for="habit in list"
           :key="`${habit.id}-${habit.updated_at}`"
@@ -26,7 +24,7 @@ const logs = computed(() => habits.logs);
           :logs="logs.filter((l) => l.habit_id === habit.id)"
         />
         <NewHabitCard />
-      </template>
-    </div>
+      </div>
+    </HabitSection>
   </div>
 </template>

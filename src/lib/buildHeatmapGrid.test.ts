@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { buildHeatmapGrid, HISTORY_COLS } from "./buildHeatmapGrid";
+import { buildHeatmapGrid, HISTORY_ROWS } from "./buildHeatmapGrid";
 import type { HabitLog } from "@/schemas/habits";
 
 function todayLocalStr(): string {
@@ -13,148 +13,101 @@ function dateStrOffset(daysAgo: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-describe("buildHeatmapGrid (row-major)", () => {
+describe("buildHeatmapGrid (column-major)", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("expone HISTORY_COLS = 28", () => {
-    expect(HISTORY_COLS).toBe(28);
+  it("expone HISTORY_ROWS = 7", () => {
+    expect(HISTORY_ROWS).toBe(7);
   });
 
-  it("genera ceil(days/cols)*cols celdas con padding", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
-    expect(cells).toHaveLength(Math.ceil(91 / 28) * 28);
+  it("genera ceil(days/rows)*rows celdas con padding", () => {
+    const cells = buildHeatmapGrid({ days: 84, logs: [], rows: 7 });
+    expect(cells).toHaveLength(Math.ceil(84 / 7) * 7);
   });
 
-  it("usa HISTORY_COLS por defecto cuando se omite cols", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [] });
-    expect(cells).toHaveLength(Math.ceil(91 / HISTORY_COLS) * HISTORY_COLS);
+  it("usa HISTORY_ROWS por defecto cuando se omite rows", () => {
+    const cells = buildHeatmapGrid({ days: 84, logs: [] });
+    expect(cells).toHaveLength(Math.ceil(84 / HISTORY_ROWS) * HISTORY_ROWS);
   });
 
-  it("hoy es la última celda real de la fila 0 (índice cols-1)", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
-    expect(cells[27].date).toBe(todayLocalStr());
-    expect(cells[27].isEmpty).toBe(false);
+  it("columna 0 = días más antiguos", () => {
+    const cells = buildHeatmapGrid({ days: 84, logs: [], rows: 7 });
+    expect(cells[0].date).toBe(dateStrOffset(83));
+    expect(cells[6].date).toBe(dateStrOffset(77));
   });
 
-  it("fila 0 = ventana más reciente (hace 27 días → hoy)", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
-    expect(cells[0].date).toBe(dateStrOffset(27));
-    expect(cells[27].date).toBe(dateStrOffset(0));
+  it("última columna = días más recientes (hoy visible)", () => {
+    const cells = buildHeatmapGrid({ days: 84, logs: [], rows: 7 });
+    const lastColStart = (Math.ceil(84 / 7) - 1) * 7;
+    expect(cells[lastColStart].date).toBe(dateStrOffset(6));
+    expect(cells[lastColStart + 6].date).toBe(todayLocalStr());
+    expect(cells[lastColStart].isEmpty).toBe(false);
   });
 
-  it("isEmpty solo en el padding izquierdo de la última fila", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+  it("isEmpty solo en el padding de la última columna", () => {
+    const cells = buildHeatmapGrid({ days: 80, logs: [], rows: 7 });
     const emptyIndices = cells
       .map((c, i) => (c.isEmpty ? i : -1))
       .filter((i) => i >= 0);
-    expect(emptyIndices).toHaveLength(21);
+    expect(emptyIndices).toHaveLength(4);
     const firstEmpty = Math.min(...emptyIndices);
     const lastEmpty = Math.max(...emptyIndices);
-    expect(firstEmpty).toBe(84);
-    expect(lastEmpty).toBe(104);
+    expect(firstEmpty).toBe(80);
+    expect(lastEmpty).toBe(83);
   });
 
-  it("marca completada según logs (hoy)", () => {
+  it("marca completada según logs (hoy en última columna)", () => {
     const today = todayLocalStr();
     const logs: HabitLog[] = [
       { id: "1", habit_id: "h1", log_date: today, completed_at: today, note: null, created_at: today },
     ];
-    const cells = buildHeatmapGrid({ days: 91, logs, cols: 28 });
-    expect(cells[27].completed).toBe(true);
-    expect(cells[27].date).toBe(today);
+    const cells = buildHeatmapGrid({ days: 84, logs, rows: 7 });
+    const lastColStart = (Math.ceil(84 / 7) - 1) * 7;
+    expect(cells[lastColStart + 6].completed).toBe(true);
+    expect(cells[lastColStart + 6].date).toBe(today);
   });
 
   it("días viejos no completados aparecen como completed=false", () => {
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
+    const cells = buildHeatmapGrid({ days: 84, logs: [], rows: 7 });
     expect(cells[0].completed).toBe(false);
     expect(cells[0].isEmpty).toBe(false);
   });
 
-  it("days=0 produce un array vacío (sin filas)", () => {
+  it("days=0 produce un array vacío", () => {
     vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 0, logs: [], cols: 28 });
+    const cells = buildHeatmapGrid({ days: 0, logs: [], rows: 7 });
     expect(cells).toEqual([]);
   });
 
-  it("days=1 produce 28 celdas (27 padding al inicio + 1 real al final)", () => {
+  it("days=7 produce 7 celdas (1 columna completa)", () => {
     vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 1, logs: [], cols: 28 });
-    expect(cells).toHaveLength(28);
+    const cells = buildHeatmapGrid({ days: 7, logs: [], rows: 7 });
+    expect(cells).toHaveLength(7);
     const real = cells.filter((c) => !c.isEmpty);
     const padding = cells.filter((c) => c.isEmpty);
-    expect(real).toHaveLength(1);
-    expect(padding).toHaveLength(27);
-    expect(real[0].completed).toBe(false);
-    expect(real[0].isEmpty).toBe(false);
-    expect(cells[0].isEmpty).toBe(true);
-    expect(cells[27].isEmpty).toBe(false);
+    expect(real).toHaveLength(7);
+    expect(padding).toHaveLength(0);
   });
 
-  it("days=90 produce 4 filas con 22 celdas de padding en la última", () => {
-    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 90, logs: [], cols: 28 });
-    expect(cells).toHaveLength(112);
-    const emptyCount = cells.filter((c) => c.isEmpty).length;
-    expect(emptyCount).toBe(22);
-    const realCount = cells.filter((c) => !c.isEmpty).length;
-    expect(realCount).toBe(90);
-  });
-
-  it("days=120 produce 5 filas con 20 celdas de padding en la última", () => {
-    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 120, logs: [], cols: 28 });
-    expect(cells).toHaveLength(140);
-    const emptyCount = cells.filter((c) => c.isEmpty).length;
-    expect(emptyCount).toBe(20);
-    const realCount = cells.filter((c) => !c.isEmpty).length;
-    expect(realCount).toBe(120);
-  });
-
-  it("days=91 sin logs: 91 reales completed=false + 21 padding en última fila", () => {
-    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
-    expect(cells).toHaveLength(112);
-    const real = cells.filter((c) => !c.isEmpty);
-    const padding = cells.filter((c) => c.isEmpty);
-    expect(real).toHaveLength(91);
-    expect(padding).toHaveLength(21);
-    real.forEach((c) => expect(c.completed).toBe(false));
-    padding.forEach((c) => expect(c.isEmpty).toBe(true));
-  });
-
-  it("days=7 produce 1 fila con 21 padding al inicio + 7 reales al final", () => {
-    vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-    const cells = buildHeatmapGrid({ days: 7, logs: [], cols: 28 });
-    expect(cells).toHaveLength(28);
-    const first21 = cells.slice(0, 21);
-    const last7 = cells.slice(21, 28);
-    first21.forEach((c) => {
-      expect(c.isEmpty).toBe(true);
-      expect(c.completed).toBe(false);
-    });
-    last7.forEach((c) => expect(c.isEmpty).toBe(false));
-  });
-
-  it("cada fila tiene exactamente cols celdas (grilla rectangular)", () => {
+  it("cada columna tiene exactamente rows celdas (grilla rectangular)", () => {
     const scenarios = [
-      { days: 91, cols: 28 },
-      { days: 90, cols: 28 },
-      { days: 120, cols: 28 },
-      { days: 7, cols: 28 },
-      { days: 1, cols: 28 },
-      { days: 56, cols: 14 },
-      { days: 30, cols: 30 },
+      { days: 84, rows: 7 },
+      { days: 56, rows: 7 },
+      { days: 70, rows: 7 },
+      { days: 7, rows: 7 },
+      { days: 1, rows: 7 },
+      { days: 80, rows: 7 },
     ];
-    for (const { days, cols } of scenarios) {
+    for (const { days, rows } of scenarios) {
       vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
-      const cells = buildHeatmapGrid({ days, logs: [], cols });
-      const rows = Math.ceil(days / cols);
-      expect(cells).toHaveLength(rows * cols);
-      for (let r = 0; r < rows; r++) {
-        const rowCells = cells.slice(r * cols, (r + 1) * cols);
-        expect(rowCells).toHaveLength(cols);
+      const cells = buildHeatmapGrid({ days, logs: [], rows });
+      const cols = Math.ceil(days / rows);
+      expect(cells).toHaveLength(cols * rows);
+      for (let c = 0; c < cols; c++) {
+        const colCells = cells.slice(c * rows, (c + 1) * rows);
+        expect(colCells).toHaveLength(rows);
       }
     }
   });

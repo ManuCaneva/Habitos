@@ -128,10 +128,19 @@ export const CreateHabitLogDraftSchema = z.object({
 export type CreateHabitLogDraft = z.infer<typeof CreateHabitLogDraftSchema>;
 
 // ───────────────────────────────────────────────────────────────
-// Row schemas (espejo de SQLite) — lo que cruza la frontera Tauri
+// Mappers: row ⇄ dominio
 // ───────────────────────────────────────────────────────────────
 
 export const FrequencyTypeSchema = z.enum(["daily", "weekly", "interval"]);
+
+function normalizeTimestamp(ts: string): string {
+  if (!ts) return ts;
+  if (ts.includes("T")) return ts;
+  const [date, time] = ts.split(" ");
+  if (!date || !time) return ts;
+  const hasTimezone = time.includes("Z") || time.includes("+") || time.includes("-", 6);
+  return `${date}T${time}${hasTimezone ? "" : "Z"}`;
+}
 
 export const HabitRowSchema = z.object({
   id: uuid,
@@ -189,14 +198,19 @@ export function rowToHabit(row: HabitRow): Habit {
     color: row.color,
     frequency,
     sort_order: row.sort_order,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    archived_at: row.archived_at,
+    created_at: normalizeTimestamp(row.created_at),
+    updated_at: normalizeTimestamp(row.updated_at),
+    archived_at: row.archived_at ? normalizeTimestamp(row.archived_at) : null,
   });
 }
 
 export function rowToHabitLog(row: HabitLogRow): HabitLog {
-  return HabitLogSchema.parse(row);
+  const normalized = {
+    ...row,
+    completed_at: normalizeTimestamp(row.completed_at),
+    created_at: normalizeTimestamp(row.created_at),
+  };
+  return HabitLogSchema.parse(normalized);
 }
 
 /** Aplana un Habit (o draft) a la forma de fila que espera Rust/SQLite. */

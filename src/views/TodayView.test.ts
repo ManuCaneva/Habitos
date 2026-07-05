@@ -48,17 +48,18 @@ describe("TodayView", () => {
     expect(habitCard.exists()).toBe(true);
   });
 
-  it("panel no tiene max-w-2xl mx-auto", () => {
+  it("panel no tiene max-w-2xl ni mx-auto", () => {
     const wrapper = mount(TodayView);
     const panel = wrapper.find("[data-testid='habits-panel']");
-    expect(panel.classes()).not.toContain("max-w-2xl");
     expect(panel.classes()).not.toContain("mx-auto");
+    expect(panel.classes()).not.toContain("max-w-2xl");
   });
 
-  it("panel usa max-w-md (ancho medio para heatmap legible)", () => {
+  it("panel usa w-[15%] y self-start (alineado a la izquierda)", () => {
     const wrapper = mount(TodayView);
     const panel = wrapper.find("[data-testid='habits-panel']");
-    expect(panel.classes()).toContain("max-w-md");
+    expect(panel.classes()).toContain("w-[15%]");
+    expect(panel.classes()).toContain("self-start");
   });
 
   it("no tiene header con título 'Hábitos'", () => {
@@ -72,10 +73,9 @@ describe("TodayView", () => {
     expect(newCard.exists()).toBe(true);
   });
 
-  it("tiene panel contenedor con gap-1 para glass cards compactas", () => {
+  it("usa HabitSection como contenedor visual", () => {
     const wrapper = mount(TodayView);
-    const panel = wrapper.find("[data-testid='habits-container']");
-    expect(panel.exists()).toBe(true);
-    expect(panel.classes()).toContain("gap-1");
+    const section = wrapper.findComponent({ name: "HabitSection" });
+    expect(section.exists()).toBe(true);
   });
 });

@@ -6,12 +6,12 @@ export interface GridCell {
   isEmpty: boolean;
 }
 
-export const HISTORY_COLS = 28;
+export const HISTORY_ROWS = 7;
 
 export interface BuildGridOptions {
   days: number;
   logs: HabitLog[];
-  cols?: number;
+  rows?: number;
 }
 
 function toLocalDateStr(d: Date): string {
@@ -21,10 +21,12 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function buildHeatmapGrid({ days, logs, cols }: BuildGridOptions): GridCell[] {
-  const c = cols ?? HISTORY_COLS;
+export function buildHeatmapGrid({ days, logs, rows }: BuildGridOptions): GridCell[] {
+  if (days === 0) return [];
+  
+  const r = rows ?? HISTORY_ROWS;
   const completed = new Set(logs.map((l) => l.log_date));
-  const rows = Math.ceil(days / c);
+  const cols = Math.ceil(days / r);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -38,18 +40,19 @@ export function buildHeatmapGrid({ days, logs, cols }: BuildGridOptions): GridCe
   }
 
   const emptyCell: GridCell = { date: "", completed: false, isEmpty: true };
-  const flat: GridCell[] = [];
-  for (let r = 0; r < rows; r++) {
-    const start = days - (r + 1) * c;
-    const rowStart = Math.max(0, start);
-    const rowEnd = Math.min(days, start + c);
-    const rowCells = realCells.slice(rowStart, rowEnd);
-    const padCount = c - rowCells.length;
-    for (let p = 0; p < padCount; p++) flat.push(emptyCell);
-    for (const cell of rowCells) flat.push(cell);
+  const totalCells = cols * r;
+  const padCount = totalCells - days;
+  
+  const allCells: GridCell[] = [];
+  for (const cell of realCells) {
+    allCells.push(cell);
   }
+  for (let p = 0; p < padCount; p++) {
+    allCells.push(emptyCell);
+  }
+  
   if (import.meta.env.DEV) {
-    console.assert(flat.length === rows * c, `buildHeatmapGrid: expected ${rows * c} cells, got ${flat.length}`);
+    console.assert(allCells.length === cols * r, `buildHeatmapGrid: expected ${cols * r} cells, got ${allCells.length}`);
   }
-  return flat;
+  return allCells;
 }
