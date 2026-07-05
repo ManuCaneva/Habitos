@@ -12,7 +12,7 @@ defineProps<{
   <div class="flex flex-col">
     <HabitRow
       v-for="habit in habits"
-      :key="habit.id"
+      :key="`${habit.id}-${habit.updated_at}`"
       :habit="habit"
       :show-archive-date="showArchiveDate"
     />

@@ -14,9 +14,21 @@ describe("HeatmapGrid (row-major)", () => {
     expect((grid.element as HTMLElement).style.gridTemplateColumns).toContain("repeat(28");
   });
 
-  it("usa gap-0.5 (separación chica entre celdas)", () => {
+  it("usa gap-px (separación mínima entre celdas compactas)", () => {
     const w = mount(HeatmapGrid, { props: { logs: [], color: "#5e6ad2", days: 91 } });
-    expect(w.find("[data-testid='heat-grid']").classes()).toContain("gap-0.5");
+    expect(w.find("[data-testid='heat-grid']").classes()).toContain("gap-px");
+  });
+
+  it("celdas usan aspect-square (llenan la columna, no tamaño fijo)", () => {
+    const w = mount(HeatmapGrid, { props: { logs: [], color: "#5e6ad2", days: 91 } });
+    const cell = w.find("[data-testid='heat-cell']");
+    expect(cell.classes()).toContain("aspect-square");
+  });
+
+  it("celdas usan rounded-[2px] (cuadradas, no circulares)", () => {
+    const w = mount(HeatmapGrid, { props: { logs: [], color: "#5e6ad2", days: 91 } });
+    const cell = w.find("[data-testid='heat-cell']");
+    expect(cell.classes()).toContain("rounded-[2px]");
   });
 
   it("rendera ceil(days/cols)*cols celdas", () => {

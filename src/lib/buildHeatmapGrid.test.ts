@@ -44,13 +44,16 @@ describe("buildHeatmapGrid (row-major)", () => {
     expect(cells[27].date).toBe(dateStrOffset(0));
   });
 
-  it("isEmpty solo en el padding derecho de la última fila", () => {
+  it("isEmpty solo en el padding izquierdo de la última fila", () => {
     const cells = buildHeatmapGrid({ days: 91, logs: [], cols: 28 });
     const emptyIndices = cells
       .map((c, i) => (c.isEmpty ? i : -1))
       .filter((i) => i >= 0);
     expect(emptyIndices).toHaveLength(21);
-    emptyIndices.forEach((i) => expect(i).toBeGreaterThanOrEqual(91));
+    const firstEmpty = Math.min(...emptyIndices);
+    const lastEmpty = Math.max(...emptyIndices);
+    expect(firstEmpty).toBe(84);
+    expect(lastEmpty).toBe(104);
   });
 
   it("marca completada según logs (hoy)", () => {
@@ -75,7 +78,7 @@ describe("buildHeatmapGrid (row-major)", () => {
     expect(cells).toEqual([]);
   });
 
-  it("days=1 produce 28 celdas (1 real + 27 padding)", () => {
+  it("days=1 produce 28 celdas (27 padding al inicio + 1 real al final)", () => {
     vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
     const cells = buildHeatmapGrid({ days: 1, logs: [], cols: 28 });
     expect(cells).toHaveLength(28);
@@ -84,6 +87,9 @@ describe("buildHeatmapGrid (row-major)", () => {
     expect(real).toHaveLength(1);
     expect(padding).toHaveLength(27);
     expect(real[0].completed).toBe(false);
+    expect(real[0].isEmpty).toBe(false);
+    expect(cells[0].isEmpty).toBe(true);
+    expect(cells[27].isEmpty).toBe(false);
   });
 
   it("days=90 produce 4 filas con 22 celdas de padding en la última", () => {
@@ -118,16 +124,38 @@ describe("buildHeatmapGrid (row-major)", () => {
     padding.forEach((c) => expect(c.isEmpty).toBe(true));
   });
 
-  it("days=7 produce 1 fila con 7 reales al inicio + 21 padding al final", () => {
+  it("days=7 produce 1 fila con 21 padding al inicio + 7 reales al final", () => {
     vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
     const cells = buildHeatmapGrid({ days: 7, logs: [], cols: 28 });
     expect(cells).toHaveLength(28);
-    const first7 = cells.slice(0, 7);
-    const last21 = cells.slice(7, 28);
-    first7.forEach((c) => expect(c.isEmpty).toBe(false));
-    last21.forEach((c) => {
+    const first21 = cells.slice(0, 21);
+    const last7 = cells.slice(21, 28);
+    first21.forEach((c) => {
       expect(c.isEmpty).toBe(true);
       expect(c.completed).toBe(false);
     });
+    last7.forEach((c) => expect(c.isEmpty).toBe(false));
+  });
+
+  it("cada fila tiene exactamente cols celdas (grilla rectangular)", () => {
+    const scenarios = [
+      { days: 91, cols: 28 },
+      { days: 90, cols: 28 },
+      { days: 120, cols: 28 },
+      { days: 7, cols: 28 },
+      { days: 1, cols: 28 },
+      { days: 56, cols: 14 },
+      { days: 30, cols: 30 },
+    ];
+    for (const { days, cols } of scenarios) {
+      vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+      const cells = buildHeatmapGrid({ days, logs: [], cols });
+      const rows = Math.ceil(days / cols);
+      expect(cells).toHaveLength(rows * cols);
+      for (let r = 0; r < rows; r++) {
+        const rowCells = cells.slice(r * cols, (r + 1) * cols);
+        expect(rowCells).toHaveLength(cols);
+      }
+    }
   });
 });

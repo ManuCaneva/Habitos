@@ -16,7 +16,7 @@ const cells = computed(() =>
 const todayStr = computed(() => new Date().toISOString().slice(0, 10));
 
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
-  if (c.isEmpty) return "background: transparent";
+  if (c.isEmpty) return "background: rgb(255 255 255 / 0.03)";
   const intensity: 0 | 1 = c.completed ? 1 : 0;
   const base = shadeFor(props.color, intensity);
   return c.date === todayStr.value && c.completed
@@ -28,14 +28,14 @@ function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
 <template>
   <div
     data-testid="heat-grid"
-    class="grid gap-0.5"
+    class="grid gap-px"
     :style="{ gridTemplateColumns: `repeat(${props.cols}, minmax(0,1fr))` }"
   >
     <div
       v-for="(c, i) in cells"
       :key="i"
       data-testid="heat-cell"
-      class="w-2.5 h-2.5 rounded-sm"
+      class="aspect-square rounded-[2px]"
       :style="cellStyle(c)"
     />
   </div>

@@ -41,7 +41,7 @@ async function handleArchiveToggle() {
 <template>
   <div
     ref="menuRef"
-    class="absolute right-4 top-full mt-1 z-20 w-44 bg-surface-2 border border-hairline-strong rounded-md shadow-xl py-1 animate-fade-in"
+    class="absolute right-4 top-full mt-1 z-40 w-44 bg-surface-2 border border-hairline-strong rounded-md shadow-xl py-1 animate-fade-in"
     role="menu"
   >
     <button

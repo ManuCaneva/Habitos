@@ -55,10 +55,10 @@ describe("TodayView", () => {
     expect(panel.classes()).not.toContain("mx-auto");
   });
 
-  it("panel usa max-w-sm (columna angosta phone-like)", () => {
+  it("panel usa max-w-md (ancho medio para heatmap legible)", () => {
     const wrapper = mount(TodayView);
     const panel = wrapper.find("[data-testid='habits-panel']");
-    expect(panel.classes()).toContain("max-w-sm");
+    expect(panel.classes()).toContain("max-w-md");
   });
 
   it("no tiene header con título 'Hábitos'", () => {
@@ -72,10 +72,10 @@ describe("TodayView", () => {
     expect(newCard.exists()).toBe(true);
   });
 
-  it("tiene panel contenedor con gap-2 para glass cards apiladas", () => {
+  it("tiene panel contenedor con gap-1 para glass cards compactas", () => {
     const wrapper = mount(TodayView);
     const panel = wrapper.find("[data-testid='habits-container']");
     expect(panel.exists()).toBe(true);
-    expect(panel.classes()).toContain("gap-2");
+    expect(panel.classes()).toContain("gap-1");
   });
 });

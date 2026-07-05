@@ -45,8 +45,11 @@ export function buildHeatmapGrid({ days, logs, cols }: BuildGridOptions): GridCe
     const rowEnd = Math.min(days, start + c);
     const rowCells = realCells.slice(rowStart, rowEnd);
     const padCount = c - rowCells.length;
-    for (const cell of rowCells) flat.push(cell);
     for (let p = 0; p < padCount; p++) flat.push(emptyCell);
+    for (const cell of rowCells) flat.push(cell);
+  }
+  if (import.meta.env.DEV) {
+    console.assert(flat.length === rows * c, `buildHeatmapGrid: expected ${rows * c} cells, got ${flat.length}`);
   }
   return flat;
 }

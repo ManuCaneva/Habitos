@@ -27,10 +27,10 @@ async function toggleCheck() {
 </script>
 
 <template>
-  <div data-testid="habit-card" class="glass p-3 group relative">
-    <div class="flex items-center gap-3 mb-3">
+  <div data-testid="habit-card" :class="['glass p-1.5 group relative', isMenuOpen && 'z-10']">
+    <div class="flex items-center gap-1.5 mb-1.5">
       <span data-testid="habit-icon" class="text-white shrink-0">
-        <component :is="icon.icon" :size="20" :stroke-width="2" />
+        <component :is="icon.icon" :size="18" :stroke-width="2" />
       </span>
       <button
         data-testid="habit-title"
@@ -38,31 +38,31 @@ async function toggleCheck() {
         @click="ui.openEdit(habit.id)"
       >
         <div class="font-semibold text-ink truncate">{{ habit.name }}</div>
-        <div data-testid="habit-subtitle" class="text-sm text-ink-muted opacity-70">
+        <div data-testid="habit-subtitle" class="text-xs text-ink-muted">
           {{ subtitle }}
         </div>
       </button>
       <div class="flex items-center gap-1 shrink-0">
         <button
+          data-testid="menu-button"
+          class="w-7 h-7 flex items-center justify-center"
+          aria-label="Más opciones"
+          @click="ui.toggleMenu(habit.id)"
+        >
+          <MoreHorizontal :size="16" />
+        </button>
+        <button
           data-testid="checkin-button"
           :class="[
-            'w-9 h-9 flex items-center justify-center transition-all active:scale-95 rounded-full',
+            'w-7 h-7 flex items-center justify-center transition-all active:scale-95 rounded-full',
             !checked && 'border-2 bg-surface-3/30',
           ]"
           :style="checked ? { backgroundColor: habit.color } : { borderColor: habit.color }"
           :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
           @click="toggleCheck"
         >
-          <Check v-if="checked" :size="18" :stroke-width="3" class="text-white" />
-          <Plus v-else :size="18" :stroke-width="2" class="text-white" />
-        </button>
-        <button
-          data-testid="menu-button"
-          class="w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100"
-          aria-label="Más opciones"
-          @click="ui.toggleMenu(habit.id)"
-        >
-          <MoreHorizontal :size="18" />
+          <Check v-if="checked" :size="16" :stroke-width="3" class="text-white" />
+          <Plus v-else :size="16" :stroke-width="2" class="text-white" />
         </button>
       </div>
     </div>

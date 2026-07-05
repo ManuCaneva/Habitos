@@ -107,8 +107,35 @@ describe("HabitCard (binary)", () => {
     expect(w.find("[data-testid='menu-button']").exists()).toBe(true);
   });
 
+  it("botón de menú siempre visible (sin opacity-0)", () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
+    expect(w.find("[data-testid='menu-button']").classes()).not.toContain("opacity-0");
+  });
+
   it("rendera HeatmapGrid", () => {
     const w = mount(HabitCard, { props: { habit: base, logs: [] } });
     expect(w.findComponent({ name: "HeatmapGrid" }).exists()).toBe(true);
+  });
+
+  it("botón menú aparece antes que botón checkin", () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
+    const all = w.findAll("[data-testid='menu-button'], [data-testid='checkin-button']");
+    const menuIndex = all.findIndex((el: ReturnType<typeof w.find>) => el.attributes("data-testid") === "menu-button");
+    const checkIndex = all.findIndex((el: ReturnType<typeof w.find>) => el.attributes("data-testid") === "checkin-button");
+    expect(menuIndex).toBeGreaterThanOrEqual(0);
+    expect(checkIndex).toBeGreaterThanOrEqual(0);
+    expect(menuIndex).toBeLessThan(checkIndex);
+  });
+
+  it("card tiene z-10 cuando su menú está abierto", () => {
+    uiMock.menuOpenForHabitId = "h1";
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
+    expect(w.find("[data-testid='habit-card']").classes()).toContain("z-10");
+  });
+
+  it("card NO tiene z-10 cuando otro menú está abierto", () => {
+    uiMock.menuOpenForHabitId = "h2";
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
+    expect(w.find("[data-testid='habit-card']").classes()).not.toContain("z-10");
   });
 });

@@ -33,14 +33,14 @@ const collapseIcon = computed(() =>
   <aside
     :class="[
       'flex flex-col h-screen bg-canvas border-r border-hairline transition-all duration-200',
-      ui.sidebarCollapsed ? 'w-[60px]' : 'w-60',
+      ui.sidebarCollapsed ? 'w-[40px]' : 'w-28',
     ]"
   >
-    <div class="flex items-center gap-2 px-4 py-4 border-b border-hairline">
+    <div class="flex items-center gap-1 px-2 py-2 border-b border-hairline">
       <span class="text-headline text-primary shrink-0" aria-hidden="true">◉</span>
       <Text
         v-if="!ui.sidebarCollapsed"
-        variant="card-title"
+        variant="body-sm"
         weight="600"
         class="truncate"
       >
@@ -48,14 +48,14 @@ const collapseIcon = computed(() =>
       </Text>
     </div>
 
-    <nav class="flex-1 px-2 py-3 flex flex-col gap-1">
+    <nav class="flex-1 px-1 py-1.5 flex flex-col gap-0.5">
       <button
         v-for="item in navItems"
         :key="item.id"
         type="button"
         :class="[
-          'flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150',
-          'text-body-sm font-medium',
+          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150',
+          'text-caption font-medium',
           ui.viewMode === item.id
             ? 'bg-surface-2 text-ink'
             : 'text-ink-muted hover:text-ink hover:bg-surface-1',
@@ -67,10 +67,10 @@ const collapseIcon = computed(() =>
       </button>
     </nav>
 
-    <div class="px-2 py-3 flex flex-col gap-1 border-t border-hairline">
+    <div class="px-1 py-1.5 flex flex-col gap-0.5 border-t border-hairline">
       <button
         type="button"
-        class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-body-sm font-medium"
+        class="flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-caption font-medium"
         :aria-label="themeLabel"
         :title="themeLabel"
         @click="toggleDark()"
@@ -82,7 +82,7 @@ const collapseIcon = computed(() =>
       </button>
       <button
         type="button"
-        class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-body-sm font-medium"
+        class="flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-caption font-medium"
         aria-label="Colapsar sidebar"
         title="Colapsar sidebar"
         @click="ui.toggleSidebar()"

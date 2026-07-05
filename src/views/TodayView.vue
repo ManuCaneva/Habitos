@@ -12,16 +12,16 @@ const logs = computed(() => habits.logs);
 </script>
 
 <template>
-  <div class="w-full max-w-sm" data-testid="habits-panel">
+  <div class="w-full max-w-md" data-testid="habits-panel">
     <div
       data-testid="habits-container"
-      class="flex flex-col gap-2"
+      class="flex flex-col gap-1"
     >
       <EmptyState v-if="list.length === 0" />
       <template v-else>
         <HabitCard
           v-for="habit in list"
-          :key="habit.id"
+          :key="`${habit.id}-${habit.updated_at}`"
           :habit="habit"
           :logs="logs.filter((l) => l.habit_id === habit.id)"
         />

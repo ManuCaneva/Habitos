@@ -37,7 +37,7 @@ const archivedLabel = computed(() => {
 </script>
 
 <template>
-  <div class="relative group">
+  <div data-testid="habit-row" :class="['relative group', isMenuOpen && 'z-10']">
     <div
       :class="[
         'flex items-center gap-3 px-6 py-3 transition-colors duration-150',
@@ -68,6 +68,21 @@ const archivedLabel = computed(() => {
       <button
         type="button"
         :class="[
+          'shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
+          'text-ink-tertiary hover:text-ink hover:bg-surface-2',
+          isMenuOpen ? 'bg-surface-2 text-ink' : '',
+        ]"
+        data-testid="menu-button"
+        aria-label="Más opciones"
+        title="Más opciones"
+        @click="ui.toggleMenu(habit.id)"
+      >
+        <MoreHorizontal :size="16" />
+      </button>
+      <button
+        type="button"
+        data-testid="check-button"
+        :class="[
           'shrink-0 w-7 h-7 rounded-md border flex items-center justify-center',
           'transition-all duration-150 active:scale-95',
           checked
@@ -85,22 +100,6 @@ const archivedLabel = computed(() => {
           {{ streak }}
         </Text>
       </div>
-      <button
-        type="button"
-        :class="[
-          'shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
-          'transition-opacity duration-150',
-          'text-ink-tertiary hover:text-ink hover:bg-surface-2',
-          isMenuOpen
-            ? 'opacity-100 bg-surface-2 text-ink'
-            : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
-        ]"
-        aria-label="Más opciones"
-        title="Más opciones"
-        @click="ui.toggleMenu(habit.id)"
-      >
-        <MoreHorizontal :size="16" />
-      </button>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
   </div>
