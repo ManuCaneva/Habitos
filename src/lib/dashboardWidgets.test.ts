@@ -9,15 +9,29 @@ describe("dashboardWidgets", () => {
     expect(widget?.title).toBe("Hábitos");
   });
 
-  it("cada widget tiene dimensiones por defecto válidas", () => {
+  it("cada widget tiene dimensiones por defecto válidas (porcentajes)", () => {
     widgets.forEach((w) => {
-      expect(w.minWidth).toBeGreaterThan(0);
-      expect(w.minHeight).toBeGreaterThan(0);
-      expect(w.defaultW).toBeGreaterThanOrEqual(w.minWidth);
-      expect(w.defaultH).toBeGreaterThanOrEqual(w.minHeight);
-      expect(w.defaultX).toBeGreaterThanOrEqual(0);
-      expect(w.defaultY).toBeGreaterThanOrEqual(0);
+      expect(w.minWidthPercent).toBeGreaterThan(0);
+      expect(w.minHeightPercent).toBeGreaterThan(0);
+      expect(w.defaultWPercent).toBeGreaterThan(0);
+      expect(w.defaultHPercent).toBeGreaterThan(0);
+      expect(w.defaultWPercent).toBeLessThanOrEqual(1);
+      expect(w.defaultHPercent).toBeLessThanOrEqual(1);
+      expect(w.defaultWPercent).toBeGreaterThanOrEqual(w.minWidthPercent);
+      expect(w.defaultHPercent).toBeGreaterThanOrEqual(w.minHeightPercent);
     });
+  });
+
+  it("widget de hábitos tiene default 50% ancho × 40% alto", () => {
+    const widget = getWidgetById("habits")!;
+    expect(widget.defaultWPercent).toBeCloseTo(0.5);
+    expect(widget.defaultHPercent).toBeCloseTo(0.4);
+  });
+
+  it("widget de hábitos permite resize pequeño (mínimo 1/12 ancho, 1/10 alto)", () => {
+    const widget = getWidgetById("habits")!;
+    expect(widget.minWidthPercent).toBeCloseTo(1 / 12);
+    expect(widget.minHeightPercent).toBeCloseTo(1 / 10);
   });
 
   it("devuelve undefined para un id desconocido", () => {

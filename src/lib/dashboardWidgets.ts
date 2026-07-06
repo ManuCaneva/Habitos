@@ -6,12 +6,12 @@ export interface DashboardWidget {
   title: string;
   icon?: string;
   component: Component;
-  minWidth: number;
-  minHeight: number;
+  minWidthPercent: number;
+  minHeightPercent: number;
   defaultX: number;
   defaultY: number;
-  defaultW: number;
-  defaultH: number;
+  defaultWPercent: number;
+  defaultHPercent: number;
 }
 
 export const widgets: DashboardWidget[] = [
@@ -20,12 +20,12 @@ export const widgets: DashboardWidget[] = [
     title: "Hábitos",
     icon: "check-circle",
     component: HabitsWidget,
-    minWidth: 3,
-    minHeight: 3,
+    minWidthPercent: 1 / 12,
+    minHeightPercent: 1 / 10,
     defaultX: 0,
     defaultY: 0,
-    defaultW: 12,
-    defaultH: 10,
+    defaultWPercent: 0.5,
+    defaultHPercent: 0.4,
   },
 ];
 

@@ -55,16 +55,17 @@ describe("TodayView", () => {
     expect(panel.classes()).not.toContain("max-w-2xl");
   });
 
-  it("panel usa w-[15%] y self-start (alineado a la izquierda)", () => {
+  it("panel no tiene w-[15%] ni self-start (ocupa todo el ancho del widget)", () => {
     const wrapper = mount(TodayView);
     const panel = wrapper.find("[data-testid='habits-panel']");
-    expect(panel.classes()).toContain("w-[15%]");
-    expect(panel.classes()).toContain("self-start");
+    expect(panel.classes()).not.toContain("w-[15%]");
+    expect(panel.classes()).not.toContain("self-start");
   });
 
-  it("no tiene header con título 'Hábitos'", () => {
+  it("muestra título 'Hábitos' con cantidad activa", () => {
     const wrapper = mount(TodayView);
-    expect(wrapper.text()).not.toContain("Hábitos");
+    expect(wrapper.text()).toContain("Hábitos");
+    expect(wrapper.text()).toContain("1");
   });
 
   it("renderiza NewHabitCard al final de la lista", () => {
@@ -73,9 +74,62 @@ describe("TodayView", () => {
     expect(newCard.exists()).toBe(true);
   });
 
-  it("usa HabitSection como contenedor visual", () => {
+  it("usa HabitSection con variant flat (sin borde duplicado)", () => {
     const wrapper = mount(TodayView);
     const section = wrapper.findComponent({ name: "HabitSection" });
     expect(section.exists()).toBe(true);
+    expect(section.props("variant")).toBe("flat");
+  });
+
+  it("header NO usa sticky (está fuera del scroll)", () => {
+    const wrapper = mount(TodayView);
+    const header = wrapper.find("[data-testid='habits-header']");
+    expect(header.exists()).toBe(true);
+    expect(header.classes()).not.toContain("sticky");
+  });
+
+  it("header está antes del contenedor scrolleable de cards", () => {
+    const wrapper = mount(TodayView);
+    const header = wrapper.find("[data-testid='habits-header']");
+    const scrollContainer = wrapper.find("[data-testid='habits-scroll']");
+    expect(header.exists()).toBe(true);
+    expect(scrollContainer.exists()).toBe(true);
+    const headerIndex = wrapper.element.innerHTML.indexOf('data-testid="habits-header"');
+    const scrollIndex = wrapper.element.innerHTML.indexOf('data-testid="habits-scroll"');
+    expect(headerIndex).toBeLessThan(scrollIndex);
+  });
+
+  it("contenedor de cards tiene overflow-auto", () => {
+    const wrapper = mount(TodayView);
+    const scrollContainer = wrapper.find("[data-testid='habits-scroll']");
+    expect(scrollContainer.exists()).toBe(true);
+    expect(scrollContainer.classes()).toContain("overflow-auto");
+  });
+
+  it("contenedor scrolleable tiene padding reducido (p-1.5 = 50% de p-3)", () => {
+    const wrapper = mount(TodayView);
+    const scrollContainer = wrapper.find("[data-testid='habits-scroll']");
+    expect(scrollContainer.classes()).toContain("p-1.5");
+    expect(scrollContainer.classes()).not.toContain("p-3");
+  });
+
+  it("header tiene clase habits-header-responsive para container queries", () => {
+    const wrapper = mount(TodayView);
+    const header = wrapper.find("[data-testid='habits-header']");
+    expect(header.classes()).toContain("habits-header-responsive");
+  });
+
+  it("título 'Hábitos' tiene clase habits-header-title", () => {
+    const wrapper = mount(TodayView);
+    const title = wrapper.find(".habits-header-title");
+    expect(title.exists()).toBe(true);
+    expect(title.text()).toBe("Hábitos");
+  });
+
+  it("contador tiene clase habits-header-count", () => {
+    const wrapper = mount(TodayView);
+    const count = wrapper.find(".habits-header-count");
+    expect(count.exists()).toBe(true);
+    expect(count.text()).toContain("1");
   });
 });

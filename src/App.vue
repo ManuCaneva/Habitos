@@ -17,11 +17,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-canvas text-ink">
+  <div class="flex h-screen overflow-hidden bg-canvas text-ink">
     <Sidebar />
 
-    <div class="flex-1 flex flex-col min-w-0">
-      <div class="flex-1 px-3 py-4">
+    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <div class="flex-1 min-h-0 overflow-hidden px-3 py-4">
         <DashboardView v-if="ui.viewMode === 'dashboard'" />
         <ArchivedView v-else-if="ui.viewMode === 'archived'" />
         <SettingsView v-else-if="ui.viewMode === 'settings'" />

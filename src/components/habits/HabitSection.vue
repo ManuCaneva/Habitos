@@ -1,22 +1,20 @@
 <script setup lang="ts">
-type Variant = "contained" | "flat";
+import Container from "@/components/ui/Container.vue";
 
-withDefaults(defineProps<{ variant?: Variant }>(), {
+withDefaults(defineProps<{ variant?: "contained" | "flat" }>(), {
   variant: "contained",
 });
-
-const variantClass = (v: Variant) => {
-  switch (v) {
-    case "contained":
-      return "bg-surface-1 border border-hairline rounded-xl p-3";
-    case "flat":
-      return "";
-  }
-};
 </script>
 
 <template>
-  <div :class="variantClass(variant)">
+  <Container
+    v-if="variant === 'contained'"
+    variant="default"
+    padding="md"
+  >
+    <slot />
+  </Container>
+  <div v-else>
     <slot />
   </div>
 </template>

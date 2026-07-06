@@ -69,4 +69,20 @@ describe("DashboardView", () => {
     expect(firstItem.props("dims")).toBeDefined();
     expect(firstItem.props("dims").colWidth).toBe(100);
   });
+
+  it("root element has h-full and overflow-hidden", () => {
+    const wrapper = mount(DashboardView);
+    const root = wrapper.find("[data-testid='dashboard-view']");
+    expect(root.classes()).toContain("h-full");
+    expect(root.classes()).toContain("overflow-hidden");
+  });
+
+  it("grid container has h-full instead of min-height: 100%", () => {
+    const wrapper = mount(DashboardView);
+    const root = wrapper.find("[data-testid='dashboard-view']");
+    const gridContainer = root.find("div");
+    expect(gridContainer.classes()).toContain("h-full");
+    const style = gridContainer.attributes("style") ?? "";
+    expect(style).not.toContain("min-height");
+  });
 });

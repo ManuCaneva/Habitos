@@ -82,16 +82,35 @@ describe("useHeatmapCols", () => {
     expect(vm.cols).toBe(52);
   });
 
-  it("con ancho insuficiente para 1 col a 10px: reduce cellSize al mínimo", async () => {
+  it("con ancho insuficiente: mantiene cellSize y reduce cols", async () => {
     const vm = createTestComponent(5, {
       dataCols: 52,
       cellSize: 10,
-      minCellSize: 6,
-      maxCellSize: 12,
       gap: 2,
     });
     await nextTick();
-    expect(vm.actualCellSize).toBeLessThan(10);
+    expect(vm.actualCellSize).toBe(10);
+    expect(vm.cols).toBe(1);
+  });
+
+  it("siempre usa cellSize fijo (sin fallback a minCellSize)", async () => {
+    const vm = createTestComponent(50, { dataCols: 52, cellSize: 10, gap: 2 });
+    await nextTick();
+    expect(vm.actualCellSize).toBe(10);
     expect(vm.cols).toBeGreaterThan(0);
+  });
+
+  it("con contenedor muy chico: muestra al menos 1 columna", async () => {
+    const vm = createTestComponent(5, { dataCols: 52, cellSize: 10, gap: 2 });
+    await nextTick();
+    expect(vm.cols).toBe(1);
+    expect(vm.actualCellSize).toBe(10);
+  });
+
+  it("calcula columnas dinámicamente según el ancho", async () => {
+    // 200px / (10px + 2px gap) = 16.66 → 16 columnas
+    const vm = createTestComponent(200, { dataCols: 52, cellSize: 10, gap: 2 });
+    await nextTick();
+    expect(vm.cols).toBe(16);
   });
 });

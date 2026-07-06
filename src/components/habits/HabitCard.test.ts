@@ -34,9 +34,11 @@ describe("HabitCard (binary)", () => {
     vi.clearAllMocks();
   });
 
-  it("usa .glass", () => {
+  it("usa Container con estilos de surface", () => {
     const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='habit-card']").classes()).toContain("glass");
+    const card = w.find("[data-testid='habit-card']");
+    expect(card.classes()).toContain("bg-surface-1");
+    expect(card.classes()).toContain("border");
   });
 
   it("rendera el ícono lineal (svg)", () => {

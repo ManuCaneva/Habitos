@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import type { LayoutItem } from "@/stores/dashboard";
 import type { GridDimensions } from "@/composables/useDashGrid";
+import { snapToGrid } from "@/composables/useDashGrid";
 import { useDashDrag } from "@/composables/useDashDrag";
 
 const props = defineProps<{
@@ -11,22 +12,20 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  moved: [id: string, x: number, y: number];
-  resized: [id: string, w: number, h: number];
+  moved: [id: string, xPercent: number, yPercent: number];
+  resized: [id: string, wPercent: number, hPercent: number];
 }>();
 
 const elRef = ref<HTMLElement | null>(null);
 const isDragging = ref(false);
 
 function gridToPixel() {
-  const { colWidth, rowHeight, marginX, marginY } = props.dims;
-  const cellW = colWidth + marginX;
-  const cellH = rowHeight + marginY;
+  const { containerWidth, containerHeight } = props.dims;
   return {
-    left: props.item.x * cellW,
-    top: props.item.y * cellH,
-    width: props.item.w * colWidth + (props.item.w - 1) * marginX,
-    height: props.item.h * rowHeight + (props.item.h - 1) * marginY,
+    left: props.item.xPercent * containerWidth,
+    top: props.item.yPercent * containerHeight,
+    width: props.item.wPercent * containerWidth,
+    height: props.item.hPercent * containerHeight,
   };
 }
 
@@ -73,18 +72,21 @@ useDashDrag(elRef, editModeRef, dimsRef, {
     applyPixelOffset();
   },
   onDragEnd() {
-    const { colWidth, rowHeight, marginX, marginY } = props.dims;
-    const cellW = colWidth + marginX;
-    const cellH = rowHeight + marginY;
     const px = gridToPixel();
-    const newX = Math.max(0, Math.round((px.left + dragAccumX) / cellW));
-    const newY = Math.max(0, Math.round((px.top + dragAccumY) / cellH));
+    const snapped = snapToGrid(
+      px.left + dragAccumX,
+      px.top + dragAccumY,
+      px.width,
+      px.height,
+      props.dims,
+      { minWPercent: props.item.minWPercent, minHPercent: props.item.minHPercent },
+    );
     dragAccumX = 0;
     dragAccumY = 0;
     resizeAccumW = 0;
     resizeAccumH = 0;
     isDragging.value = false;
-    emit("moved", props.item.i, newX, newY);
+    emit("moved", props.item.i, snapped.xPercent, snapped.yPercent);
   },
   onResizeStart() {
     isDragging.value = true;
@@ -99,18 +101,21 @@ useDashDrag(elRef, editModeRef, dimsRef, {
     applyPixelOffset();
   },
   onResizeEnd() {
-    const { colWidth, rowHeight, marginX, marginY } = props.dims;
-    const cellW = colWidth + marginX;
-    const cellH = rowHeight + marginY;
     const px = gridToPixel();
-    const newW = Math.max(1, Math.round((px.width + resizeAccumW + marginX) / cellW));
-    const newH = Math.max(1, Math.round((px.height + resizeAccumH + marginY) / cellH));
+    const snapped = snapToGrid(
+      px.left,
+      px.top,
+      px.width + resizeAccumW,
+      px.height + resizeAccumH,
+      props.dims,
+      { minWPercent: props.item.minWPercent, minHPercent: props.item.minHPercent },
+    );
     dragAccumX = 0;
     dragAccumY = 0;
     resizeAccumW = 0;
     resizeAccumH = 0;
     isDragging.value = false;
-    emit("resized", props.item.i, newW, newH);
+    emit("resized", props.item.i, snapped.wPercent, snapped.hPercent);
   },
 });
 </script>
@@ -132,7 +137,7 @@ useDashDrag(elRef, editModeRef, dimsRef, {
 <style scoped>
 .grid-item {
   transition: left 0.2s ease, top 0.2s ease, width 0.2s ease, height 0.2s ease;
-  border-radius: 16px;
+  border-radius: 2px;
   will-change: left, top, width, height;
 }
 

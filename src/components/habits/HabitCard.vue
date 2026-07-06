@@ -8,6 +8,7 @@ import { iconFor } from "@/lib/icons";
 import { frequencyLabel } from "@/lib/frequencyLabel";
 import HabitContextMenu from "./HabitContextMenu.vue";
 import HeatmapGrid from "./HeatmapGrid.vue";
+import Container from "@/components/ui/Container.vue";
 
 const props = defineProps<{ habit: Habit; logs: HabitLog[] }>();
 const habits = useHabitsStore();
@@ -27,9 +28,14 @@ async function toggleCheck() {
 </script>
 
 <template>
-  <div data-testid="habit-card" :class="['glass p-2 group relative', isMenuOpen && 'z-10']">
-    <div class="flex items-center gap-1.5 mb-1">
-      <span data-testid="habit-icon" class="text-white shrink-0">
+  <Container
+    data-testid="habit-card"
+    variant="ghost"
+    padding="sm"
+    :class="['group relative habit-card-responsive', isMenuOpen && 'z-10']"
+  >
+    <div class="flex items-center gap-1.5 mb-1.5 habit-card-row">
+      <span data-testid="habit-icon" class="text-white shrink-0 habit-card-icon">
         <component :is="icon.icon" :size="14" :stroke-width="2" />
       </span>
       <button
@@ -37,15 +43,16 @@ async function toggleCheck() {
         class="min-w-0 flex-1 text-left"
         @click="ui.openEdit(habit.id)"
       >
-        <div class="font-medium text-body-sm text-ink truncate">{{ habit.name }}</div>
-        <div data-testid="habit-subtitle" class="text-caption text-ink-muted">
+        <div class="font-medium text-body-sm text-ink truncate habit-card-title">{{ habit.name }}</div>
+        <div data-testid="habit-subtitle" class="text-caption text-ink-muted habit-card-subtitle">
           {{ subtitle }}
         </div>
       </button>
       <div class="flex items-center gap-1 shrink-0">
         <button
           data-testid="menu-button"
-          class="w-7 h-7 flex items-center justify-center"
+          :data-habit-menu-trigger="habit.id"
+          class="w-7 h-7 flex items-center justify-center habit-card-btn"
           aria-label="Más opciones"
           @click="ui.toggleMenu(habit.id)"
         >
@@ -54,7 +61,7 @@ async function toggleCheck() {
         <button
           data-testid="checkin-button"
           :class="[
-            'w-7 h-7 flex items-center justify-center transition-all active:scale-95 rounded-full',
+            'w-7 h-7 flex items-center justify-center transition-all active:scale-95 rounded-full habit-card-checkin',
             !checked && 'border-2 bg-surface-3/30',
           ]"
           :style="checked ? { backgroundColor: habit.color } : { borderColor: habit.color }"
@@ -67,6 +74,6 @@ async function toggleCheck() {
       </div>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
-    <HeatmapGrid :logs="logs" :color="habit.color" :days="364" />
-  </div>
+    <HeatmapGrid :logs="logs" :color="habit.color" :days="364" class="habit-card-heatmap" />
+  </Container>
 </template>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import Container from "@/components/ui/Container.vue";
 import TodayView from "@/views/TodayView.vue";
 </script>
 
 <template>
-  <div
+  <Container
     data-testid="habits-widget"
-    class="h-full overflow-auto rounded-xl bg-surface-1 border border-hairline p-3"
+    variant="default"
+    padding="none"
+    class="h-full overflow-hidden"
+    style="container-type: inline-size"
   >
     <TodayView />
-  </div>
+  </Container>
 </template>

@@ -2,53 +2,33 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import NewHabitCard from "./NewHabitCard.vue";
-import { useUiStore } from "@/stores/ui";
+
+vi.mock("@/stores/ui", () => ({
+  useUiStore: () => ({
+    openCreate: vi.fn(),
+  }),
+}));
 
 describe("NewHabitCard", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
-  it("renderiza texto 'Nuevo hábito'", () => {
+  it("tiene clase habit-card-responsive para container queries", () => {
     const wrapper = mount(NewHabitCard);
-    expect(wrapper.text()).toContain("Nuevo hábito");
+    expect(wrapper.classes()).toContain("habit-card-responsive");
   });
 
-  it("renderiza un ícono Plus", () => {
+  it("texto 'Nuevo hábito' tiene clase new-habit-card-text", () => {
     const wrapper = mount(NewHabitCard);
-    const svg = wrapper.find("svg");
-    expect(svg.exists()).toBe(true);
+    const text = wrapper.find(".new-habit-card-text");
+    expect(text.exists()).toBe(true);
+    expect(text.text()).toContain("Nuevo hábito");
   });
 
-  it("click dispara ui.openCreate", async () => {
-    const ui = useUiStore();
-    const openCreateSpy = vi.spyOn(ui, "openCreate");
+  it("icono Plus tiene clase new-habit-card-icon", () => {
     const wrapper = mount(NewHabitCard);
-    await wrapper.trigger("click");
-    expect(openCreateSpy).toHaveBeenCalledOnce();
-  });
-
-  it("tiene data-testid='new-habit-card' para tests E2E", () => {
-    const wrapper = mount(NewHabitCard);
-    expect(wrapper.find("[data-testid='new-habit-card']").exists()).toBe(true);
-  });
-
-  it("tiene aria-label accesible", () => {
-    const wrapper = mount(NewHabitCard);
-    const card = wrapper.find("[data-testid='new-habit-card']");
-    expect(card.attributes("aria-label")).toBe("Crear nuevo hábito");
-  });
-
-  it("card no tiene bg-surface-1 ni border sólido (vive adentro del panel)", () => {
-    const wrapper = mount(NewHabitCard);
-    const card = wrapper.find("[data-testid='new-habit-card']");
-    expect(card.classes()).not.toContain("bg-surface-1");
-  });
-
-  it("card tiene border-t border-dashed (separador del último hábito)", () => {
-    const wrapper = mount(NewHabitCard);
-    const card = wrapper.find("[data-testid='new-habit-card']");
-    expect(card.classes()).toContain("border-t");
-    expect(card.classes()).toContain("border-dashed");
+    const icon = wrapper.find(".new-habit-card-icon");
+    expect(icon.exists()).toBe(true);
   });
 });

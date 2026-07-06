@@ -24,9 +24,9 @@ function onResized(id: string, w: number, h: number) {
   <div
     ref="containerRef"
     data-testid="dashboard-view"
-    class="h-full"
+    class="h-full overflow-hidden"
   >
-    <div class="relative" style="min-height: 100%">
+    <div class="relative h-full">
       <GridItemVue
         v-for="item in dashboard.layout"
         :key="item.i"
