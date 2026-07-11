@@ -21,11 +21,12 @@ export const GoalSchema = z.object({
   description: z.string().trim().max(500).nullable().default(null),
   color: hexColor,
   target: z.number().int().min(1),
-  unit: z.string().trim().max(20).nullable().default(null),
+  unit: z.string().trim().max(30).nullable().default(null),
   frequency: GoalFrequencySchema,
   sort_order: z.number().int().default(0),
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
+  archived_at: isoTimestamp.nullable().default(null),
 });
 export type Goal = z.infer<typeof GoalSchema>;
 
@@ -74,6 +75,7 @@ export const GoalRowSchema = z.object({
   sort_order: z.number().int(),
   created_at: z.string(),
   updated_at: z.string(),
+  archived_at: z.string().nullable(),
 });
 export type GoalRow = z.infer<typeof GoalRowSchema>;
 
@@ -106,6 +108,7 @@ export function rowToGoal(row: GoalRow): Goal {
     sort_order: row.sort_order,
     created_at: normalizeTimestamp(row.created_at),
     updated_at: normalizeTimestamp(row.updated_at),
+    archived_at: row.archived_at ? normalizeTimestamp(row.archived_at) : null,
   });
 }
 

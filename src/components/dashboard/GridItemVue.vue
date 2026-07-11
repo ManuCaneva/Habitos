@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import type { LayoutItem } from "@/stores/dashboard";
 import type { GridDimensions } from "@/composables/useDashGrid";
-import { snapToGrid } from "@/composables/useDashGrid";
+import { snapToGrid, applyGapToPixel } from "@/composables/useDashGrid";
 import { useDashDrag } from "@/composables/useDashDrag";
 
 const props = defineProps<{
@@ -30,7 +30,15 @@ function gridToPixel() {
 }
 
 const baseStyle = computed(() => {
-  const px = gridToPixel();
+  const { containerWidth, containerHeight } = props.dims;
+  const px = applyGapToPixel(
+    props.item.xPercent,
+    props.item.yPercent,
+    props.item.wPercent,
+    props.item.hPercent,
+    containerWidth,
+    containerHeight,
+  );
   return {
     position: "absolute" as const,
     left: `${px.left}px`,
@@ -51,7 +59,15 @@ let resizeAccumH = 0;
 function applyPixelOffset() {
   const el = elRef.value;
   if (!el) return;
-  const px = gridToPixel();
+  const { containerWidth, containerHeight } = props.dims;
+  const px = applyGapToPixel(
+    props.item.xPercent,
+    props.item.yPercent,
+    props.item.wPercent,
+    props.item.hPercent,
+    containerWidth,
+    containerHeight,
+  );
   el.style.left = `${px.left + dragAccumX}px`;
   el.style.top = `${px.top + dragAccumY}px`;
   el.style.width = `${px.width + resizeAccumW}px`;

@@ -47,6 +47,7 @@ const mockTaskRow = {
   sort_order: 0,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-07-05T00:00:00.000Z",
+  archived_at: null,
 };
 
 const mockGoalRow = {
@@ -62,6 +63,7 @@ const mockGoalRow = {
   sort_order: 0,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-07-05T00:00:00.000Z",
+  archived_at: null,
 };
 
 const mockGoalLogRow = {
@@ -148,7 +150,7 @@ describe("db.listTasks", () => {
 
   it("retorna array de TaskRow parseados", async () => {
     const result = await listTasks();
-    expect(invoke).toHaveBeenCalledWith("list_tasks", {});
+    expect(invoke).toHaveBeenCalledWith("list_tasks", { includeArchived: false });
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe("Test Task");
   });
@@ -237,7 +239,7 @@ describe("db.listGoals", () => {
 
   it("retorna array de GoalRow parseados", async () => {
     const result = await listGoals();
-    expect(invoke).toHaveBeenCalledWith("list_goals", {});
+    expect(invoke).toHaveBeenCalledWith("list_goals", { includeArchived: false });
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe("Test Goal");
   });

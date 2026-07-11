@@ -8,6 +8,8 @@ vi.mock("@/lib/db", () => ({
   createTask: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn().mockResolvedValue(undefined),
+  archiveTask: vi.fn().mockResolvedValue(undefined),
+  restoreTask: vi.fn().mockResolvedValue(undefined),
 }));
 
 function todayLocalDate(): string {
@@ -41,6 +43,7 @@ describe("tasks store - createTask", () => {
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      archived_at: null,
     };
 
     vi.mocked(db.createTask).mockResolvedValue(mockRow);
@@ -72,6 +75,7 @@ describe("tasks store - createTask", () => {
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      archived_at: null,
     };
 
     vi.mocked(db.createTask).mockResolvedValue(mockRow);
@@ -103,6 +107,7 @@ describe("tasks store - loadTasks", () => {
         sort_order: 0,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
       {
         id: "22222222-2222-2222-2222-222222222222",
@@ -115,6 +120,7 @@ describe("tasks store - loadTasks", () => {
         sort_order: 1,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
     ];
 
@@ -152,6 +158,7 @@ describe("tasks store - updateTask", () => {
         sort_order: 0,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
     ];
 
@@ -166,6 +173,7 @@ describe("tasks store - updateTask", () => {
       sort_order: 0,
       created_at: now,
       updated_at: new Date().toISOString(),
+      archived_at: null,
     };
 
     vi.mocked(db.updateTask).mockResolvedValue(mockRow);
@@ -206,6 +214,7 @@ describe("tasks store - deleteTask", () => {
         sort_order: 0,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
     ];
 
@@ -240,6 +249,7 @@ describe("tasks store - toggleStep", () => {
         sort_order: 0,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
     ];
 
@@ -254,6 +264,7 @@ describe("tasks store - toggleStep", () => {
       sort_order: 0,
       created_at: now,
       updated_at: new Date().toISOString(),
+      archived_at: null,
     };
 
     vi.mocked(db.updateTask).mockResolvedValue(mockRow);
@@ -294,6 +305,7 @@ describe("tasks store - pendingTasks", () => {
         sort_order: 0,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
       {
         id: "22222222-2222-2222-2222-222222222222",
@@ -306,6 +318,7 @@ describe("tasks store - pendingTasks", () => {
         sort_order: 1,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
       {
         id: "33333333-3333-3333-3333-333333333333",
@@ -318,6 +331,7 @@ describe("tasks store - pendingTasks", () => {
         sort_order: 2,
         created_at: now,
         updated_at: now,
+        archived_at: null,
       },
     ];
 
@@ -406,5 +420,115 @@ describe("deadlineProgress", () => {
     expect(progress).not.toBeNull();
     expect(progress).toBeGreaterThan(0);
     expect(progress).toBeLessThan(1);
+  });
+});
+
+describe("tasks store - archiveTask", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it("should call db.archiveTask and set archived_at on the task", async () => {
+    const store = useTasksStore();
+    const now = new Date().toISOString();
+    const taskId = "11111111-1111-1111-1111-111111111111";
+
+    store.tasks = [
+      {
+        id: taskId,
+        title: "To archive",
+        description: null,
+        color: "#5e6ad2",
+        status: "todo",
+        due_date: null,
+        steps: [],
+        sort_order: 0,
+        created_at: now,
+        updated_at: now,
+        archived_at: null,
+      },
+    ];
+
+    await store.archiveTask(taskId);
+
+    expect(db.archiveTask).toHaveBeenCalledTimes(1);
+    expect(db.archiveTask).toHaveBeenCalledWith(taskId, expect.any(String));
+    expect(store.tasks[0].archived_at).not.toBeNull();
+    expect(store.tasks[0].archived_at).toBeTruthy();
+  });
+
+  it("should exclude archived tasks from activeTasks", async () => {
+    const store = useTasksStore();
+    const now = new Date().toISOString();
+
+    store.tasks = [
+      {
+        id: "11111111-1111-1111-1111-111111111111",
+        title: "Active",
+        description: null,
+        color: "#5e6ad2",
+        status: "todo",
+        due_date: null,
+        steps: [],
+        sort_order: 0,
+        created_at: now,
+        updated_at: now,
+        archived_at: null,
+      },
+      {
+        id: "22222222-2222-2222-2222-222222222222",
+        title: "Archived",
+        description: null,
+        color: "#ff0000",
+        status: "todo",
+        due_date: null,
+        steps: [],
+        sort_order: 1,
+        created_at: now,
+        updated_at: now,
+        archived_at: now,
+      },
+    ];
+
+    expect(store.activeTasks).toHaveLength(1);
+    expect(store.activeTasks[0].title).toBe("Active");
+    expect(store.archivedTasks).toHaveLength(1);
+    expect(store.archivedTasks[0].title).toBe("Archived");
+  });
+});
+
+describe("tasks store - restoreTask", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it("should call db.restoreTask and clear archived_at", async () => {
+    const store = useTasksStore();
+    const now = new Date().toISOString();
+    const taskId = "11111111-1111-1111-1111-111111111111";
+
+    store.tasks = [
+      {
+        id: taskId,
+        title: "To restore",
+        description: null,
+        color: "#5e6ad2",
+        status: "todo",
+        due_date: null,
+        steps: [],
+        sort_order: 0,
+        created_at: now,
+        updated_at: now,
+        archived_at: now,
+      },
+    ];
+
+    await store.restoreTask(taskId);
+
+    expect(db.restoreTask).toHaveBeenCalledTimes(1);
+    expect(db.restoreTask).toHaveBeenCalledWith(taskId, expect.any(String));
+    expect(store.tasks[0].archived_at).toBeNull();
   });
 });

@@ -22,6 +22,7 @@ export const TaskSchema = z.object({
   sort_order: z.number().int().default(0),
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
+  archived_at: isoTimestamp.nullable().default(null),
 });
 export type Task = z.infer<typeof TaskSchema>;
 
@@ -50,6 +51,7 @@ export const TaskRowSchema = z.object({
   sort_order: z.number().int(),
   created_at: z.string(),
   updated_at: z.string(),
+  archived_at: z.string().nullable(),
 });
 export type TaskRow = z.infer<typeof TaskRowSchema>;
 
@@ -68,6 +70,7 @@ export function rowToTask(row: TaskRow): Task {
     sort_order: row.sort_order,
     created_at: normalizeTimestamp(row.created_at),
     updated_at: normalizeTimestamp(row.updated_at),
+    archived_at: row.archived_at ? normalizeTimestamp(row.archived_at) : null,
   });
 }
 

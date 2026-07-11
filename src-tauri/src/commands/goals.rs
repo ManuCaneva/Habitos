@@ -57,6 +57,7 @@ pub struct GoalRow {
     pub sort_order: i32,
     pub created_at: String,
     pub updated_at: String,
+    pub archived_at: Option<String>,
 }
 
 fn row_to_goal(r: &rusqlite::Row<'_>) -> rusqlite::Result<GoalRow> {
@@ -73,6 +74,7 @@ fn row_to_goal(r: &rusqlite::Row<'_>) -> rusqlite::Result<GoalRow> {
         sort_order: r.get("sort_order")?,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
+        archived_at: r.get("archived_at")?,
     })
 }
 
@@ -119,10 +121,15 @@ pub fn create_goal(db: State<'_, Db>, input: CreateGoalInput) -> Result<GoalRow,
 }
 
 #[tauri::command]
-pub fn list_goals(db: State<'_, Db>) -> Result<Vec<GoalRow>, String> {
+pub fn list_goals(db: State<'_, Db>, include_archived: bool) -> Result<Vec<GoalRow>, String> {
     let result: DbResult<Vec<GoalRow>> = (|| {
         let conn = db.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT * FROM goals ORDER BY sort_order ASC, created_at ASC")?;
+        let sql = if include_archived {
+            "SELECT * FROM goals ORDER BY sort_order ASC, created_at ASC"
+        } else {
+            "SELECT * FROM goals WHERE archived_at IS NULL ORDER BY sort_order ASC, created_at ASC"
+        };
+        let mut stmt = conn.prepare(sql)?;
         let rows = stmt.query_map([], row_to_goal)?;
         let mut out = Vec::new();
         for r in rows {
@@ -187,6 +194,38 @@ pub fn delete_goal(db: State<'_, Db>, id: String) -> Result<(), String> {
     let result: DbResult<()> = (|| {
         let conn = db.conn.lock().unwrap();
         let n = conn.execute("DELETE FROM goals WHERE id = ?1", params![id])?;
+        if n == 0 {
+            return Err(DbError::NotFound);
+        }
+        Ok(())
+    })();
+    result.to_str_err()
+}
+
+#[tauri::command]
+pub fn archive_goal(db: State<'_, Db>, id: String, archived_at: String) -> Result<(), String> {
+    let result: DbResult<()> = (|| {
+        let conn = db.conn.lock().unwrap();
+        let n = conn.execute(
+            "UPDATE goals SET archived_at = ?2, updated_at = ?2 WHERE id = ?1",
+            params![id, archived_at],
+        )?;
+        if n == 0 {
+            return Err(DbError::NotFound);
+        }
+        Ok(())
+    })();
+    result.to_str_err()
+}
+
+#[tauri::command]
+pub fn restore_goal(db: State<'_, Db>, id: String, updated_at: String) -> Result<(), String> {
+    let result: DbResult<()> = (|| {
+        let conn = db.conn.lock().unwrap();
+        let n = conn.execute(
+            "UPDATE goals SET archived_at = NULL, updated_at = ?2 WHERE id = ?1",
+            params![id, updated_at],
+        )?;
         if n == 0 {
             return Err(DbError::NotFound);
         }

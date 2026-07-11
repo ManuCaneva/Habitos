@@ -46,6 +46,7 @@ function makeGoal(overrides: Partial<Goal> = {}): Goal {
     sort_order: 0,
     created_at: now,
     updated_at: now,
+    archived_at: null,
     ...overrides,
   };
 }
@@ -72,6 +73,7 @@ describe("goals store - createGoal", () => {
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      archived_at: null,
     };
 
     vi.mocked(db.createGoal).mockResolvedValue(mockRow);
@@ -112,6 +114,7 @@ describe("goals store - loadGoals + loadLogsForRange", () => {
       sort_order: 0,
       created_at: now,
       updated_at: now,
+      archived_at: null,
     };
 
     const mockLogRow = {

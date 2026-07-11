@@ -66,6 +66,7 @@ describe("TaskSchema", () => {
     sort_order: 0,
     created_at: validIso,
     updated_at: validIso,
+    archived_at: null,
   };
 
   it("acepta una task válida sin due_date ni steps", () => {
@@ -178,6 +179,7 @@ describe("TaskRowSchema", () => {
       sort_order: 0,
       created_at: "2026-06-27 10:00:00",
       updated_at: "2026-06-27 10:00:00",
+      archived_at: null,
     };
     const parsed = TaskRowSchema.parse(row);
     expect(parsed.title).toBe("  con espacios  ");
@@ -196,6 +198,7 @@ describe("TaskRowSchema", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(TaskRowSchema.parse(row).steps).toContain("S1");
   });
@@ -214,6 +217,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: "2026-06-27 10:00:00",
       updated_at: "2026-06-27 10:00:00",
+      archived_at: null,
     };
     const task = rowToTask(row);
     expect(task.steps).toHaveLength(1);
@@ -233,6 +237,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(rowToTask(row).steps).toEqual([]);
   });
@@ -249,6 +254,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(() => rowToTask(row)).toThrow();
   });
@@ -265,6 +271,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(() => rowToTask(row)).toThrow();
   });
@@ -281,6 +288,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(rowToTask(row).due_date).toBeNull();
   });
@@ -297,6 +305,7 @@ describe("rowToTask", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     expect(rowToTask(row).due_date).toBe(validDate);
   });

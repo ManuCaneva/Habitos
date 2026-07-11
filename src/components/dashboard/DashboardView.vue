@@ -5,6 +5,8 @@ import { useUiStore } from "@/stores/ui";
 import { useDashGrid } from "@/composables/useDashGrid";
 import { getWidgetById } from "@/lib/dashboardWidgets";
 import GridItemVue from "./GridItemVue.vue";
+import WidgetPicker from "./WidgetPicker.vue";
+import WidgetRemoveButton from "./WidgetRemoveButton.vue";
 
 const dashboard = useDashboardStore();
 const ui = useUiStore();
@@ -17,6 +19,10 @@ function onMoved(id: string, x: number, y: number) {
 
 function onResized(id: string, w: number, h: number) {
   dashboard.resizeTo(id, w, h);
+}
+
+function onRemoveWidget(id: string) {
+  dashboard.removeWidget(id);
 }
 </script>
 
@@ -37,7 +43,13 @@ function onResized(id: string, w: number, h: number) {
         @resized="onResized"
       >
         <component :is="getWidgetById(item.i)?.component" />
+        <WidgetRemoveButton
+          v-if="ui.editMode"
+          :widget-id="item.i"
+          @remove="onRemoveWidget"
+        />
       </GridItemVue>
     </div>
+    <WidgetPicker />
   </div>
 </template>

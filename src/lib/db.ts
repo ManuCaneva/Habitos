@@ -184,8 +184,8 @@ export async function createTask(
   return TaskRowSchema.parse(raw);
 }
 
-export async function listTasks(): Promise<TaskRow[]> {
-  const raw = await invoke<unknown>("list_tasks", {});
+export async function listTasks(includeArchived = false): Promise<TaskRow[]> {
+  const raw = await invoke<unknown>("list_tasks", { includeArchived });
   const arr = Array.isArray(raw) ? raw : [];
   return arr.map((r) => TaskRowSchema.parse(r));
 }
@@ -215,6 +215,14 @@ export async function updateTask(
 
 export async function deleteTask(id: string): Promise<void> {
   await invoke("delete_task", { id });
+}
+
+export async function archiveTask(id: string, archived_at: string): Promise<void> {
+  await invoke("archive_task", { id, archivedAt: archived_at });
+}
+
+export async function restoreTask(id: string, updated_at: string): Promise<void> {
+  await invoke("restore_task", { id, updatedAt: updated_at });
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -248,8 +256,8 @@ export async function createGoal(
   return GoalRowSchema.parse(raw);
 }
 
-export async function listGoals(): Promise<GoalRow[]> {
-  const raw = await invoke<unknown>("list_goals", {});
+export async function listGoals(includeArchived = false): Promise<GoalRow[]> {
+  const raw = await invoke<unknown>("list_goals", { includeArchived });
   const arr = Array.isArray(raw) ? raw : [];
   return arr.map((r) => GoalRowSchema.parse(r));
 }
@@ -281,6 +289,14 @@ export async function updateGoal(
 
 export async function deleteGoal(id: string): Promise<void> {
   await invoke("delete_goal", { id });
+}
+
+export async function archiveGoal(id: string, archived_at: string): Promise<void> {
+  await invoke("archive_goal", { id, archivedAt: archived_at });
+}
+
+export async function restoreGoal(id: string, updated_at: string): Promise<void> {
+  await invoke("restore_goal", { id, updatedAt: updated_at });
 }
 
 // ───────────────────────────────────────────────────────────────

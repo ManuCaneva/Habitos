@@ -5,7 +5,7 @@ import Text from "@/components/ui/Text.vue";
 <template>
   <div class="flex items-center justify-center h-full">
     <Text variant="body" color="muted">
-      Todavía no tenés hábitos.
+      No hay tareas pendientes
     </Text>
   </div>
 </template>

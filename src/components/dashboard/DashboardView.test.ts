@@ -12,10 +12,17 @@ vi.mock("@/composables/useDashGrid", () => ({
       marginX: 12,
       marginY: 12,
       containerWidth: 1200,
+      containerHeight: 600,
     }),
     gridToPixel: vi.fn(),
     snapToGrid: vi.fn(),
   }),
+  applyGapToPixel: vi.fn((xPercent, yPercent, wPercent, hPercent, containerWidth, containerHeight, _gap) => ({
+    left: xPercent * containerWidth,
+    top: yPercent * containerHeight,
+    width: wPercent * containerWidth,
+    height: hPercent * containerHeight,
+  })),
 }));
 
 vi.mock("@/composables/useDashDrag", () => ({
@@ -38,18 +45,36 @@ vi.mock("@/stores/habits", () => ({
   }),
 }));
 
+let editModeValue = false;
+const mockRemoveWidget = vi.fn();
+
 vi.mock("@/stores/ui", () => ({
   useUiStore: () => ({
-    editMode: false,
+    get editMode() {
+      return editModeValue;
+    },
     openCreate: vi.fn(),
     menuOpenForHabitId: null,
     toggleMenu: vi.fn(),
   }),
 }));
 
+vi.mock("@/stores/dashboard", () => ({
+  useDashboardStore: () => ({
+    get layout() {
+      return [
+        { i: "habits", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
+      ];
+    },
+    removeWidget: mockRemoveWidget,
+  }),
+}));
+
 describe("DashboardView", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    editModeValue = false;
+    mockRemoveWidget.mockClear();
   });
 
   it("renderiza el contenedor del dashboard", () => {
@@ -86,5 +111,40 @@ describe("DashboardView", () => {
     expect(gridContainer.classes()).toContain("h-full");
     const style = gridContainer.attributes("style") ?? "";
     expect(style).not.toContain("min-height");
+  });
+
+  it("no renderiza WidgetPicker si editMode es false", () => {
+    editModeValue = false;
+    const wrapper = mount(DashboardView);
+    expect(wrapper.find("[data-testid='widget-picker']").exists()).toBe(false);
+  });
+
+  it("renderiza WidgetPicker si editMode es true", () => {
+    editModeValue = true;
+    const wrapper = mount(DashboardView);
+    expect(wrapper.find("[data-testid='widget-picker']").exists()).toBe(true);
+  });
+
+  it("renderiza WidgetRemoveButton en cada widget si editMode es true", () => {
+    editModeValue = true;
+    const wrapper = mount(DashboardView);
+    const removeButtons = wrapper.findAllComponents({ name: "WidgetRemoveButton" });
+    expect(removeButtons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("no renderiza WidgetRemoveButton si editMode es false", () => {
+    editModeValue = false;
+    const wrapper = mount(DashboardView);
+    const removeButtons = wrapper.findAllComponents({ name: "WidgetRemoveButton" });
+    expect(removeButtons.length).toBe(0);
+  });
+
+  it("al remover un widget, llama removeWidget del store", async () => {
+    editModeValue = true;
+    const wrapper = mount(DashboardView);
+    const removeBtn = wrapper.findComponent({ name: "WidgetRemoveButton" });
+    removeBtn.vm.$emit("remove", "habits");
+    await wrapper.vm.$nextTick();
+    expect(mockRemoveWidget).toHaveBeenCalledWith("habits");
   });
 });

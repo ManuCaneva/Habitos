@@ -1,40 +1,16 @@
 <script setup lang="ts">
-import { Plus } from "lucide-vue-next";
 import { useUiStore } from "@/stores/ui";
-import Text from "@/components/ui/Text.vue";
+import NewEntityCard from "@/components/ui/NewEntityCard.vue";
 
 const ui = useUiStore();
-
-function onClick() {
-  ui.openCreate();
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    ui.openCreate();
-  }
-}
 </script>
 
 <template>
-  <div
-    data-testid="new-habit-card"
-    role="button"
-    tabindex="0"
+  <NewEntityCard
+    label="Nuevo hábito"
     aria-label="Crear nuevo hábito"
-    class="border-t border-dashed border-hairline
-           flex flex-col items-center justify-center gap-1.5
-           min-h-[44px] py-2 cursor-pointer
-           text-ink-muted
-           transition-colors duration-150 ease-out
-           hover:bg-surface-3/30 hover:text-ink
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas
-           habit-card-responsive new-habit-card"
-    @click="onClick"
-    @keydown="onKeydown"
-  >
-    <Plus :size="16" :stroke-width="2" aria-hidden="true" class="new-habit-card-icon" />
-    <Text variant="body-sm" weight="500" class="new-habit-card-text">Nuevo hábito</Text>
-  </div>
+    data-testid="new-habit-card"
+    css-class="habit-card-responsive new-habit-card"
+    @create="ui.openCreate()"
+  />
 </template>

@@ -64,13 +64,21 @@ export const useTasksStore = defineStore("tasks", () => {
   const loading = ref(false);
   const lastError = ref<string | null>(null);
 
-  const pendingTasks = computed(() => tasks.value.filter((t) => t.status !== "done"));
+  const activeTasks = computed(() =>
+    tasks.value.filter((t) => t.archived_at === null),
+  );
 
-  async function loadTasks(): Promise<void> {
+  const archivedTasks = computed(() =>
+    tasks.value.filter((t) => t.archived_at !== null),
+  );
+
+  const pendingTasks = computed(() => activeTasks.value.filter((t) => t.status !== "done"));
+
+  async function loadTasks(includeArchived = false): Promise<void> {
     loading.value = true;
     lastError.value = null;
     try {
-      const rows: TaskRow[] = await db.listTasks();
+      const rows: TaskRow[] = await db.listTasks(includeArchived);
       tasks.value = rows.map(rowToTask);
     } catch (e) {
       lastError.value = e instanceof Error ? e.message : String(e);
@@ -101,6 +109,22 @@ export const useTasksStore = defineStore("tasks", () => {
     tasks.value = tasks.value.filter((t) => t.id !== id);
   }
 
+  async function archiveTask(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.archiveTask(id, now);
+    tasks.value = tasks.value.map((t) =>
+      t.id === id ? { ...t, archived_at: now, updated_at: now } : t,
+    );
+  }
+
+  async function restoreTask(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.restoreTask(id, now);
+    tasks.value = tasks.value.map((t) =>
+      t.id === id ? { ...t, archived_at: null, updated_at: now } : t,
+    );
+  }
+
   async function toggleStep(taskId: string, stepId: string): Promise<void> {
     const task = tasks.value.find((t) => t.id === taskId);
     if (!task) return;
@@ -116,11 +140,15 @@ export const useTasksStore = defineStore("tasks", () => {
     tasks,
     loading,
     lastError,
+    activeTasks,
+    archivedTasks,
     pendingTasks,
     loadTasks,
     createTask,
     updateTask,
     deleteTask,
+    archiveTask,
+    restoreTask,
     toggleStep,
   };
 });

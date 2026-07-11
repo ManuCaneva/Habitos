@@ -84,8 +84,8 @@ function getDefaultLayout(): Layout {
   return widgets.map((widget) =>
     markRaw({
       i: widget.id,
-      xPercent: widget.defaultX / COLS,
-      yPercent: widget.defaultY / DEFAULT_MAX_ROWS,
+      xPercent: widget.defaultX,
+      yPercent: widget.defaultY,
       wPercent: widget.defaultWPercent,
       hPercent: widget.defaultHPercent,
       minWPercent: widget.minWidthPercent,
@@ -220,8 +220,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
     const wPercent = widget.defaultWPercent;
     const hPercent = widget.defaultHPercent;
-    const defaultX = widget.defaultX / COLS;
-    const defaultY = widget.defaultY / DEFAULT_MAX_ROWS;
+    const defaultX = widget.defaultX;
+    const defaultY = widget.defaultY;
     const position =
       wouldCollide(defaultX, defaultY, wPercent, hPercent, layout.value)
         ? findFreePosition(wPercent, hPercent, layout.value)

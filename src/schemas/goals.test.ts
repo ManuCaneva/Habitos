@@ -63,6 +63,7 @@ describe("GoalSchema", () => {
     sort_order: 0,
     created_at: validIso,
     updated_at: validIso,
+    archived_at: null,
   };
 
   it("acepta goal válido mínimo", () => {
@@ -98,7 +99,7 @@ describe("GoalSchema", () => {
   });
 
   it("rechaza unit demasiado largo", () => {
-    expect(() => GoalSchema.parse({ ...validGoal, unit: "a".repeat(21) })).toThrow();
+    expect(() => GoalSchema.parse({ ...validGoal, unit: "a".repeat(31) })).toThrow();
   });
 });
 
@@ -234,6 +235,7 @@ describe("GoalRowSchema", () => {
       sort_order: 0,
       created_at: "2026-06-27 10:00:00",
       updated_at: "2026-06-27 10:00:00",
+      archived_at: null,
     };
     const parsed = GoalRowSchema.parse(row);
     expect(parsed.title).toBe("  con espacios  ");
@@ -271,6 +273,7 @@ describe("rowToGoal", () => {
       sort_order: 0,
       created_at: "2026-06-27 10:00:00",
       updated_at: "2026-06-27 10:00:00",
+      archived_at: null,
     };
     const goal = rowToGoal(row);
     expect(goal.frequency).toEqual({ type: "daily" });
@@ -291,6 +294,7 @@ describe("rowToGoal", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     const goal = rowToGoal(row);
     expect(goal.frequency).toEqual({ type: "interval", interval_days: 7 });
@@ -310,6 +314,7 @@ describe("rowToGoal", () => {
       sort_order: 0,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     const goal = rowToGoal(row);
     expect(goal.frequency).toEqual({ type: "interval", interval_days: 1 });
@@ -384,6 +389,7 @@ describe("Round-trip", () => {
       sort_order: 5,
       created_at: validIso,
       updated_at: validIso,
+      archived_at: null,
     };
     const row = goalToRow(goal);
     const fullRow = {
@@ -399,6 +405,7 @@ describe("Round-trip", () => {
       sort_order: goal.sort_order,
       created_at: goal.created_at,
       updated_at: goal.updated_at,
+      archived_at: null,
     };
     const result = rowToGoal(fullRow);
     expect(result).toEqual(goal);

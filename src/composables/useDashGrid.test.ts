@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { snapToGrid } from "./useDashGrid";
+import { snapToGrid, applyGapToPixel, WIDGET_GAP } from "./useDashGrid";
 import type { GridDimensions } from "./useDashGrid";
 
 const dims: GridDimensions = {
@@ -82,5 +82,28 @@ describe("snapToGrid", () => {
     const result = snapToGrid(-100, -100, 100, 80, dims);
     expect(result.xPercent).toBe(0);
     expect(result.yPercent).toBe(0);
+  });
+});
+
+describe("applyGapToPixel", () => {
+  it("aplica WIDGET_GAP como inset: left/top + halfGap, width/height - gap", () => {
+    const result = applyGapToPixel(0, 0, 0.5, 0.4, 1200, 600, 4);
+    expect(result.left).toBe(2);
+    expect(result.top).toBe(2);
+    expect(result.width).toBe(596);
+    expect(result.height).toBe(236);
+  });
+
+  it("usa WIDGET_GAP por defecto", () => {
+    const result = applyGapToPixel(0, 0, 0.5, 0.4, 1200, 600);
+    expect(result.width).toBe(1200 * 0.5 - WIDGET_GAP);
+    expect(result.height).toBe(600 * 0.4 - WIDGET_GAP);
+  });
+
+  it("widgets adyacentes tienen gap total = WIDGET_GAP entre sí", () => {
+    const a = applyGapToPixel(0, 0, 0.5, 0.4, 1200, 600, 4);
+    const b = applyGapToPixel(0.5, 0, 0.5, 0.4, 1200, 600, 4);
+    const distanceBtw = b.left - (a.left + a.width);
+    expect(distanceBtw).toBe(4);
   });
 });

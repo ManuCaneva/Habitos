@@ -19,16 +19,13 @@ describe("NewHabitCard", () => {
     expect(wrapper.classes()).toContain("habit-card-responsive");
   });
 
-  it("texto 'Nuevo hábito' tiene clase new-habit-card-text", () => {
+  it("renderiza texto 'Nuevo hábito'", () => {
     const wrapper = mount(NewHabitCard);
-    const text = wrapper.find(".new-habit-card-text");
-    expect(text.exists()).toBe(true);
-    expect(text.text()).toContain("Nuevo hábito");
+    expect(wrapper.text()).toContain("Nuevo hábito");
   });
 
-  it("icono Plus tiene clase new-habit-card-icon", () => {
+  it("renderiza icono Plus", () => {
     const wrapper = mount(NewHabitCard);
-    const icon = wrapper.find(".new-habit-card-icon");
-    expect(icon.exists()).toBe(true);
+    expect(wrapper.find("svg").exists()).toBe(true);
   });
 });

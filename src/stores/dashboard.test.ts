@@ -150,6 +150,43 @@ describe("dashboard store", () => {
     expect(oldItem.wPercent).toBe(oldW);
   });
 
+  it("posiciones por defecto correctas: tasks a la derecha (x=0.5), goals debajo (y=0.4)", async () => {
+    const store = useDashboardStore();
+    await flush();
+    const tasks = store.layout.find((i) => i.i === "tasks")!;
+    expect(tasks.xPercent).toBeCloseTo(0.5);
+    expect(tasks.yPercent).toBeCloseTo(0);
+    const goals = store.layout.find((i) => i.i === "goals")!;
+    expect(goals.xPercent).toBeCloseTo(0);
+    expect(goals.yPercent).toBeCloseTo(0.4);
+  });
+
+  it("addWidget('goals') con layout parcial: solo habits", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([{ i: "habits", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 }]);
+    store.addWidget("goals");
+    const item = store.layout.find((i) => i.i === "goals");
+    expect(item).toBeDefined();
+    expect(item!.xPercent).toBeCloseTo(0);
+    expect(item!.yPercent).toBeCloseTo(0.4);
+    expect(item!.wPercent).toBeCloseTo(1);
+    expect(item!.hPercent).toBeCloseTo(0.3);
+  });
+
+  it("addWidget('tasks') con layout parcial: solo habits", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([{ i: "habits", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 }]);
+    store.addWidget("tasks");
+    const item = store.layout.find((i) => i.i === "tasks");
+    expect(item).toBeDefined();
+    expect(item!.xPercent).toBeCloseTo(0.5);
+    expect(item!.yPercent).toBeCloseTo(0);
+    expect(item!.wPercent).toBeCloseTo(0.5);
+    expect(item!.hPercent).toBeCloseTo(0.4);
+  });
+
   it("no agrega un widget duplicado", async () => {
     const store = useDashboardStore();
     await flush();

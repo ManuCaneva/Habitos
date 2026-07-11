@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import * as db from "@/lib/db";
 import {
   rowToGoal,
@@ -82,11 +82,19 @@ export const useGoalsStore = defineStore("goals", () => {
   const loading = ref(false);
   const lastError = ref<string | null>(null);
 
-  async function loadGoals(): Promise<void> {
+  const activeGoals = computed(() =>
+    goals.value.filter((g) => g.archived_at === null),
+  );
+
+  const archivedGoals = computed(() =>
+    goals.value.filter((g) => g.archived_at !== null),
+  );
+
+  async function loadGoals(includeArchived = false): Promise<void> {
     loading.value = true;
     lastError.value = null;
     try {
-      const rows: GoalRow[] = await db.listGoals();
+      const rows: GoalRow[] = await db.listGoals(includeArchived);
       goals.value = rows.map(rowToGoal);
     } catch (e) {
       lastError.value = e instanceof Error ? e.message : String(e);
@@ -121,6 +129,22 @@ export const useGoalsStore = defineStore("goals", () => {
     await db.deleteGoal(id);
     goals.value = goals.value.filter((g) => g.id !== id);
     logs.value = logs.value.filter((l) => l.goal_id !== id);
+  }
+
+  async function archiveGoal(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.archiveGoal(id, now);
+    goals.value = goals.value.map((g) =>
+      g.id === id ? { ...g, archived_at: now, updated_at: now } : g,
+    );
+  }
+
+  async function restoreGoal(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.restoreGoal(id, now);
+    goals.value = goals.value.map((g) =>
+      g.id === id ? { ...g, archived_at: null, updated_at: now } : g,
+    );
   }
 
   async function incrementLog(goalId: string, delta: number = 1): Promise<void> {
@@ -191,11 +215,15 @@ export const useGoalsStore = defineStore("goals", () => {
     logs,
     loading,
     lastError,
+    activeGoals,
+    archivedGoals,
     loadGoals,
     loadLogsForRange,
     createGoal,
     updateGoal,
     deleteGoal,
+    archiveGoal,
+    restoreGoal,
     incrementLog,
     setLogAmount,
     undoLog,

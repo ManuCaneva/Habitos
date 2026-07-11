@@ -50,6 +50,7 @@ pub struct TaskRow {
     pub sort_order: i32,
     pub created_at: String,
     pub updated_at: String,
+    pub archived_at: Option<String>,
 }
 
 fn row_to_task(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskRow> {
@@ -64,6 +65,7 @@ fn row_to_task(r: &rusqlite::Row<'_>) -> rusqlite::Result<TaskRow> {
         sort_order: r.get("sort_order")?,
         created_at: r.get("created_at")?,
         updated_at: r.get("updated_at")?,
+        archived_at: r.get("archived_at")?,
     })
 }
 
@@ -99,10 +101,15 @@ pub fn create_task(db: State<'_, Db>, input: CreateTaskInput) -> Result<TaskRow,
 }
 
 #[tauri::command]
-pub fn list_tasks(db: State<'_, Db>) -> Result<Vec<TaskRow>, String> {
+pub fn list_tasks(db: State<'_, Db>, include_archived: bool) -> Result<Vec<TaskRow>, String> {
     let result: DbResult<Vec<TaskRow>> = (|| {
         let conn = db.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT * FROM tasks ORDER BY sort_order ASC, created_at ASC")?;
+        let sql = if include_archived {
+            "SELECT * FROM tasks ORDER BY sort_order ASC, created_at ASC"
+        } else {
+            "SELECT * FROM tasks WHERE archived_at IS NULL ORDER BY sort_order ASC, created_at ASC"
+        };
+        let mut stmt = conn.prepare(sql)?;
         let rows = stmt.query_map([], row_to_task)?;
         let mut out = Vec::new();
         for r in rows {
@@ -158,6 +165,38 @@ pub fn delete_task(db: State<'_, Db>, id: String) -> Result<(), String> {
     let result: DbResult<()> = (|| {
         let conn = db.conn.lock().unwrap();
         let n = conn.execute("DELETE FROM tasks WHERE id = ?1", params![id])?;
+        if n == 0 {
+            return Err(DbError::NotFound);
+        }
+        Ok(())
+    })();
+    result.to_str_err()
+}
+
+#[tauri::command]
+pub fn archive_task(db: State<'_, Db>, id: String, archived_at: String) -> Result<(), String> {
+    let result: DbResult<()> = (|| {
+        let conn = db.conn.lock().unwrap();
+        let n = conn.execute(
+            "UPDATE tasks SET archived_at = ?2, updated_at = ?2 WHERE id = ?1",
+            params![id, archived_at],
+        )?;
+        if n == 0 {
+            return Err(DbError::NotFound);
+        }
+        Ok(())
+    })();
+    result.to_str_err()
+}
+
+#[tauri::command]
+pub fn restore_task(db: State<'_, Db>, id: String, updated_at: String) -> Result<(), String> {
+    let result: DbResult<()> = (|| {
+        let conn = db.conn.lock().unwrap();
+        let n = conn.execute(
+            "UPDATE tasks SET archived_at = NULL, updated_at = ?2 WHERE id = ?1",
+            params![id, updated_at],
+        )?;
         if n == 0 {
             return Err(DbError::NotFound);
         }

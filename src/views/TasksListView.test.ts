@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { ref } from "vue";
 import TasksListView from "./TasksListView.vue";
 
-const tasksState = ref<{ id: string; title: string; description?: string | null; color: string; status: string; due_date?: string | null; steps: any[] }[]>([]);
+const tasksState = ref<{ id: string; title: string; description?: string | null; color: string; status: string; due_date?: string | null; steps: any[]; archived_at?: string | null }[]>([]);
 const tasksMock = {
   get tasks() {
     return tasksState.value;
@@ -32,126 +32,69 @@ describe("TasksListView", () => {
     uiMock.menuOpenForTaskId.value = null;
   });
 
-  it("should render with data-testid='tasks-panel'", () => {
+  it("usa EntityListing con título 'Tareas'", () => {
     const wrapper = mount(TasksListView);
-    const panel = wrapper.find("[data-testid='tasks-panel']");
-    expect(panel.exists()).toBe(true);
+    const listing = wrapper.findComponent({ name: "EntityListing" });
+    expect(listing.exists()).toBe(true);
+    expect(listing.props("title")).toBe("Tareas");
   });
 
-  it("should render header with 'Tareas' title", () => {
+  it("panel tiene data-testid", () => {
+    const wrapper = mount(TasksListView);
+    expect(wrapper.find("[data-testid='tasks-panel']").exists()).toBe(true);
+  });
+
+  it("muestra título 'Tareas'", () => {
     const wrapper = mount(TasksListView);
     expect(wrapper.text()).toContain("Tareas");
   });
 
-  it("should render task count in header", () => {
+  it("no muestra contador", () => {
     tasksState.value = [
-      {
-        id: "task-1",
-        title: "Task 1",
-        description: null,
-        color: "#ff0000",
-        status: "todo",
-        due_date: null,
-        steps: [],
-      },
+      { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
     ];
     const wrapper = mount(TasksListView);
-    expect(wrapper.text()).toContain("1");
+    expect(wrapper.text()).not.toContain("·");
   });
 
-  it("should render TaskCard for each task", () => {
+  it("renderiza TaskCard por cada tarea", () => {
     tasksState.value = [
-      {
-        id: "task-1",
-        title: "Task 1",
-        description: null,
-        color: "#ff0000",
-        status: "todo",
-        due_date: null,
-        steps: [],
-      },
-      {
-        id: "task-2",
-        title: "Task 2",
-        description: null,
-        color: "#00ff00",
-        status: "doing",
-        due_date: null,
-        steps: [],
-      },
+      { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
+      { id: "task-2", title: "Task 2", description: null, color: "#00ff00", status: "doing", due_date: null, steps: [], archived_at: null },
     ];
     const wrapper = mount(TasksListView);
-    const cards = wrapper.findAllComponents({ name: "TaskCard" });
-    expect(cards).toHaveLength(2);
+    expect(wrapper.findAllComponents({ name: "TaskCard" })).toHaveLength(2);
   });
 
-  it("should not render done tasks", () => {
+  it("no renderiza tareas done", () => {
     tasksState.value = [
-      {
-        id: "task-1",
-        title: "Task 1",
-        description: null,
-        color: "#ff0000",
-        status: "todo",
-        due_date: null,
-        steps: [],
-      },
-      {
-        id: "task-2",
-        title: "Task 2",
-        description: null,
-        color: "#00ff00",
-        status: "done",
-        due_date: null,
-        steps: [],
-      },
+      { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
+      { id: "task-2", title: "Task 2", description: null, color: "#00ff00", status: "done", due_date: null, steps: [], archived_at: null },
     ];
     const wrapper = mount(TasksListView);
-    const cards = wrapper.findAllComponents({ name: "TaskCard" });
-    expect(cards).toHaveLength(1);
+    expect(wrapper.findAllComponents({ name: "TaskCard" })).toHaveLength(1);
   });
 
-  it("should render NewTaskCard", () => {
+  it("renderiza NewTaskCard", () => {
     const wrapper = mount(TasksListView);
-    const newCard = wrapper.findComponent({ name: "NewTaskCard" });
-    expect(newCard.exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "NewTaskCard" }).exists()).toBe(true);
   });
 
-  it("should have TaskContextMenu in template", () => {
-    // TaskContextMenu is tested separately in TaskContextMenu.test.ts
-    // This test just verifies the component imports it
+  it("TaskContextMenu aparece cuando el menú está abierto", () => {
     tasksState.value = [
-      {
-        id: "task-1",
-        title: "Task 1",
-        description: null,
-        color: "#ff0000",
-        status: "todo",
-        due_date: null,
-        steps: [],
-      },
+      { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
     ];
     uiMock.menuOpenForTaskId.value = "task-1";
     const wrapper = mount(TasksListView);
-    // Component should exist and render without errors
     expect(wrapper.find("[data-testid='tasks-panel']").exists()).toBe(true);
   });
 
-  it("should not render TaskContextMenu when menu is closed", () => {
+  it("TaskContextMenu no aparece cuando el menú está cerrado", () => {
     tasksState.value = [
-      {
-        id: "task-1",
-        title: "Task 1",
-        description: null,
-        color: "#ff0000",
-        status: "todo",
-        due_date: null,
-        steps: [],
-      },
+      { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
     ];
     uiMock.menuOpenForTaskId.value = null;
     const wrapper = mount(TasksListView);
-    const contextMenu = wrapper.findComponent({ name: "TaskContextMenu" });
-    expect(contextMenu.exists()).toBe(false);
+    expect(wrapper.findComponent({ name: "TaskContextMenu" }).exists()).toBe(false);
   });
 });

@@ -53,6 +53,26 @@ export function snapToGrid(
   return { xPercent, yPercent, wPercent, hPercent };
 }
 
+export const WIDGET_GAP = 4;
+
+export function applyGapToPixel(
+  xPercent: number,
+  yPercent: number,
+  wPercent: number,
+  hPercent: number,
+  containerWidth: number,
+  containerHeight: number,
+  gap: number = WIDGET_GAP,
+): { left: number; top: number; width: number; height: number } {
+  const halfGap = gap / 2;
+  return {
+    left: xPercent * containerWidth + halfGap,
+    top: yPercent * containerHeight + halfGap,
+    width: wPercent * containerWidth - gap,
+    height: hPercent * containerHeight - gap,
+  };
+}
+
 export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
   const dims = ref<GridDimensions>({
     colWidth: 100,
