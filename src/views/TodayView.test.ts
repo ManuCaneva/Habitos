@@ -106,6 +106,12 @@ describe("TodayView", () => {
     expect(scrollContainer.classes()).toContain("overflow-auto");
   });
 
+  it("contenedor scrolleable tiene scrollbar-gutter-stable para evitar overlap", () => {
+    const wrapper = mount(TodayView);
+    const scrollContainer = wrapper.find("[data-testid='habits-scroll']");
+    expect(scrollContainer.classes()).toContain("scrollbar-gutter-stable");
+  });
+
   it("contenedor scrolleable tiene padding reducido (p-1.5 = 50% de p-3)", () => {
     const wrapper = mount(TodayView);
     const scrollContainer = wrapper.find("[data-testid='habits-scroll']");

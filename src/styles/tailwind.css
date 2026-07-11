@@ -117,6 +117,31 @@
   }
 }
 
+@layer utilities {
+  /* Reserva espacio para la scrollbar, evitando overlap con el contenido */
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+
+  /* Scrollbar más fina y consistente con el design system */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-4 rounded-full;
+    border: 1.5px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-hairline-tertiary;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -190,6 +215,79 @@
   .habits-header-responsive .habits-header-count {
     font-size: 0.625rem;
   }
+  /* En single column: ocultar scrollbar completamente */
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+  .scrollbar-gutter-stable::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    -webkit-appearance: none;
+  }
+  /* TaskCard responsive */
+  .task-card-responsive {
+    padding: 0.25rem;
+  }
+  .task-card-responsive .task-card-title {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  .task-card-responsive .task-card-description {
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  }
+  .task-card-responsive .task-card-steps {
+    font-size: 0.625rem;
+  }
+  .task-card-responsive .task-card-deadline {
+    font-size: 0.625rem;
+  }
+  /* NewTaskCard responsive */
+  .task-card-responsive.new-task-card {
+    min-height: 2rem;
+    padding: 0.25rem;
+    gap: 0.125rem;
+  }
+  .task-card-responsive.new-task-card .new-task-card-icon {
+    width: 10px;
+    height: 10px;
+  }
+  .task-card-responsive.new-task-card .new-task-card-text {
+    font-size: 0.625rem;
+  }
+  /* GoalCard responsive */
+  .goal-card-responsive {
+    padding: 0.25rem;
+  }
+  .goal-card-responsive .goal-card-title {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  .goal-card-responsive .goal-card-description {
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  }
+  .goal-card-responsive .goal-card-progress {
+    font-size: 0.625rem;
+  }
+  .goal-card-responsive .goal-card-frequency {
+    font-size: 0.625rem;
+  }
+  /* NewGoalCard responsive */
+  .goal-card-responsive.new-goal-card {
+    min-height: 2rem;
+    padding: 0.25rem;
+    gap: 0.125rem;
+  }
+  .goal-card-responsive.new-goal-card .new-goal-card-icon {
+    width: 10px;
+    height: 10px;
+  }
+  .goal-card-responsive.new-goal-card .new-goal-card-text {
+    font-size: 0.625rem;
+  }
 }
 
 @container (max-width: 140px) {
@@ -212,5 +310,16 @@
   }
   .habits-header-responsive .habits-header-title {
     font-size: 0.625rem;
+  }
+  /* En contenedores muy chicos: ocultar scrollbar completamente */
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+  .scrollbar-gutter-stable::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    -webkit-appearance: none;
   }
 }

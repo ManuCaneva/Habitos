@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { shallowRef, markRaw } from "vue";
-import { useStorage } from "@vueuse/core";
 import { widgets, getWidgetById } from "@/lib/dashboardWidgets";
+import { saveConfig, loadConfig } from "@/lib/db";
 
 const COLS = 12;
 const DEFAULT_MAX_ROWS = 10;
@@ -166,13 +166,22 @@ function validateLayout(raw: unknown): Layout | null {
 }
 
 export const useDashboardStore = defineStore("dashboard", () => {
-  const savedLayout = useStorage<Layout | null>(STORAGE_KEY, null);
+  const layout = shallowRef<Layout>(getDefaultLayout());
 
-  const validated = validateLayout(savedLayout.value);
-  const layout = shallowRef<Layout>(validated ?? getDefaultLayout());
+  loadConfig(STORAGE_KEY).then((raw) => {
+    if (raw !== null) {
+      try {
+        const parsed = JSON.parse(raw);
+        const validated = validateLayout(parsed);
+        if (validated) layout.value = validated;
+      } catch {
+        // datos corruptos → usar default
+      }
+    }
+  });
 
   function persist() {
-    savedLayout.value = [...layout.value];
+    saveConfig(STORAGE_KEY, JSON.stringify(layout.value)).catch(() => {});
   }
 
   function updateLayout(newLayout: Layout) {

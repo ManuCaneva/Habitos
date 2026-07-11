@@ -12,6 +12,23 @@ vi.mock("@/stores/habits", () => ({
   }),
 }));
 
+vi.mock("@/stores/tasks", () => ({
+  useTasksStore: () => ({
+    loadTasks: vi.fn(),
+    tasks: [],
+    pendingTasks: [],
+  }),
+}));
+
+vi.mock("@/stores/goals", () => ({
+  useGoalsStore: () => ({
+    loadGoals: vi.fn(),
+    loadLogsForRange: vi.fn(),
+    goals: [],
+    logs: [],
+  }),
+}));
+
 vi.mock("@/stores/ui", () => ({
   useUiStore: () => ({
     viewMode: "dashboard",
@@ -37,7 +54,15 @@ vi.mock("@/components/layout/Sidebar.vue", () => ({
 }));
 
 vi.mock("@/components/habits/HabitFormModal.vue", () => ({
-  default: { template: '<div data-testid="mock-modal" />' },
+  default: { template: '<div data-testid="mock-habit-modal" />' },
+}));
+
+vi.mock("@/components/tasks/TaskFormModal.vue", () => ({
+  default: { template: '<div data-testid="mock-task-modal" />' },
+}));
+
+vi.mock("@/components/goals/GoalFormModal.vue", () => ({
+  default: { template: '<div data-testid="mock-goal-modal" />' },
 }));
 
 describe("App layout", () => {

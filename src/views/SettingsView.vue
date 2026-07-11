@@ -13,7 +13,7 @@ function onToggle(value: boolean) {
 </script>
 
 <template>
-  <main class="h-full overflow-y-auto px-6 py-section max-w-2xl mx-auto flex flex-col gap-6">
+  <main class="scrollbar-gutter-stable h-full overflow-y-auto px-6 py-section max-w-2xl mx-auto flex flex-col gap-6">
     <Heading variant="headline">Settings</Heading>
 
     <Card variant="default" padding="md">

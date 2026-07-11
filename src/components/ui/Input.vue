@@ -7,7 +7,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: string;
     placeholder?: string;
-    type?: "text" | "email" | "password" | "number" | "url" | "search";
+    type?: "text" | "email" | "password" | "number" | "url" | "search" | "date";
     size?: Size;
     disabled?: boolean;
     error?: string;

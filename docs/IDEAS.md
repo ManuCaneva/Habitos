@@ -10,6 +10,51 @@ Transformar la app de hábitos en una **aplicación centralizada de productivida
 
 ---
 
+## 0. Widgets del Dashboard (PRIORIDAD MÁXIMA)
+
+> **Concepto**: El dashboard será una grilla de **contenedores/widgets** independientes. Cada widget vive dentro de su propio contenedor y el usuario puede organizarlos, moverlos o esconderlos. Todo lo que sigue en esta sección son widgets que residen en el dashboard.
+
+### Widget: Tareas pendientes
+- Lista de tareas dentro de un contenedor en el dashboard
+- Cada tarea puede tener:
+  - **Pasos / sub-tareas**: checklist anidada dentro de la tarea
+  - **Color asignable**: el usuario elige un color para categorizar o priorizar visualmente
+  - **Descripción**: campo de texto con detalles de la tarea
+  - **Fecha de finalización**: deadline
+  - **Contador de falta**: mostrar visualmente cuánto falta para la fecha de vencimiento (ej: "Faltan 3 días", barra de progreso, indicador de urgencia)
+- Todo dentro de un contenedor widget en el dashboard
+
+### Widget: Objetivos
+- Seguimiento de objetivos del estilo: "Estudiar 30 min por día" o "Leer 10 páginas por día" (estos son solo ejemplos; la idea son plantearse objetivos según las necesidades del usuario)
+- **Diferencia con hábitos**: los objetivos se cumplen cuando pasan **cosas específicas** (ej: leí 10 páginas, estudié un tema), no son simplemente un check diario binario
+- Cada objetivo puede tener:
+  - Descripción de qué se necesita cumplir
+  - Métrica de progreso (ej: 7/10 páginas hoy)
+  - Frecuencia (diario, semanal, etc.).
+  - Indicador visual de cumplimiento
+- Todo dentro de un contenedor widget en el dashboard
+
+### Widget: Calendario anual
+- Vista de calendario anual completo (los 12 meses en grid)
+- **Conexión con Google Calendar**: sincronización para traer eventos externos
+- Marcadores visuales para días con tareas, objetivos o eventos
+- Navegación entre años
+- Todo dentro de un contenedor widget en el dashboard
+
+### Widget: Cronograma semanal
+- Grilla de **días vs franjas horarias** (ejes: días de la semana cruzados con horarios)
+- Permite colocar **bloques de actividades** en slots específicos:
+  - Materias / cursos
+  - Gimnasio
+  - Trabajo
+  - Cualquier actividad recurrente
+- Drag & drop para mover bloques
+- Bloques coloreables por categoría
+- Vista semanal con scroll vertical en el eje de tiempo
+- Todo dentro de un contenedor widget en el dashboard
+
+---
+
 ## 1. Core de gestión del tiempo
 
 ### Calendario integrado
@@ -155,6 +200,7 @@ Sesiones de estudio/productividad con temporizador pomodoro configurable.
 
 | Fase | Features | Por qué primero |
 |------|----------|------------------|
+| 0 | **Widgets del Dashboard** (Tareas pendientes, Objetivos, Calendario anual, Cronograma semanal) | Es la base de la app centralizada. Todo vive como widgets en el dashboard. |
 | 1 | **Tareas** (prioridades, estados, sub-tareas) | Llena el gap más grande junto a hábitos |
 | 2 | **Calendario** | Ya tenemos fechas, se integra naturalmente |
 | 3 | **Proyectos** | Agrupa tareas + hábitos bajo un contexto |
@@ -169,3 +215,9 @@ Sesiones de estudio/productividad con temporizador pomodoro configurable.
 ## Notas abiertas
 
 - *Agregar aquí decisiones de diseño, dudas pendientes, o ideas que surjan durante el desarrollo.*
+
+### Multi-check-in progresivo (hábitos con múltiples repeticiones por día)
+
+Un hábito puede requerir N repeticiones por día (ej: "Tomar 8 vasos de agua", "Hacer 3 series de ejercicio"). Cada tap en el botón de check-in incrementa un contador visual. El color del botón se llena progresivamente (opacity/shade) hasta alcanzar el color completo cuando se llega al target. No es binario check/uncheck — es un contador con feedback visual gradual.
+
+**Estado**: No implementado. La frecuencia queda hardcodeada en `daily` por ahora. El schema ya soporta `target_per_period` y `frequency_type`, pero la UI no lo expone.

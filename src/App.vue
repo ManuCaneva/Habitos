@@ -1,18 +1,32 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useHabitsStore } from "@/stores/habits";
+import { useTasksStore } from "@/stores/tasks";
+import { useGoalsStore } from "@/stores/goals";
 import { useUiStore } from "@/stores/ui";
 import Sidebar from "@/components/layout/Sidebar.vue";
 import DashboardView from "@/components/dashboard/DashboardView.vue";
 import ArchivedView from "@/views/ArchivedView.vue";
 import SettingsView from "@/views/SettingsView.vue";
 import HabitFormModal from "@/components/habits/HabitFormModal.vue";
+import TaskFormModal from "@/components/tasks/TaskFormModal.vue";
+import GoalFormModal from "@/components/goals/GoalFormModal.vue";
 
-const store = useHabitsStore();
+const habits = useHabitsStore();
+const tasks = useTasksStore();
+const goals = useGoalsStore();
 const ui = useUiStore();
 
-onMounted(() => {
-  store.loadInitialData();
+onMounted(async () => {
+  await habits.loadInitialData();
+  await tasks.loadTasks();
+  await goals.loadGoals();
+  const today = new Date();
+  const ninetyDaysAgo = new Date(today);
+  ninetyDaysAgo.setDate(today.getDate() - 90);
+  const fromDate = ninetyDaysAgo.toISOString().split("T")[0];
+  const toDate = today.toISOString().split("T")[0];
+  await goals.loadLogsForRange(fromDate, toDate);
 });
 </script>
 
@@ -29,5 +43,7 @@ onMounted(() => {
     </div>
 
     <HabitFormModal />
+    <TaskFormModal />
+    <GoalFormModal />
   </div>
 </template>

@@ -72,7 +72,6 @@ impl Db {
     }
 
     fn run_migrations(&self) -> DbResult<()> {
-        const V: i64 = 1;
         let conn = self.conn.lock().unwrap();
 
         conn.execute_batch(
@@ -83,25 +82,30 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let already_applied: bool = conn
-            .query_row(
-                "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = ?1)",
-                params![V],
-                |r| r.get(0),
-            )
-            .unwrap_or(false);
+        let migrations: [(i64, &str, &str); 3] = [
+            (1, "001_init", include_str!("migrations/001_init.sql")),
+            (2, "002_config", include_str!("migrations/002_config.sql")),
+            (3, "003_tasks_goals", include_str!("migrations/003_tasks_goals.sql")),
+        ];
 
-        if already_applied {
-            return Ok(());
+        for (version, name, sql) in &migrations {
+            let already_applied: bool = conn
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = ?1)",
+                    params![version],
+                    |r| r.get(0),
+                )
+                .unwrap_or(false);
+
+            if !already_applied {
+                conn.execute_batch(sql)
+                    .map_err(|e| DbError::Migration(format!("{name}.sql: {e}")))?;
+                conn.execute(
+                    "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                    params![version, now_iso8601()],
+                )?;
+            }
         }
-
-        conn.execute_batch(include_str!("migrations/001_init.sql"))
-            .map_err(|e| DbError::Migration(format!("001_init.sql: {e}")))?;
-
-        conn.execute(
-            "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
-            params![V, now_iso8601()],
-        )?;
 
         Ok(())
     }

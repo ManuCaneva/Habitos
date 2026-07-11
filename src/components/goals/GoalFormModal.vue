@@ -1,46 +1,53 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useUiStore } from "@/stores/ui";
-import { useHabitsStore } from "@/stores/habits";
-import { HABIT_COLORS, DEFAULT_HABIT_COLOR } from "@/lib/habitColors";
-import { HABIT_ICONS, DEFAULT_HABIT_ICON } from "@/lib/icons";
+import { useGoalsStore } from "@/stores/goals";
+import { HABIT_COLORS } from "@/lib/habitColors";
+import type { GoalFrequency } from "@/schemas/goals";
 import Modal from "@/components/ui/Modal.vue";
 import Input from "@/components/ui/Input.vue";
 import Textarea from "@/components/ui/Textarea.vue";
 import Button from "@/components/ui/Button.vue";
 import Text from "@/components/ui/Text.vue";
+import FrequencySelector from "@/components/ui/FrequencySelector.vue";
 
 const ui = useUiStore();
-const habits = useHabitsStore();
+const goals = useGoalsStore();
 
 const editing = computed(() => {
-  if (!ui.editingHabitId) return null;
-  return habits.habits.find((h) => h.id === ui.editingHabitId) ?? null;
+  if (!ui.editingGoalId) return null;
+  return goals.goals.find((g) => g.id === ui.editingGoalId) ?? null;
 });
 
 const isEdit = computed(() => editing.value !== null);
 
-const name = ref("");
+const title = ref("");
 const description = ref("");
-const color = ref<string>(DEFAULT_HABIT_COLOR);
-const icon = ref<string>(DEFAULT_HABIT_ICON);
+const color = ref<string>(HABIT_COLORS[0].value);
+const target = ref<number>(10);
+const unit = ref<string>("");
+const frequency = ref<GoalFrequency>({ type: "daily" });
 const error = ref<string | null>(null);
 const saving = ref(false);
 
 watch(
-  () => [ui.createHabitOpen, ui.editingHabitId] as const,
+  () => [ui.createGoalOpen, ui.editingGoalId] as const,
   ([open]) => {
     if (open) {
       if (editing.value) {
-        name.value = editing.value.name;
+        title.value = editing.value.title;
         description.value = editing.value.description ?? "";
         color.value = editing.value.color;
-        icon.value = editing.value.icon ?? DEFAULT_HABIT_ICON;
+        target.value = editing.value.target;
+        unit.value = editing.value.unit ?? "";
+        frequency.value = editing.value.frequency;
       } else {
-        name.value = "";
+        title.value = "";
         description.value = "";
-        color.value = DEFAULT_HABIT_COLOR;
-        icon.value = DEFAULT_HABIT_ICON;
+        color.value = HABIT_COLORS[0].value;
+        target.value = 10;
+        unit.value = "";
+        frequency.value = { type: "daily" };
       }
       error.value = null;
     }
@@ -49,32 +56,42 @@ watch(
 
 async function handleSubmit(e: Event) {
   e.preventDefault();
-  const trimmed = name.value.trim();
-  if (!trimmed) {
-    error.value = "El nombre no puede estar vacío.";
+  const trimmedTitle = title.value.trim();
+  if (!trimmedTitle) {
+    error.value = "El título no puede estar vacío.";
     return;
   }
+  if (target.value < 1) {
+    error.value = "El objetivo debe ser al menos 1.";
+    return;
+  }
+
   saving.value = true;
   error.value = null;
   const desc = description.value.trim() || null;
+  const unitValue = unit.value.trim() || null;
+
   try {
     if (editing.value) {
-      await habits.updateHabit(editing.value.id, {
-        name: trimmed,
+      await goals.updateGoal(editing.value.id, {
+        title: trimmedTitle,
         description: desc,
         color: color.value,
-        icon: icon.value,
+        target: target.value,
+        unit: unitValue,
+        frequency: frequency.value,
       });
     } else {
-      await habits.createHabit({
-        name: trimmed,
+      await goals.createGoal({
+        title: trimmedTitle,
         description: desc,
         color: color.value,
-        icon: icon.value,
-        frequency: { type: "daily", target_per_period: 1 },
+        target: target.value,
+        unit: unitValue,
+        frequency: frequency.value,
       });
     }
-    ui.closeModal();
+    ui.closeGoalModal();
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -84,19 +101,19 @@ async function handleSubmit(e: Event) {
 </script>
 
 <template>
-  <Modal :open="ui.createHabitOpen" size="md" @close="ui.closeModal()">
+  <Modal :open="ui.createGoalOpen" size="md" @close="ui.closeGoalModal()">
     <form @submit="handleSubmit">
       <div class="px-5 py-4 border-b border-hairline">
         <Text variant="card-title" as="h2">
-          {{ isEdit ? "Editar hábito" : "Nuevo hábito" }}
+          {{ isEdit ? "Editar objetivo" : "Nuevo objetivo" }}
         </Text>
       </div>
 
       <div class="px-5 py-5 flex flex-col gap-5">
         <Input
-          v-model="name"
-          label="Nombre"
-          placeholder="Ej: Leer 20 minutos"
+          v-model="title"
+          label="Título"
+          placeholder="Ej: Leer 30 minutos"
           :error="error ?? undefined"
           maxlength="100"
           required
@@ -105,33 +122,37 @@ async function handleSubmit(e: Event) {
         <Textarea
           v-model="description"
           label="Descripción"
-          placeholder="Ej: Leer al menos 20 páginas de un libro"
+          placeholder="Ej: Leer al menos 30 minutos de un libro"
           maxlength="500"
           :rows="2"
         />
 
-        <div class="flex flex-col gap-2">
-          <Text variant="body-sm" color="muted">Ícono</Text>
-          <div class="grid grid-cols-8 gap-1">
-            <button
-              v-for="i in HABIT_ICONS"
-              :key="i.value"
-              data-testid="icon-option"
-              type="button"
-              :title="i.name"
-              :aria-label="i.name"
-              :aria-pressed="icon === i.value"
-              :class="[
-                'p-2 rounded-md flex items-center justify-center',
-                icon === i.value
-                  ? 'selected bg-primary text-white'
-                  : 'bg-surface-1 text-ink',
-              ]"
-              @click="icon = i.value"
-            >
-              <component :is="i.icon" :size="18" />
-            </button>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="block text-sm font-medium mb-1">Meta</label>
+            <input
+              v-model.number="target"
+              type="number"
+              min="1"
+              required
+              class="w-full px-3 py-2 bg-surface-1 border border-hairline rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
           </div>
+          <div class="flex-1">
+            <label class="block text-sm font-medium mb-1">Unidad</label>
+            <input
+              v-model="unit"
+              type="text"
+              placeholder="Ej: páginas, minutos"
+              maxlength="20"
+              class="w-full px-3 py-2 bg-surface-1 border border-hairline rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Text variant="body-sm" color="muted">Frecuencia</Text>
+          <FrequencySelector v-model="frequency" />
         </div>
 
         <div class="flex flex-col gap-2">
@@ -140,6 +161,7 @@ async function handleSubmit(e: Event) {
             <button
               v-for="c in HABIT_COLORS"
               :key="c.value"
+              data-testid="color-option"
               type="button"
               :title="c.name"
               :aria-label="c.name"
@@ -166,7 +188,7 @@ async function handleSubmit(e: Event) {
           variant="tertiary"
           size="md"
           :disabled="saving"
-          @click="ui.closeModal()"
+          @click="ui.closeGoalModal()"
         >
           Cancelar
         </Button>

@@ -9,7 +9,7 @@ const list = computed(() => habits.archivedHabits);
 </script>
 
 <template>
-  <main class="h-full overflow-y-auto">
+  <main class="h-full overflow-y-auto scrollbar-gutter-stable">
     <div v-if="list.length === 0" class="flex items-center justify-center py-section">
       <Text variant="subhead" color="muted">No tenés hábitos archivados.</Text>
     </div>

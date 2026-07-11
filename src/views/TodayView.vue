@@ -23,7 +23,7 @@ const activeCount = computed(() => list.value.length);
       <Text variant="card-title" weight="600" class="habits-header-title">Hábitos</Text>
       <Text variant="body-sm" color="muted" class="habits-header-count">· {{ activeCount }}</Text>
     </div>
-    <div data-testid="habits-scroll" class="flex-1 overflow-auto p-1.5">
+    <div data-testid="habits-scroll" class="flex-1 overflow-auto p-1.5 scrollbar-gutter-stable">
       <HabitSection variant="flat">
         <EmptyState v-if="list.length === 0" />
         <div v-else class="flex flex-col gap-1">

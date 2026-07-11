@@ -25,6 +25,8 @@ vi.mock("@/composables/useDashDrag", () => ({
 vi.mock("@/lib/db", () => ({
   listHabits: vi.fn().mockResolvedValue([]),
   listLogsInRange: vi.fn().mockResolvedValue([]),
+  loadConfig: vi.fn().mockResolvedValue(null),
+  saveConfig: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/stores/habits", () => ({

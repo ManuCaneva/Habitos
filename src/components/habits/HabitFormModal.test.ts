@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { ref } from "vue";
 import HabitFormModal from "./HabitFormModal.vue";
 
-const habitsState = ref<{ id: string; name: string; color: string; icon: string | null }[]>([]);
+const habitsState = ref<{ id: string; name: string; description?: string | null; color: string; icon: string | null }[]>([]);
 const habitsMock = {
   get habits() {
     return habitsState.value;
@@ -68,6 +68,16 @@ function setInputValue(form: HTMLFormElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setTextareaValue(form: HTMLFormElement, value: string) {
+  const textarea = form.querySelector("textarea")!;
+  const nativeSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLTextAreaElement.prototype,
+    "value",
+  )!.set!;
+  nativeSetter.call(textarea, value);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 describe("HabitFormModal", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -111,6 +121,32 @@ describe("HabitFormModal", () => {
     await flushPromises();
     expect(habitsMock.createHabit).toHaveBeenCalledWith(
       expect.objectContaining({ icon: expect.any(String) }),
+    );
+  });
+
+  it("incluye description en el draft de creación", async () => {
+    const w = mountModal();
+    const form = getForm();
+    setInputValue(form, "Test habit");
+    await w.vm.$nextTick();
+    setTextareaValue(form, "Mi descripción");
+    await w.vm.$nextTick();
+    form.requestSubmit();
+    await flushPromises();
+    expect(habitsMock.createHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "Mi descripción" }),
+    );
+  });
+
+  it("envía description null cuando está vacía", async () => {
+    const w = mountModal();
+    const form = getForm();
+    setInputValue(form, "Test habit");
+    await w.vm.$nextTick();
+    form.requestSubmit();
+    await flushPromises();
+    expect(habitsMock.createHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ description: null }),
     );
   });
 
@@ -162,6 +198,43 @@ describe("HabitFormModal", () => {
           color: "#eb5757",
           icon: expect.any(String),
         }),
+      );
+    });
+
+    it("pre-llena la descripción en modo edición", async () => {
+      habitsState.value = [
+        { id: "h1", name: "Meditar", description: "Respirar profundo", color: "#5e6ad2", icon: "footprints" },
+      ];
+      uiState.createHabitOpen.value = false;
+      uiState.editingHabitId.value = null;
+      mountModal();
+      await flushPromises();
+      uiState.editingHabitId.value = "h1";
+      uiState.createHabitOpen.value = true;
+      await flushPromises();
+      const textarea = getForm().querySelector<HTMLTextAreaElement>("textarea")!;
+      expect(textarea.value).toBe("Respirar profundo");
+    });
+
+    it("incluye description en el updateHabit", async () => {
+      habitsState.value = [
+        { id: "h1", name: "Meditar", description: "Antes", color: "#5e6ad2", icon: "footprints" },
+      ];
+      uiState.createHabitOpen.value = false;
+      uiState.editingHabitId.value = null;
+      const w = mountModal();
+      await flushPromises();
+      uiState.editingHabitId.value = "h1";
+      uiState.createHabitOpen.value = true;
+      await flushPromises();
+      const form = getForm();
+      setTextareaValue(form, "Después");
+      await w.vm.$nextTick();
+      form.requestSubmit();
+      await flushPromises();
+      expect(habitsMock.updateHabit).toHaveBeenCalledWith(
+        "h1",
+        expect.objectContaining({ description: "Después" }),
       );
     });
 
