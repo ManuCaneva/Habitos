@@ -9,6 +9,7 @@ export const CalendarEventSchema = z.object({
   calendarId: z.string(),
   start: z.string(),
   end: z.string(),
+  description: z.string().optional(),
 });
 
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>;
@@ -33,6 +34,7 @@ const GcalEventItemSchema = z.object({
   start: GcalDateTimeSchema,
   end: GcalDateTimeSchema,
   colorId: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export const GcalEventApiResponseSchema = z.object({

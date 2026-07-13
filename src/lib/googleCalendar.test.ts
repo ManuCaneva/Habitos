@@ -25,6 +25,13 @@ describe("googleCalendar", () => {
     });
   });
 
+  describe("buildEventCreateUrl", () => {
+    it("construye URL para crear evento", () => {
+      const url = buildEventsListUrl("primary", "", "").split("?")[0]; // Base URL of events
+      expect(url).toBe("https://www.googleapis.com/calendar/v3/calendars/primary/events");
+    });
+  });
+
   describe("mapGcalEventsToDomain", () => {
     it("mapea items a CalendarEvent[]", () => {
       const items = [
@@ -34,6 +41,7 @@ describe("googleCalendar", () => {
           start: { dateTime: "2026-01-15T10:00:00-03:00" },
           end: { dateTime: "2026-01-15T11:00:00-03:00" },
           colorId: "1",
+          description: "Test description",
         },
         {
           id: "evt2",
@@ -50,10 +58,12 @@ describe("googleCalendar", () => {
       expect(events[0].title).toBe("Reunión");
       expect(events[0].color).toBe("#7986cb");
       expect(events[0].calendarId).toBe("primary");
+      expect(events[0].description).toBe("Test description");
 
       expect(events[1].date).toBe("2026-01-20");
       expect(events[1].title).toBe("Todo el día");
       expect(events[1].color).toBe("#5e6ad2");
+      expect(events[1].description).toBeUndefined();
     });
 
     it("usa el color del calendario si no hay colorId", () => {

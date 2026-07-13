@@ -26,6 +26,7 @@ export function mapGcalEventsToDomain(
     start: { dateTime?: string; date?: string };
     end: { dateTime?: string; date?: string };
     colorId?: string;
+    description?: string;
   }>,
   calendarId: string,
   calendarColor: string,
@@ -41,6 +42,7 @@ export function mapGcalEventsToDomain(
       calendarId,
       start: item.start.dateTime ?? item.start.date ?? "",
       end: item.end.dateTime ?? item.end.date ?? "",
+      description: item.description,
     };
   });
 }

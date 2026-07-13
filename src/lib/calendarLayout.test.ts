@@ -29,6 +29,20 @@ describe("calendarLayout", () => {
       expect(result!.showsAll).toBe(false);
       expect(result!.visibleSlots).toBeLessThan(12);
     });
+
+    it("targets exactly 6 months (1 semester) when all 12 don't fit", () => {
+      const result = computeForCols(1, 150, 360);
+      expect(result).not.toBeNull();
+      expect(result!.showsAll).toBe(false);
+      expect(result!.visibleSlots).toBe(6);
+    });
+
+    it("always targets exactly 6 months for a 1-column layout even with plenty of space", () => {
+      const result = computeForCols(1, 150, 1000);
+      expect(result).not.toBeNull();
+      expect(result!.showsAll).toBe(false);
+      expect(result!.visibleSlots).toBe(6);
+    });
   });
 
   describe("computeLayout", () => {

@@ -38,12 +38,32 @@ describe("MonthMini", () => {
     expect(realDays.length).toBe(31); // enero tiene 31 días
   });
 
-  it("muestra el nombre del mes en el tooltip cuando se pasa monthName", () => {
+  it("no muestra el nombre del mes en el tooltip principal", () => {
     const wrapper = mount(MonthMini, {
       props: { year: 2026, month: 0, eventsByDate, monthName: "enero" },
     });
     const monthEl = wrapper.find("[data-testid='month-mini']");
-    expect(monthEl.attributes("title")).toBe("enero");
+    expect(monthEl.attributes("title")).toBeUndefined();
+  });
+
+  it("muestra el día exacto formateado en el tooltip de la celda de día", () => {
+    const wrapper = mount(MonthMini, {
+      props: { year: 2026, month: 0, eventsByDate },
+    });
+    const cells = wrapper.findAll("[data-testid='day-cell']");
+    const cell15 = cells[14]; // 15 de Enero
+    expect(cell15.attributes("title")).toBe("15 de Enero");
+  });
+
+  it("emite select-day al hacer clic en una celda con fecha", async () => {
+    const wrapper = mount(MonthMini, {
+      props: { year: 2026, month: 0, eventsByDate },
+    });
+    const cells = wrapper.findAll("[data-testid='day-cell']");
+    const cell15 = cells[14];
+    await cell15.trigger("click");
+    expect(wrapper.emitted("select-day")).toBeTruthy();
+    expect(wrapper.emitted("select-day")![0]).toEqual(["2026-01-15"]);
   });
 
   it("renderiza el nombre del mes como texto cuando se pasa monthName", () => {

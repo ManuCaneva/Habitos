@@ -35,7 +35,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "var(--font-sans)",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
@@ -43,7 +43,7 @@ const config: Config = {
           "sans-serif",
         ],
         mono: [
-          "JetBrains Mono",
+          "var(--font-mono)",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
@@ -51,13 +51,13 @@ const config: Config = {
         ],
       },
       fontSize: {
-        "display-xl": ["80px", { lineHeight: "1.05", letterSpacing: "-0.0375em", fontWeight: "600" }],
-        "display-lg": ["56px", { lineHeight: "1.10", letterSpacing: "-0.0321em", fontWeight: "600" }],
-        "display-md": ["40px", { lineHeight: "1.15", letterSpacing: "-0.025em", fontWeight: "600" }],
-        headline: ["28px", { lineHeight: "1.20", letterSpacing: "-0.0214em", fontWeight: "600" }],
-        "card-title": ["22px", { lineHeight: "1.25", letterSpacing: "-0.0182em", fontWeight: "500" }],
-        subhead: ["20px", { lineHeight: "1.40", letterSpacing: "-0.01em", fontWeight: "400" }],
-        "body-lg": ["18px", { lineHeight: "1.50", letterSpacing: "-0.0056em", fontWeight: "400" }],
+        "display-xl": ["clamp(2rem, 5vw, 5rem)", { lineHeight: "1.05", letterSpacing: "-0.0375em", fontWeight: "600" }],
+        "display-lg": ["clamp(1.75rem, 3.5vw, 3.5rem)", { lineHeight: "1.10", letterSpacing: "-0.0321em", fontWeight: "600" }],
+        "display-md": ["clamp(1.5rem, 2.5vw, 2.5rem)", { lineHeight: "1.15", letterSpacing: "-0.025em", fontWeight: "600" }],
+        headline: ["clamp(1.25rem, 1.75vw, 1.75rem)", { lineHeight: "1.20", letterSpacing: "-0.0214em", fontWeight: "600" }],
+        "card-title": ["clamp(1rem, 1.4vw, 1.375rem)", { lineHeight: "1.25", letterSpacing: "-0.0182em", fontWeight: "500" }],
+        subhead: ["clamp(0.9rem, 1.25vw, 1.25rem)", { lineHeight: "1.40", letterSpacing: "-0.01em", fontWeight: "400" }],
+        "body-lg": ["clamp(0.875rem, 1.125vw, 1.125rem)", { lineHeight: "1.50", letterSpacing: "-0.0056em", fontWeight: "400" }],
         body: ["16px", { lineHeight: "1.50", letterSpacing: "-0.0031em", fontWeight: "400" }],
         "body-sm": ["14px", { lineHeight: "1.50", letterSpacing: "0", fontWeight: "400" }],
         caption: ["12px", { lineHeight: "1.40", letterSpacing: "0", fontWeight: "400" }],

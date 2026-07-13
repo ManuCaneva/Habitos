@@ -17,6 +17,7 @@ import {
 import {
   GcalEventApiResponseSchema,
   type CalendarEvent,
+  CALENDAR_COLORS,
 } from "@/schemas/calendar";
 import { yearBounds } from "@/lib/calendarDates";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -30,7 +31,7 @@ const GCAL_REFRESH_TOKEN = "gcal_refresh_token";
 const GCAL_TOKEN_EXPIRY = "gcal_token_expiry";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+const SCOPES = "https://www.googleapis.com/auth/calendar";
 
 let _pendingState: { verifier: string; state: string } | null = null;
 let _unlisten: (() => void) | null = null;
@@ -41,6 +42,8 @@ export const useCalendarStore = defineStore("calendar", () => {
   const syncing = ref(false);
   const syncError = ref<string | null>(null);
   const events = ref<CalendarEvent[]>([]);
+  const localEvents = ref<CalendarEvent[]>([]);
+  const calendars = ref<{ id: string; summary: string; primary?: boolean; backgroundColor?: string }[]>([]);
 
   const accessToken = ref<string | null>(null);
   const refreshToken = ref<string | null>(null);
@@ -66,11 +69,6 @@ export const useCalendarStore = defineStore("calendar", () => {
   function getRedirectUri(): string {
     if (import.meta.env.DEV) {
       return "http://localhost:14202/oauth-callback";
-    }
-    const clientId = getClientId();
-    if (clientId && clientId.includes(".apps.googleusercontent.com")) {
-      const prefix = clientId.split(".")[0];
-      return `com.googleusercontent.apps.${prefix}:/oauth2redirect`;
     }
     return "com.aeon://oauth/callback";
   }
@@ -249,6 +247,22 @@ export const useCalendarStore = defineStore("calendar", () => {
     syncing.value = true;
     syncError.value = null;
     try {
+      const localJson = await loadConfig("local-calendar-events");
+      if (localJson) {
+        try {
+          localEvents.value = JSON.parse(localJson);
+        } catch {
+          localEvents.value = [];
+        }
+      } else {
+        localEvents.value = [];
+      }
+
+      if (!connected.value) {
+        events.value = [...localEvents.value].sort((a, b) => a.date.localeCompare(b.date));
+        return;
+      }
+
       const token = await ensureAccessToken();
 
       const calRes = await fetch(buildCalendarListUrl(), {
@@ -258,6 +272,7 @@ export const useCalendarStore = defineStore("calendar", () => {
         throw new Error("Failed to fetch calendars");
       }
       const calData = await calRes.json();
+      calendars.value = calData.items ?? [];
       const calendarColors = mapCalendarListToColors(calData.items ?? []);
       const calendarIds: string[] = (calData.items ?? []).map(
         (c: { id: string }) => c.id,
@@ -269,19 +284,20 @@ export const useCalendarStore = defineStore("calendar", () => {
       await Promise.all(
         calendarIds.map(async (cid: string) => {
           try {
-            const evRes = await fetch(buildEventsListUrl(cid, start, end), {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!evRes.ok) return;
-            const raw = await evRes.json();
-            const evData = GcalEventApiResponseSchema.parse(raw);
-            const calColor = calendarColors.get(cid) ?? "#5e6ad2";
-            const mapped = mapGcalEventsToDomain(evData.items, cid, calColor);
-            allEvents.push(...mapped);
+             const evRes = await fetch(buildEventsListUrl(cid, start, end), {
+               headers: { Authorization: `Bearer ${token}` },
+             });
+             if (!evRes.ok) return;
+             const raw = await evRes.json();
+             const evData = GcalEventApiResponseSchema.parse(raw);
+             const calColor = calendarColors.get(cid) ?? "#5e6ad2";
+             const mapped = mapGcalEventsToDomain(evData.items, cid, calColor);
+             allEvents.push(...mapped);
           } catch {}
         }),
       );
 
+      allEvents.push(...localEvents.value);
       allEvents.sort((a, b) => a.date.localeCompare(b.date));
       events.value = allEvents;
     } catch (e) {
@@ -301,11 +317,17 @@ export const useCalendarStore = defineStore("calendar", () => {
   }
 
   async function loadPersistedConfig(): Promise<void> {
-    const [at, rt, exp] = await Promise.all([
+    const [at, rt, exp, localJson] = await Promise.all([
       loadConfig(GCAL_ACCESS_TOKEN),
       loadConfig(GCAL_REFRESH_TOKEN),
       loadConfig(GCAL_TOKEN_EXPIRY),
+      loadConfig("local-calendar-events"),
     ]);
+    if (localJson) {
+      try {
+        localEvents.value = JSON.parse(localJson);
+      } catch {}
+    }
     if (at && rt) {
       accessToken.value = at;
       refreshToken.value = rt;
@@ -365,6 +387,185 @@ export const useCalendarStore = defineStore("calendar", () => {
     _unlistenOauth = null;
   });
 
+  async function createEvent(
+    calendarId: string,
+    eventData: { title: string; description?: string; colorId?: string; start: string; end: string },
+  ): Promise<void> {
+    syncing.value = true;
+    syncError.value = null;
+    try {
+      if (calendarId === "local" || !connected.value) {
+        const eventId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const calendarColor = eventData.colorId ? (CALENDAR_COLORS[eventData.colorId] ?? "#5e6ad2") : "#5e6ad2";
+        
+        const newEvent: CalendarEvent = {
+          id: eventId,
+          date: eventData.start.split("T")[0],
+          title: eventData.title,
+          description: eventData.description,
+          color: calendarColor,
+          calendarId: "local",
+          start: eventData.start,
+          end: eventData.end,
+        };
+        
+        localEvents.value.push(newEvent);
+        await saveConfig("local-calendar-events", JSON.stringify(localEvents.value));
+        
+        events.value = [...events.value, newEvent].sort((a, b) => a.date.localeCompare(b.date));
+        return;
+      }
+
+      const token = await ensureAccessToken();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+      
+      const body = {
+        summary: eventData.title,
+        description: eventData.description,
+        colorId: eventData.colorId,
+        start: { dateTime: eventData.start },
+        end: { dateTime: eventData.end },
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || "Failed to create event");
+      }
+
+      const calendarColor = calendars.value.find(c => c.id === calendarId)?.backgroundColor ?? "#5e6ad2";
+      const mapped = mapGcalEventsToDomain([data], calendarId, calendarColor)[0];
+      events.value = [...events.value, mapped].sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e: any) {
+      syncError.value = e?.message || "Failed to create event";
+      throw e;
+    } finally {
+      syncing.value = false;
+    }
+  }
+
+  async function updateEvent(
+    calendarId: string,
+    eventId: string,
+    eventData: { title: string; description?: string; colorId?: string; start: string; end: string },
+  ): Promise<void> {
+    syncing.value = true;
+    syncError.value = null;
+    try {
+      if (calendarId === "local" || eventId.startsWith("local_")) {
+        const calendarColor = eventData.colorId ? (CALENDAR_COLORS[eventData.colorId] ?? "#5e6ad2") : "#5e6ad2";
+        localEvents.value = localEvents.value.map(evt => {
+          if (evt.id === eventId) {
+            return {
+              ...evt,
+              title: eventData.title,
+              description: eventData.description,
+              color: calendarColor,
+              start: eventData.start,
+              end: eventData.end,
+              date: eventData.start.split("T")[0],
+            };
+          }
+          return evt;
+        });
+        await saveConfig("local-calendar-events", JSON.stringify(localEvents.value));
+        
+        events.value = events.value.map(evt => {
+          if (evt.id === eventId) {
+            return {
+              ...evt,
+              title: eventData.title,
+              description: eventData.description,
+              color: calendarColor,
+              start: eventData.start,
+              end: eventData.end,
+              date: eventData.start.split("T")[0],
+            };
+          }
+          return evt;
+        }).sort((a, b) => a.date.localeCompare(b.date));
+        return;
+      }
+
+      const token = await ensureAccessToken();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+      
+      const body = {
+        summary: eventData.title,
+        description: eventData.description,
+        colorId: eventData.colorId,
+        start: { dateTime: eventData.start },
+        end: { dateTime: eventData.end },
+      };
+
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || "Failed to update event");
+      }
+
+      const calendarColor = calendars.value.find(c => c.id === calendarId)?.backgroundColor ?? "#5e6ad2";
+      const mapped = mapGcalEventsToDomain([data], calendarId, calendarColor)[0];
+      events.value = events.value.map(evt => evt.id === eventId ? mapped : evt).sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e: any) {
+      syncError.value = e?.message || "Failed to update event";
+      throw e;
+    } finally {
+      syncing.value = false;
+    }
+  }
+
+  async function deleteEvent(calendarId: string, eventId: string): Promise<void> {
+    syncing.value = true;
+    syncError.value = null;
+    try {
+      if (calendarId === "local" || eventId.startsWith("local_")) {
+        localEvents.value = localEvents.value.filter(evt => evt.id !== eventId);
+        await saveConfig("local-calendar-events", JSON.stringify(localEvents.value));
+        events.value = events.value.filter(evt => evt.id !== eventId);
+        return;
+      }
+
+      const token = await ensureAccessToken();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+      
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error?.message || "Failed to delete event");
+      }
+
+      events.value = events.value.filter(evt => evt.id !== eventId);
+    } catch (e: any) {
+      syncError.value = e?.message || "Failed to delete event";
+      throw e;
+    } finally {
+      syncing.value = false;
+    }
+  }
+
   return {
     connected,
     currentYear,
@@ -379,5 +580,12 @@ export const useCalendarStore = defineStore("calendar", () => {
     goPrevYear,
     loadPersistedConfig,
     exchangeCodeDirect,
+    accessToken,
+    refreshToken,
+    tokenExpiry,
+    calendars,
+    createEvent,
+    updateEvent,
+    deleteEvent,
   };
 });

@@ -9,16 +9,23 @@ const store = useWeeklyScheduleStore();
 const emit = defineEmits<{ edit: [block: ScheduleBlock] }>();
 
 const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-const labelWidthPx = 48;
 
 const containerRef = ref<HTMLElement | null>(null);
 const containerHeight = ref(400);
+const containerWidth = ref(800);
 
 function measure() {
   if (containerRef.value) {
-    containerHeight.value = containerRef.value.getBoundingClientRect().height;
+    const rect = containerRef.value.getBoundingClientRect();
+    containerHeight.value = rect.height;
+    containerWidth.value = rect.width;
   }
 }
+
+const labelWidthPx = computed(() => {
+  return Math.max(32, Math.min(64, containerWidth.value * 0.06));
+});
+const labelWidthStyle = computed(() => labelWidthPx.value + "px");
 
 let observer: ResizeObserver | null = null;
 onMounted(() => {
@@ -92,7 +99,7 @@ function blocksForDay(day: number) {
     <div class="flex-1 min-h-0 overflow-y-auto relative bg-canvas scrollbar-gutter-stable">
       <!-- Header de días (sticky) -->
       <div class="flex border-b border-hairline bg-surface-2 sticky top-0 z-20 flex-shrink-0">
-        <div :style="{ width: labelWidthPx + 'px' }" class="flex-shrink-0 bg-surface-2" />
+        <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 bg-surface-2" />
         <div class="flex-1 grid grid-cols-7 border-l border-hairline bg-surface-2">
           <div v-for="(day, index) in DAYS" :key="index"
                class="text-caption text-ink-muted text-center py-2 border-r border-hairline font-semibold text-xs bg-surface-2">
@@ -104,7 +111,7 @@ function blocksForDay(day: number) {
       <!-- Grilla de fondo con las líneas de horas y días -->
       <div class="flex" :style="{ height: gridHeightStyle }">
         <!-- Columna de etiquetas de horas -->
-        <div :style="{ width: labelWidthPx + 'px' }" class="flex-shrink-0 border-r border-hairline bg-surface-1/50 select-none">
+        <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 border-r border-hairline bg-surface-1/50 select-none">
           <div v-for="hl in hourLabels" :key="hl.minute"
                :style="{ height: rowHeightStyle }"
                class="text-[10px] text-ink-subtle px-1 flex items-center justify-end pr-2 font-mono border-b border-hairline/30">

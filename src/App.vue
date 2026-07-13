@@ -8,6 +8,7 @@ import Sidebar from "@/components/layout/Sidebar.vue";
 import DashboardView from "@/components/dashboard/DashboardView.vue";
 import ArchivedView from "@/views/ArchivedView.vue";
 import SettingsView from "@/views/SettingsView.vue";
+import { useTheme } from "@/composables/useTheme";
 import HabitFormModal from "@/components/habits/HabitFormModal.vue";
 import TaskFormModal from "@/components/tasks/TaskFormModal.vue";
 import GoalFormModal from "@/components/goals/GoalFormModal.vue";
@@ -16,6 +17,8 @@ const habits = useHabitsStore();
 const tasks = useTasksStore();
 const goals = useGoalsStore();
 const ui = useUiStore();
+
+useTheme();
 
 onMounted(async () => {
   await habits.loadInitialData();

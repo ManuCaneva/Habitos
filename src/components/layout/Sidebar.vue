@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Sun, Moon, PanelLeftClose, PanelLeftOpen, CheckSquare, Archive, Settings, Pencil } from "lucide-vue-next";
+import { PanelLeftClose, PanelLeftOpen, CheckSquare, Archive, Settings, Pencil } from "lucide-vue-next";
 import { useUiStore, type ViewMode } from "@/stores/ui";
-import { useTheme } from "@/composables/useTheme";
 import Text from "@/components/ui/Text.vue";
 
 const ui = useUiStore();
-const { isDark, toggleDark } = useTheme();
 
 interface NavItem {
   id: ViewMode;
@@ -17,13 +15,8 @@ interface NavItem {
 const navItems: readonly NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: CheckSquare },
   { id: "archived", label: "Archivados", icon: Archive },
-  { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
-const themeIcon = computed(() => (isDark.value ? Sun : Moon));
-const themeLabel = computed(() =>
-  isDark.value ? "Cambiar a tema claro" : "Cambiar a tema oscuro",
-);
 const collapseIcon = computed(() =>
   ui.sidebarCollapsed ? PanelLeftOpen : PanelLeftClose,
 );
@@ -85,15 +78,18 @@ const collapseIcon = computed(() =>
       </button>
       <button
         type="button"
-        class="flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-caption font-medium"
-        :aria-label="themeLabel"
-        :title="themeLabel"
-        @click="toggleDark()"
+        :class="[
+          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-caption font-medium',
+          ui.viewMode === 'settings'
+            ? 'bg-surface-2 text-ink'
+            : 'text-ink-muted hover:text-ink hover:bg-surface-1',
+        ]"
+        aria-label="Settings"
+        title="Settings"
+        @click="ui.setViewMode('settings')"
       >
-        <component :is="themeIcon" :size="18" class="shrink-0" />
-        <span v-if="!ui.sidebarCollapsed" class="truncate">
-          {{ isDark ? "Tema claro" : "Tema oscuro" }}
-        </span>
+        <Settings :size="18" class="shrink-0" />
+        <span v-if="!ui.sidebarCollapsed" class="truncate">Settings</span>
       </button>
       <button
         type="button"

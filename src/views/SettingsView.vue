@@ -1,20 +1,37 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useTheme } from "@/composables/useTheme";
 import { useCalendarStore } from "@/stores/calendar";
 import Card from "@/components/ui/Card.vue";
 import Text from "@/components/ui/Text.vue";
 import Heading from "@/components/ui/Heading.vue";
-import Switch from "@/components/ui/Switch.vue";
 import Button from "@/components/ui/Button.vue";
 
-const { isDark, setTheme } = useTheme();
+const { current, currentId, themes, setTheme } = useTheme();
 const store = useCalendarStore();
 const connecting = ref(false);
 
-function onToggle(value: boolean) {
-  setTheme(value ? "dark" : "light");
+const primaryColor = computed(() => `rgb(${current.value.colors.primary})`);
+const surfaceColor = computed(() => `rgb(${current.value.colors.surface1})`);
+const inkColor = computed(() => `rgb(${current.value.colors.ink})`);
+const hairlineColor = computed(() => `rgb(${current.value.colors.hairline})`);
+
+const dropdownOpen = ref(false);
+const dropdownRef = ref<HTMLElement | null>(null);
+
+function handleClickOutside(e: MouseEvent) {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
+    dropdownOpen.value = false;
+  }
 }
+
+function selectTheme(id: string) {
+  setTheme(id);
+  dropdownOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("mousedown", handleClickOutside));
+onBeforeUnmount(() => document.removeEventListener("mousedown", handleClickOutside));
 
 async function handleConnect() {
   connecting.value = true;
@@ -39,16 +56,56 @@ async function handleDisconnect() {
     <Card variant="default" padding="md">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <Text variant="card-title" as="h2" class="mb-1">Tema oscuro</Text>
+          <Text variant="card-title" as="h2" class="mb-1">Tema</Text>
           <Text variant="body-sm" color="muted">
-            Activalo para reducir el cansancio visual.
+            Elegí el tema que más te guste.
           </Text>
         </div>
-        <Switch
-          :model-value="isDark"
-          aria-label="Activar tema oscuro"
-          @update:model-value="onToggle"
-        />
+        <div ref="dropdownRef" class="relative">
+          <button
+            type="button"
+            data-testid="theme-dropdown-btn" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md border transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-focus/50"
+            :style="{
+              backgroundColor: surfaceColor,
+              borderColor: hairlineColor,
+              color: inkColor,
+            }"
+            @click="dropdownOpen = !dropdownOpen"
+          >
+            <span
+              class="w-3 h-3 rounded-full shrink-0"
+              :style="{ backgroundColor: primaryColor }"
+            />
+            <span class="text-body-sm">{{ current.name }}</span>
+            <span class="text-ink-subtle text-xs ml-1">{{ dropdownOpen ? '▲' : '▼' }}</span>
+          </button>
+          <div
+            v-if="dropdownOpen"
+            class="absolute right-0 top-full mt-1 w-40 rounded-md border shadow-lg z-50 overflow-hidden"
+            :style="{
+              backgroundColor: surfaceColor,
+              borderColor: hairlineColor,
+            }"
+          >
+            <button
+              v-for="t in themes"
+              :key="t.id"
+              type="button"
+              class="flex items-center gap-2.5 w-full px-3 py-2 text-left text-body-sm transition-colors duration-100"
+              :style="{
+                color: t.id === currentId ? primaryColor : inkColor,
+                backgroundColor: t.id === currentId ? `rgb(${current.colors.surface2})` : 'transparent',
+              }"
+              @click="selectTheme(t.id)"
+            >
+              <span
+                class="w-3 h-3 rounded-full shrink-0"
+                :style="{ backgroundColor: `rgb(${t.colors.primary})` }"
+              />
+              {{ t.name }}
+            </button>
+          </div>
+        </div>
       </div>
     </Card>
 
@@ -102,7 +159,7 @@ async function handleDisconnect() {
         v-if="store.syncError"
         variant="caption"
         color="muted"
-        class="mt-2 text-red-500 font-medium"
+        class="mt-2 text-red-500 font-medium font-mono"
       >
         Error: {{ store.syncError }}
       </Text>

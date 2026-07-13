@@ -17,9 +17,26 @@ const props = withDefaults(
   },
 );
 
+const emit = defineEmits<{
+  "select-day": [date: string];
+}>();
+
 const MAX_DOTS = 4;
 
 const grid = computed(() => monthGrid(props.year, props.month, 0));
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
+function formatTooltipDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const [, monthStr, dayStr] = dateStr.split("-");
+  const day = parseInt(dayStr, 10);
+  const monthIndex = parseInt(monthStr, 10) - 1;
+  return `${day} de ${MONTHS[monthIndex]}`;
+}
 
 function getEvents(date: string | null): CalendarEvent[] {
   if (!date) return [];
@@ -38,7 +55,6 @@ function overflowCount(date: string | null): number {
 <template>
   <div
     class="month-mini"
-    :title="monthName"
     data-testid="month-mini"
   >
     <div
@@ -62,7 +78,9 @@ function overflowCount(date: string | null): number {
           v-for="(cell, di) in week"
           :key="`c-${wi}-${di}`"
           :data-testid="cell.date ? 'day-cell' : undefined"
-          :class="['day-cell', { 'day-cell--empty': !cell.date }]"
+          :class="['day-cell', { 'day-cell--empty': !cell.date, 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary/50 transition-all': cell.date }]"
+          :title="cell.date ? formatTooltipDate(cell.date) : undefined"
+          @click="cell.date && emit('select-day', cell.date)"
         >
           <template v-if="cell.date">
             <span
@@ -87,11 +105,9 @@ function overflowCount(date: string | null): number {
 .month-mini {
   display: flex;
   flex-direction: column;
-  gap: var(--cell-gap, 4px);
   height: var(--month-h, auto);
   box-sizing: border-box;
   width: 100%;
-  padding: var(--month-padding, 0px);
 }
 
 .month-mini__name {
@@ -101,8 +117,8 @@ function overflowCount(date: string | null): number {
   color: rgb(var(--color-ink-muted));
   text-transform: capitalize;
   line-height: 1.2;
-  margin-bottom: 4px;
   height: var(--month-header, auto);
+  margin-bottom: var(--name-gap, 4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,10 +156,12 @@ function overflowCount(date: string | null): number {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: var(--cell-gap, 1px);
+  gap: calc(var(--cell-size) * 0.06);
   overflow: hidden;
   background: rgb(var(--color-surface-3));
   border-radius: 1px;
+  padding: calc(var(--cell-size) * 0.06);
+  box-sizing: border-box;
 }
 
 .day-cell--empty {
@@ -151,14 +169,14 @@ function overflowCount(date: string | null): number {
 }
 
 .event-dot {
-  width: 4px;
-  height: 4px;
+  width: calc(var(--cell-size) * 0.22);
+  height: calc(var(--cell-size) * 0.22);
   border-radius: 9999px;
   flex-shrink: 0;
 }
 
 .overflow {
-  font-size: 0.55rem;
+  font-size: calc(var(--cell-size) * 0.44);
   line-height: 1;
   color: rgb(var(--color-ink-tertiary));
 }

@@ -1,59 +1,8 @@
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    color-scheme: light;
-    --color-canvas: 255 255 255;
-    --color-surface-1: 247 248 248;
-    --color-surface-2: 238 240 242;
-    --color-surface-3: 228 230 233;
-    --color-surface-4: 216 218 223;
-    --color-hairline: 228 230 233;
-    --color-hairline-strong: 197 200 206;
-    --color-hairline-tertiary: 168 172 180;
-    --color-ink: 14 15 18;
-    --color-ink-muted: 44 45 53;
-    --color-ink-subtle: 98 102 109;
-    --color-ink-tertiary: 138 143 152;
-    --color-primary: 94 106 210;
-    --color-primary-hover: 77 89 192;
-    --color-primary-focus: 94 105 209;
-    --color-brand-secure: 122 127 173;
-    --color-success: 29 138 54;
-    --color-overlay: 0 0 0;
-  }
-
-  .dark {
-    color-scheme: dark;
-    --color-canvas: 1 1 2;
-    --color-surface-1: 14 15 18;
-    --color-surface-2: 24 25 30;
-    --color-surface-3: 34 35 42;
-    --color-surface-4: 44 45 53;
-    --color-hairline: 35 37 42;
-    --color-hairline-strong: 57 59 66;
-    --color-hairline-tertiary: 74 77 86;
-    --color-ink: 247 248 248;
-    --color-ink-muted: 208 214 224;
-    --color-ink-subtle: 138 143 152;
-    --color-ink-tertiary: 98 102 109;
-    --color-primary: 94 106 210;
-    --color-primary-hover: 130 143 255;
-    --color-primary-focus: 94 105 209;
-    --color-brand-secure: 122 127 173;
-    --color-success: 39 166 68;
-    --color-overlay: 0 0 0;
-  }
-
   html {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -118,13 +67,11 @@
 }
 
 @layer utilities {
-  /* Reserva espacio para la scrollbar, evitando overlap con el contenido */
   .scrollbar-gutter-stable {
     scrollbar-gutter: stable;
     scrollbar-width: thin;
   }
 
-  /* Scrollbar más fina y consistente con el design system */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -153,7 +100,6 @@
   }
 }
 
-/* Container queries: escalar cards de hábitos cuando el widget es chico */
 @container (max-width: 200px) {
   .habit-card-responsive {
     padding: 0.25rem;
@@ -192,7 +138,6 @@
   .habit-card-responsive .habit-card-heatmap {
     margin-top: 0.25rem;
   }
-  /* NewHabitCard: escalar + centrar */
   .habit-card-responsive.new-habit-card {
     min-height: 2rem;
     padding: 0.25rem;
@@ -205,7 +150,6 @@
   .habit-card-responsive.new-habit-card .new-habit-card-text {
     font-size: 0.625rem;
   }
-  /* Header responsivo */
   .habits-header-responsive {
     padding: 0.25rem 0.5rem;
   }
@@ -215,7 +159,6 @@
   .habits-header-responsive .habits-header-count {
     font-size: 0.625rem;
   }
-  /* En single column: ocultar scrollbar completamente */
   .scrollbar-gutter-stable {
     scrollbar-gutter: auto;
     scrollbar-width: none;
@@ -226,7 +169,6 @@
     height: 0;
     -webkit-appearance: none;
   }
-  /* TaskCard responsive */
   .task-card-responsive {
     padding: 0.25rem;
   }
@@ -244,7 +186,6 @@
   .task-card-responsive .task-card-deadline {
     font-size: 0.625rem;
   }
-  /* NewTaskCard responsive */
   .task-card-responsive.new-task-card {
     min-height: 2rem;
     padding: 0.25rem;
@@ -257,7 +198,6 @@
   .task-card-responsive.new-task-card .new-task-card-text {
     font-size: 0.625rem;
   }
-  /* GoalCard responsive */
   .goal-card-responsive {
     padding: 0.25rem;
   }
@@ -275,7 +215,6 @@
   .goal-card-responsive .goal-card-frequency {
     font-size: 0.625rem;
   }
-  /* NewGoalCard responsive */
   .goal-card-responsive.new-goal-card {
     min-height: 2rem;
     padding: 0.25rem;
@@ -311,7 +250,6 @@
   .habits-header-responsive .habits-header-title {
     font-size: 0.625rem;
   }
-  /* En contenedores muy chicos: ocultar scrollbar completamente */
   .scrollbar-gutter-stable {
     scrollbar-gutter: auto;
     scrollbar-width: none;

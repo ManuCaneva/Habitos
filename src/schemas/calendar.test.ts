@@ -17,10 +17,12 @@ describe("CalendarEventSchema", () => {
       calendarId: "primary",
       start: "2026-01-15T10:00:00-03:00",
       end: "2026-01-15T10:30:00-03:00",
+      description: "Daily sync meeting",
     };
     const result = CalendarEventSchema.parse(event);
     expect(result.id).toBe("evt123");
     expect(result.date).toBe("2026-01-15");
+    expect(result.description).toBe("Daily sync meeting");
   });
 
   it("rechaza date con formato incorrecto", () => {
@@ -72,6 +74,7 @@ describe("GcalEventApiResponseSchema", () => {
         start: { dateTime: "2026-01-15T10:00:00-03:00" },
         end: { dateTime: "2026-01-15T11:00:00-03:00" },
         colorId: "1",
+        description: "Reunión de coordinación del equipo",
       },
       {
         id: "evt2",
@@ -87,6 +90,7 @@ describe("GcalEventApiResponseSchema", () => {
     expect(result.items).toHaveLength(2);
     expect(result.items[0].id).toBe("evt1");
     expect(result.items[0].summary).toBe("Reunión");
+    expect(result.items[0].description).toBe("Reunión de coordinación del equipo");
     expect(result.items[1].id).toBe("evt2");
   });
 

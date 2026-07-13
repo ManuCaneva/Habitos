@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import YearCalendarWidget from "./YearCalendarWidget.vue";
+import MonthMini from "@/components/calendar/MonthMini.vue";
+import DayDetailsModal from "@/components/dashboard/DayDetailsModal.vue";
 
 const mockStore = {
   connected: false,
@@ -99,12 +101,41 @@ describe("YearCalendarWidget", () => {
     expect(container.classes()).toContain("border-hairline");
   });
 
-  it("cada mes tiene su nombre en el tooltip", () => {
-    const wrapper = mount(YearCalendarWidget);
-    const months = wrapper.findAll("[data-testid='month-mini']");
-    for (const month of months) {
-      expect(month.attributes("title")).toBeTruthy();
+  it("al emitir select-day en un mes, se abre el modal de detalles con la fecha seleccionada", async () => {
+    let resizeCallback: (() => void) | null = null;
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: () => void) {
+        resizeCallback = callback;
+      }
+      observe() {}
+      disconnect() {}
+    });
+
+    const wrapper = mount(YearCalendarWidget, { attachTo: document.body });
+    const bodyEl = wrapper.find(".ycw__body").element as HTMLElement;
+    Object.defineProperty(bodyEl, "clientWidth", { value: 1200, configurable: true });
+    Object.defineProperty(bodyEl, "clientHeight", { value: 900, configurable: true });
+
+    if (resizeCallback) {
+      (resizeCallback as () => void)();
     }
+    await wrapper.vm.$nextTick();
+
+    const month = wrapper.findComponent(MonthMini);
+    
+    // El modal de detalles del día debe estar cerrado inicialmente
+    expect(wrapper.findComponent(DayDetailsModal).props("open")).toBe(false);
+
+    // Simular que el mes emite select-day
+    await month.vm.$emit("select-day", "2026-07-22");
+    await wrapper.vm.$nextTick();
+
+    const modal = wrapper.findComponent(DayDetailsModal);
+    expect(modal.props("open")).toBe(true);
+    expect(modal.props("date")).toBe("2026-07-22");
+
+    vi.unstubAllGlobals();
+    wrapper.unmount();
   });
 
   it("muestra el título 'Calendario Anual' en el header", () => {

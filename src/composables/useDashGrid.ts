@@ -1,4 +1,5 @@
-import { ref, onMounted, onUnmounted, type Ref } from "vue";
+import { ref, watch, onMounted, onUnmounted, type Ref } from "vue";
+import { useMonitorChange } from "./useMonitorChange";
 
 export interface GridDimensions {
   colWidth: number;
@@ -11,11 +12,16 @@ export interface GridDimensions {
   maxRows: number;
 }
 
-const ROW_HEIGHT = 80;
+const MIN_ROW_HEIGHT = 40;
+const MAX_ROW_HEIGHT = 120;
 const MARGIN_X = 12;
 const MARGIN_Y = 12;
 const COLS = 12;
 const DEFAULT_MAX_ROWS = 10;
+
+function computeRowHeight(containerHeight: number, maxRows: number): number {
+  return Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, containerHeight / maxRows));
+}
 
 export function snapToGrid(
   leftPx: number,
@@ -74,9 +80,11 @@ export function applyGapToPixel(
 }
 
 export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
+  const { changed, ackChange } = useMonitorChange();
+
   const dims = ref<GridDimensions>({
     colWidth: 100,
-    rowHeight: ROW_HEIGHT,
+    rowHeight: computeRowHeight(600, DEFAULT_MAX_ROWS),
     marginX: MARGIN_X,
     marginY: MARGIN_Y,
     containerWidth: 1200,
@@ -95,7 +103,7 @@ export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
     const colWidth = (w - MARGIN_X * (COLS - 1)) / COLS;
     dims.value = {
       colWidth,
-      rowHeight: ROW_HEIGHT,
+      rowHeight: computeRowHeight(h, DEFAULT_MAX_ROWS),
       marginX: MARGIN_X,
       marginY: MARGIN_Y,
       containerWidth: w,
@@ -104,6 +112,13 @@ export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
       maxRows: DEFAULT_MAX_ROWS,
     };
   }
+
+  watch(changed, (hasChanged) => {
+    if (hasChanged) {
+      recalc();
+      ackChange();
+    }
+  });
 
   onMounted(() => {
     recalc();

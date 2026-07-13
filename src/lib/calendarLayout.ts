@@ -12,6 +12,7 @@ export interface LayoutResult {
   cellGapX: number;
   cellGapY: number;
   monthHeader: number;
+  nameGap: number;
   // Absolute pixels
   cellSize: number;
   monthWidth: number;
@@ -42,56 +43,85 @@ export function computeForCols(
   function getSpacing(cs: number) {
     const cellGap = cs < 10 ? 1 : Math.max(1, Math.round(cs * 0.12));
     const monthPadding = 0;
-    const gridGap = cs < 10 ? 4 : Math.max(4, Math.round(cs * 0.4));
-    const monthHeader = cs < 10 ? 8 : Math.max(10, Math.round(cs * 0.8));
+    const gridGap = Math.max(2, Math.round(cs * 0.4));
+    const nameGap = Math.max(2, Math.round(cs * 0.3));
+    const monthHeader = Math.max(9, Math.round(cs * 1.2));
 
     // Width of 1 month card
     const monthW = 7 * cs + 6 * cellGap + 2 * monthPadding;
     // Height of 1 month card
-    const monthH = 6 * cs + 5 * cellGap + 2 * monthPadding + monthHeader;
+    const monthH = 6 * cs + 5 * cellGap + 2 * monthPadding + monthHeader + nameGap;
 
-    return { cellGap, monthPadding, gridGap, monthHeader, monthW, monthH };
+    return { cellGap, monthPadding, gridGap, monthHeader, nameGap, monthW, monthH };
   }
 
-  // First, search for a cell size where target months (6 months) fit
+  // 1. Try to fit all 12 months (skip if c === 1 to force semester view)
+  const rowsAll = Math.ceil(12 / c);
   let bestCs = -1;
-  const targetMonths = 6;
-  const rowsNeeded = Math.ceil(targetMonths / c);
+  let showsAll = false;
+  let visibleSlots = 12;
 
-  for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
-    const space = getSpacing(cs);
-    const totalW = c * space.monthW + (c - 1) * space.gridGap;
-    const totalH = rowsNeeded * space.monthH + (rowsNeeded - 1) * space.gridGap;
-
-    if (totalW <= availW && totalH <= availH) {
-      bestCs = cs;
-      break;
-    }
-  }
-
-  // If 6 months cannot fit, vertical constraint is relaxed to just fitting at least 1 row of months
-  if (bestCs === -1) {
+  if (c > 1) {
     for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
       const space = getSpacing(cs);
       const totalW = c * space.monthW + (c - 1) * space.gridGap;
-      const totalH = space.monthH; // at least 1 row fits
+      const totalH = rowsAll * space.monthH + (rowsAll - 1) * space.gridGap;
 
       if (totalW <= availW && totalH <= availH) {
         bestCs = cs;
+        showsAll = true;
+        visibleSlots = 12;
         break;
       }
     }
   }
 
-  // If even 1 row cannot fit at the minimum cell size, layout is impossible
+  // 2. If 12 months cannot fit, target exactly 6 months (1 semester)
+  if (bestCs === -1) {
+    const targetMonths = c === 4 ? 8 : 6;
+    const rowsSix = Math.ceil(targetMonths / c);
+
+    for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
+      const space = getSpacing(cs);
+      const totalW = c * space.monthW + (c - 1) * space.gridGap;
+      const totalH = rowsSix * space.monthH + (rowsSix - 1) * space.gridGap;
+
+      if (totalW <= availW && totalH <= availH) {
+        bestCs = cs;
+        showsAll = false;
+        visibleSlots = targetMonths;
+        break;
+      }
+    }
+
+    // Force fit at MIN_CELL_SIZE if we are in 1-column layout to prevent falling back to empty screen!
+    if (bestCs === -1 && c === 1 && availW >= 34 && availH >= 40) {
+      bestCs = MIN_CELL_SIZE;
+      showsAll = false;
+      visibleSlots = 6;
+    }
+  }
+
+  // 3. Fallback: at least 1 row fits
+  if (bestCs === -1) {
+    for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
+      const space = getSpacing(cs);
+      const totalW = c * space.monthW + (c - 1) * space.gridGap;
+      const totalH = space.monthH;
+
+      if (totalW <= availW && totalH <= availH) {
+        bestCs = cs;
+        showsAll = false;
+        visibleSlots = c;
+        break;
+      }
+    }
+  }
+
   if (bestCs === -1) return null;
 
   const cs = bestCs;
   const space = getSpacing(cs);
-
-  const rowsFit = Math.max(1, Math.floor((availH + space.gridGap) / (space.monthH + space.gridGap)));
-  const visibleSlots = Math.min(12, c * rowsFit);
-  const showsAll = visibleSlots >= 12;
 
   return {
     cols: c,
@@ -106,6 +136,7 @@ export function computeForCols(
     cellGapX: space.cellGap,
     cellGapY: space.cellGap,
     monthHeader: space.monthHeader,
+    nameGap: space.nameGap,
     cellSize: cs,
     monthWidth: space.monthW,
     monthHeight: space.monthH,

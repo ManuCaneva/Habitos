@@ -236,4 +236,286 @@ describe("useCalendarStore", () => {
     await store.loadPersistedConfig();
     expect(store.connected).toBe(false);
   });
+
+  it("syncYear() populates calendars ref", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            { id: "primary", summary: "Calendario Principal", primary: true, backgroundColor: "#7986cb" },
+            { id: "work", summary: "Trabajo", backgroundColor: "#33b679" },
+          ],
+        }),
+      })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [] }),
+      });
+
+    const store = useCalendarStore();
+    store.connected = true;
+    store.accessToken = "at123";
+    
+    await store.syncYear(2026);
+
+    expect(store.calendars).toHaveLength(2);
+    expect(store.calendars[0].summary).toBe("Calendario Principal");
+    expect(store.calendars[1].id).toBe("work");
+  });
+
+  it("createEvent() performs POST request and updates store locally", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: "new_evt_abc",
+        summary: "Nuevo Evento",
+        description: "Una descripción",
+        start: { dateTime: "2026-07-22T10:00:00Z" },
+        end: { dateTime: "2026-07-22T11:00:00Z" },
+        colorId: "2",
+      }),
+    });
+
+    const store = useCalendarStore();
+    store.connected = true;
+    store.accessToken = "at123";
+    store.events = [];
+
+    await store.createEvent("primary", {
+      title: "Nuevo Evento",
+      description: "Una descripción",
+      start: "2026-07-22T10:00:00Z",
+      end: "2026-07-22T11:00:00Z",
+      colorId: "2",
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer at123",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          summary: "Nuevo Evento",
+          description: "Una descripción",
+          colorId: "2",
+          start: { dateTime: "2026-07-22T10:00:00Z" },
+          end: { dateTime: "2026-07-22T11:00:00Z" },
+        }),
+      })
+    );
+
+    expect(store.events).toHaveLength(1);
+    expect(store.events[0].id).toBe("new_evt_abc");
+    expect(store.events[0].title).toBe("Nuevo Evento");
+    expect(store.events[0].description).toBe("Una descripción");
+    expect(store.events[0].color).toBe("#33b679"); // colorId "2" resolves to #33b679
+  });
+
+  it("updateEvent() performs PUT request and updates local store", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: "evt_edit",
+        summary: "Evento Editado",
+        description: "Nueva desc",
+        start: { dateTime: "2026-07-22T12:00:00Z" },
+        end: { dateTime: "2026-07-22T13:00:00Z" },
+        colorId: "3",
+      }),
+    });
+
+    const store = useCalendarStore();
+    store.connected = true;
+    store.accessToken = "at123";
+    store.events = [
+      {
+        id: "evt_edit",
+        title: "Evento Viejo",
+        description: "Desc vieja",
+        start: "2026-07-22T12:00:00Z",
+        end: "2026-07-22T13:00:00Z",
+        color: "#7986cb",
+        date: "2026-07-22",
+        calendarId: "primary",
+      },
+    ];
+
+    await store.updateEvent("primary", "evt_edit", {
+      title: "Evento Editado",
+      description: "Nueva desc",
+      start: "2026-07-22T12:00:00Z",
+      end: "2026-07-22T13:00:00Z",
+      colorId: "3",
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events/evt_edit",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({
+          summary: "Evento Editado",
+          description: "Nueva desc",
+          colorId: "3",
+          start: { dateTime: "2026-07-22T12:00:00Z" },
+          end: { dateTime: "2026-07-22T13:00:00Z" },
+        }),
+      })
+    );
+
+    expect(store.events).toHaveLength(1);
+    expect(store.events[0].title).toBe("Evento Editado");
+    expect(store.events[0].description).toBe("Nueva desc");
+    expect(store.events[0].color).toBe("#8e24aa"); // colorId "3" resolves to #8e24aa
+  });
+
+  it("deleteEvent() performs DELETE request and removes event from store", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+    });
+
+    const store = useCalendarStore();
+    store.connected = true;
+    store.accessToken = "at123";
+    store.events = [
+      {
+        id: "evt_del",
+        title: "A borrar",
+        start: "2026-07-22T12:00:00Z",
+        end: "2026-07-22T13:00:00Z",
+        color: "#7986cb",
+        date: "2026-07-22",
+        calendarId: "primary",
+      },
+    ];
+
+    await store.deleteEvent("primary", "evt_del");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events/evt_del",
+      expect.objectContaining({
+        method: "DELETE",
+      })
+    );
+
+    expect(store.events).toHaveLength(0);
+  });
+
+  it("supports local event creation when disconnected or using calendarId 'local'", async () => {
+    const store = useCalendarStore();
+    store.connected = false; // Disconnected
+
+    await store.createEvent("local", {
+      title: "Local Event 1",
+      description: "Local Desc",
+      start: "2026-07-22T10:00:00Z",
+      end: "2026-07-22T11:00:00Z",
+      colorId: "2",
+    });
+
+    // Should not call Google Calendar API
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    // Event should be added to store
+    expect(store.events).toHaveLength(1);
+    expect(store.events[0].title).toBe("Local Event 1");
+    expect(store.events[0].calendarId).toBe("local");
+    expect(store.events[0].color).toBe("#33b679"); // colorId "2"
+
+    // Check configuration was saved
+    const saved = dbStore.get("local-calendar-events");
+    expect(saved).toBeTruthy();
+    expect(JSON.parse(saved!)).toHaveLength(1);
+    expect(JSON.parse(saved!)[0].title).toBe("Local Event 1");
+  });
+
+  it("supports local event update", async () => {
+    const store = useCalendarStore();
+    store.connected = false;
+    
+    // Seed a local event
+    const initialEvent = {
+      id: "local_123",
+      title: "Local Event 1",
+      description: "Local Desc",
+      start: "2026-07-22T10:00:00Z",
+      end: "2026-07-22T11:00:00Z",
+      color: "#33b679",
+      date: "2026-07-22",
+      calendarId: "local",
+    };
+    dbStore.set("local-calendar-events", JSON.stringify([initialEvent]));
+    await store.syncYear(2026);
+
+    await store.updateEvent("local", "local_123", {
+      title: "Local Event Updated",
+      description: "New Local Desc",
+      start: "2026-07-22T12:00:00Z",
+      end: "2026-07-22T13:00:00Z",
+      colorId: "3",
+    });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(store.events).toHaveLength(1);
+    expect(store.events[0].title).toBe("Local Event Updated");
+    expect(store.events[0].color).toBe("#8e24aa"); // colorId "3"
+
+    const saved = dbStore.get("local-calendar-events");
+    expect(JSON.parse(saved!)[0].title).toBe("Local Event Updated");
+  });
+
+  it("supports local event deletion", async () => {
+    const store = useCalendarStore();
+    store.connected = false;
+    
+    const initialEvent = {
+      id: "local_123",
+      title: "Local Event 1",
+      color: "#33b679",
+      date: "2026-07-22",
+      calendarId: "local",
+      start: "2026-07-22T10:00:00Z",
+      end: "2026-07-22T11:00:00Z",
+    };
+    dbStore.set("local-calendar-events", JSON.stringify([initialEvent]));
+    await store.syncYear(2026);
+
+    await store.deleteEvent("local", "local_123");
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(store.events).toHaveLength(0);
+
+    const saved = dbStore.get("local-calendar-events");
+    expect(JSON.parse(saved!)).toHaveLength(0);
+  });
+
+  it("syncYear() loads local events when disconnected", async () => {
+    const store = useCalendarStore();
+    store.connected = false;
+
+    const initialEvent = {
+      id: "local_123",
+      title: "Local Event 1",
+      color: "#33b679",
+      date: "2026-07-22",
+      calendarId: "local",
+      start: "2026-07-22T10:00:00Z",
+      end: "2026-07-22T11:00:00Z",
+    };
+    dbStore.set("local-calendar-events", JSON.stringify([initialEvent]));
+
+    await store.syncYear(2026);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(store.events).toHaveLength(1);
+    expect(store.events[0].title).toBe("Local Event 1");
+  });
 });
