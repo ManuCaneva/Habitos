@@ -80,6 +80,7 @@ const archivedLabel = computed(() => {
           isMenuOpen ? 'bg-surface-2 text-ink' : '',
         ]"
         data-testid="menu-button"
+        :data-habit-menu-trigger="habit.id"
         aria-label="Más opciones"
         title="Más opciones"
         @click="ui.toggleMenu(habit.id)"

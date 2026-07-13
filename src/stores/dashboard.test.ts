@@ -22,12 +22,14 @@ describe("dashboard store", () => {
   it("carga el layout por defecto con porcentajes", async () => {
     const store = useDashboardStore();
     await flush();
-    expect(store.layout).toHaveLength(3);
+    expect(store.layout).toHaveLength(5);
     expect(store.layout[0].i).toBe("habits");
     expect(store.layout[0].wPercent).toBeCloseTo(0.5);
     expect(store.layout[0].hPercent).toBeCloseTo(0.4);
     expect(store.layout[1].i).toBe("tasks");
     expect(store.layout[2].i).toBe("goals");
+    expect(store.layout[3].i).toBe("year-calendar");
+    expect(store.layout[4].i).toBe("weekly-schedule");
   });
 
   it("carga layout guardado válido con porcentajes", async () => {
@@ -56,7 +58,7 @@ describe("dashboard store", () => {
     vi.mocked(loadConfig).mockResolvedValue(JSON.stringify("not-an-array"));
     const store = useDashboardStore();
     await flush();
-    expect(store.layout).toHaveLength(3);
+    expect(store.layout).toHaveLength(5);
     expect(store.layout[0].i).toBe("habits");
   });
 
@@ -191,14 +193,14 @@ describe("dashboard store", () => {
     const store = useDashboardStore();
     await flush();
     store.addWidget("habits");
-    expect(store.layout).toHaveLength(3);
+    expect(store.layout).toHaveLength(5);
   });
 
   it("elimina un widget del layout", async () => {
     const store = useDashboardStore();
     await flush();
     store.removeWidget("habits");
-    expect(store.layout).toHaveLength(2);
+    expect(store.layout).toHaveLength(4);
   });
 
   it("resetea al layout por defecto", async () => {
@@ -210,30 +212,65 @@ describe("dashboard store", () => {
     expect(store.layout[0].wPercent).toBeCloseTo(0.5);
   });
 
-  it("moveTo rechaza si colisiona con otro widget", async () => {
+  it("moveTo rechaza solapamiento real pero permite bordes pegados", async () => {
     const store = useDashboardStore();
     await flush();
     store.updateLayout([
       { i: "a", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
       { i: "b", xPercent: 0.5, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
     ]);
-    const beforeX = store.layout.find((i) => i.i === "b")!.xPercent;
-    store.moveTo("b", 0, 0);
-    const afterX = store.layout.find((i) => i.i === "b")!.xPercent;
-    expect(afterX).toBe(beforeX);
+    store.moveTo("b", 0.3, 0);
+    const after = store.layout.find((i) => i.i === "b")!;
+    expect(after.xPercent).toBe(0.5);
   });
 
-  it("resizeTo rechaza si el nuevo tamaño colisiona con otro widget", async () => {
+  it("moveTo permite ubicar widget pegado a otro (bordes tocados)", async () => {
     const store = useDashboardStore();
     await flush();
     store.updateLayout([
-      { i: "a", xPercent: 0.4, yPercent: 0, wPercent: 0.3, hPercent: 0.3 },
-      { i: "b", xPercent: 0, yPercent: 0, wPercent: 0.3, hPercent: 0.3 },
+      { i: "a", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
+      { i: "b", xPercent: 0.5, yPercent: 0.4, wPercent: 0.5, hPercent: 0.3 },
     ]);
-    const beforeW = store.layout.find((i) => i.i === "b")!.wPercent;
-    store.resizeTo("b", 0.6, 0.3);
-    const afterW = store.layout.find((i) => i.i === "b")!.wPercent;
-    expect(afterW).toBe(beforeW);
+    store.moveTo("b", 0, 0.4);
+    const after = store.layout.find((i) => i.i === "b")!;
+    expect(after.xPercent).toBeCloseTo(0);
+    expect(after.yPercent).toBeCloseTo(0.4);
+  });
+
+  it("moveTo clampa la posición para no salirse del contenedor", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([
+      { i: "a", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
+    ]);
+    store.moveTo("a", 0.9, 0.9);
+    const after = store.layout.find((i) => i.i === "a")!;
+    expect(after.xPercent).toBeCloseTo(0.5);
+    expect(after.yPercent).toBeCloseTo(0.6);
+  });
+
+  it("resizeTo rechaza solapamiento real pero permite bordes pegados", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([
+      { i: "a", xPercent: 0, yPercent: 0, wPercent: 0.3, hPercent: 0.3 },
+      { i: "b", xPercent: 0.3, yPercent: 0, wPercent: 0.3, hPercent: 0.3 },
+    ]);
+    store.resizeTo("a", 0.5, 0.3);
+    const after = store.layout.find((i) => i.i === "a")!;
+    expect(after.wPercent).toBeCloseTo(0.3);
+  });
+
+  it("resizeTo clampa tamaño mínimo y máximo", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([
+      { i: "a", xPercent: 0, yPercent: 0.5, wPercent: 0.4, hPercent: 0.4 },
+    ]);
+    store.resizeTo("a", 0.01, 0.9);
+    const after = store.layout.find((i) => i.i === "a")!;
+    expect(after.wPercent).toBeGreaterThanOrEqual(1 / 12);
+    expect(after.hPercent).toBeCloseTo(0.5);
   });
 
   it("addWidget busca primera posición libre si default está ocupada", () => {
@@ -252,5 +289,46 @@ describe("dashboard store", () => {
     expect(wouldCollide(0.3, 0.3, 0.5, 0.5, layout)).toBe(true);
     expect(wouldCollide(0.5, 0.5, 0.5, 0.5, layout)).toBe(false);
     expect(wouldCollide(0.5, 0, 0.5, 0.5, layout, "a")).toBe(false);
+  });
+
+  it("wouldCollide no detecta colisión en bordes tocados (epsilon)", () => {
+    const layout: import("./dashboard").Layout = [
+      { i: "a", xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 },
+    ];
+    expect(wouldCollide(0, 0.4, 0.5, 0.3, layout)).toBe(false);
+    expect(wouldCollide(0.5, 0, 0.5, 0.4, layout)).toBe(false);
+    expect(wouldCollide(0, 0, 0.5, 0.4, layout, "a")).toBe(false);
+  });
+
+  it("addWidget coloca con tamaño mínimo cuando default size no cabe en ningún lado", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([
+      { i: "habits", xPercent: 0, yPercent: 0, wPercent: 1, hPercent: 0.8 },
+    ]);
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    store.addWidget("goals");
+    const item = store.layout.find((i) => i.i === "goals");
+    expect(item).toBeDefined();
+    expect(item!.wPercent).toBeCloseTo(1 / 12);
+    expect(item!.hPercent).toBeCloseTo(1 / 10);
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("addWidget loguea error si la grilla está completamente llena", async () => {
+    const store = useDashboardStore();
+    await flush();
+    store.updateLayout([
+      { i: "full", xPercent: 0, yPercent: 0, wPercent: 1, hPercent: 1 },
+    ]);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    store.addWidget("habits");
+    const item = store.layout.find((i) => i.i === "habits");
+    expect(item).toBeUndefined();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No se pudo colocar"),
+    );
+    consoleSpy.mockRestore();
   });
 });

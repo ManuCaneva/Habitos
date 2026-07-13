@@ -8,3 +8,5 @@ pub mod goals;
 pub mod habits;
 pub mod logs;
 pub mod tasks;
+pub mod weekly_schedule;
+pub mod oauth;

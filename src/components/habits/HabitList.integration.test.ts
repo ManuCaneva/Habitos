@@ -16,7 +16,11 @@ vi.mock("@/lib/db", () => ({
   listLogsInRange: vi.fn().mockResolvedValue([]),
 }));
 
-const today = new Date().toISOString().slice(0, 10);
+const d = new Date();
+const y = d.getFullYear();
+const m = String(d.getMonth() + 1).padStart(2, "0");
+const dayVal = String(d.getDate()).padStart(2, "0");
+const today = `${y}-${m}-${dayVal}`;
 
 const habitId = "123e4567-e89b-12d3-a456-426614174000";
 const initialRow = {

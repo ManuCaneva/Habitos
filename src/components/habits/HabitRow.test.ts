@@ -51,6 +51,12 @@ describe("HabitRow", () => {
     expect(w.find("[data-testid='menu-button']").classes()).not.toContain("opacity-0");
   });
 
+  it("botón de menú tiene el atributo data-habit-menu-trigger", () => {
+    const w = mount(HabitRow, { props: { habit: base } });
+    const btn = w.find("[data-testid='menu-button']");
+    expect(btn.attributes("data-habit-menu-trigger")).toBe("h1");
+  });
+
   it("botón menú aparece antes que botón check", () => {
     const w = mount(HabitRow, { props: { habit: base } });
     const all = w.findAll("[data-testid='check-button'], [data-testid='menu-button']");

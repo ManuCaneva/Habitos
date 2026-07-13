@@ -13,6 +13,8 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             // Persistir la DB en el app_data_dir multiplataforma.
             let dir: PathBuf = app
@@ -50,6 +52,12 @@ pub fn run() {
             commands::goal_logs::upsert_goal_log,
             commands::goal_logs::delete_goal_log,
             commands::goal_logs::list_goal_logs_in_range,
+            commands::weekly_schedule::list_schedule_blocks,
+            commands::weekly_schedule::create_schedule_block,
+            commands::weekly_schedule::update_schedule_block,
+            commands::weekly_schedule::delete_schedule_block,
+            commands::weekly_schedule::upsert_all_schedule_blocks,
+            commands::oauth::start_oauth_server,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

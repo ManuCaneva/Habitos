@@ -42,7 +42,10 @@ function onRemoveWidget(id: string) {
         @moved="onMoved"
         @resized="onResized"
       >
-        <component :is="getWidgetById(item.i)?.component" />
+        <component
+          :is="getWidgetById(item.i)?.component"
+          :item="item"
+        />
         <WidgetRemoveButton
           v-if="ui.editMode"
           :widget-id="item.i"

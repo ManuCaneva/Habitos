@@ -28,6 +28,8 @@ export type Layout = LayoutItem[];
  * con cualquier otro item del layout. Retorna true si hay colisión.
  * `ignoreId` permite excluir un item del check (útil al mover/redimensionar).
  */
+const COLLISION_EPSILON = 1e-6;
+
 export function wouldCollide(
   xPercent: number,
   yPercent: number,
@@ -38,16 +40,11 @@ export function wouldCollide(
 ): boolean {
   for (const item of layout) {
     if (ignoreId && item.i === ignoreId) continue;
-    const x1 = xPercent;
-    const y1 = yPercent;
-    const x2 = xPercent + wPercent;
-    const y2 = yPercent + hPercent;
-    const ix1 = item.xPercent;
-    const iy1 = item.yPercent;
-    const ix2 = item.xPercent + item.wPercent;
-    const iy2 = item.yPercent + item.hPercent;
-    const overlaps = x1 < ix2 && x2 > ix1 && y1 < iy2 && y2 > iy1;
-    if (overlaps) return true;
+    const overlapX = Math.min(xPercent + wPercent, item.xPercent + item.wPercent) - Math.max(xPercent, item.xPercent);
+    const overlapY = Math.min(yPercent + hPercent, item.yPercent + item.hPercent) - Math.max(yPercent, item.yPercent);
+    if (overlapX > COLLISION_EPSILON && overlapY > COLLISION_EPSILON) {
+      return true;
+    }
   }
   return false;
 }
@@ -192,11 +189,13 @@ export const useDashboardStore = defineStore("dashboard", () => {
   function moveTo(id: string, xPercent: number, yPercent: number) {
     const item = layout.value.find((i) => i.i === id);
     if (!item) return;
-    if (wouldCollide(xPercent, yPercent, item.wPercent, item.hPercent, layout.value, id)) {
+    const clampedX = Math.max(0, Math.min(1 - item.wPercent, xPercent));
+    const clampedY = Math.max(0, Math.min(1 - item.hPercent, yPercent));
+    if (wouldCollide(clampedX, clampedY, item.wPercent, item.hPercent, layout.value, id)) {
       return;
     }
     layout.value = layout.value.map((i) =>
-      i.i === id ? markRaw({ ...i, xPercent, yPercent }) : i,
+      i.i === id ? markRaw({ ...i, xPercent: clampedX, yPercent: clampedY }) : i,
     );
     persist();
   }
@@ -204,11 +203,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
   function resizeTo(id: string, wPercent: number, hPercent: number) {
     const item = layout.value.find((i) => i.i === id);
     if (!item) return;
-    if (wouldCollide(item.xPercent, item.yPercent, wPercent, hPercent, layout.value, id)) {
+    const minW = item.minWPercent ?? GRID_STEP_X;
+    const minH = item.minHPercent ?? GRID_STEP_Y;
+    const clampedW = Math.max(minW, Math.min(1 - item.xPercent, wPercent));
+    const clampedH = Math.max(minH, Math.min(1 - item.yPercent, hPercent));
+    if (wouldCollide(item.xPercent, item.yPercent, clampedW, clampedH, layout.value, id)) {
       return;
     }
     layout.value = layout.value.map((i) =>
-      i.i === id ? markRaw({ ...i, wPercent, hPercent }) : i,
+      i.i === id ? markRaw({ ...i, wPercent: clampedW, hPercent: clampedH }) : i,
     );
     persist();
   }
@@ -218,15 +221,38 @@ export const useDashboardStore = defineStore("dashboard", () => {
     if (!widget) return;
     if (layout.value.some((item) => item.i === widgetId)) return;
 
-    const wPercent = widget.defaultWPercent;
-    const hPercent = widget.defaultHPercent;
     const defaultX = widget.defaultX;
     const defaultY = widget.defaultY;
-    const position =
-      wouldCollide(defaultX, defaultY, wPercent, hPercent, layout.value)
-        ? findFreePosition(wPercent, hPercent, layout.value)
-        : { xPercent: defaultX, yPercent: defaultY };
-    if (!position) return;
+    const defaultW = widget.defaultWPercent;
+    const defaultH = widget.defaultHPercent;
+
+    let wPercent = defaultW;
+    let hPercent = defaultH;
+    let position: { xPercent: number; yPercent: number } | null = null;
+
+    if (!wouldCollide(defaultX, defaultY, defaultW, defaultH, layout.value)) {
+      position = { xPercent: defaultX, yPercent: defaultY };
+    }
+
+    if (!position) {
+      position = findFreePosition(defaultW, defaultH, layout.value);
+    }
+
+    if (!position) {
+      const minW = widget.minWidthPercent;
+      const minH = widget.minHeightPercent;
+      position = findFreePosition(minW, minH, layout.value);
+      if (position) {
+        wPercent = minW;
+        hPercent = minH;
+        console.warn(`Widget "${widget.title}" colocado a tamaño mínimo (grilla congestionada)`);
+      }
+    }
+
+    if (!position) {
+      console.error(`No se pudo colocar el widget "${widget.title}": no hay espacio en la grilla.`);
+      return;
+    }
 
     layout.value = [
       ...layout.value,

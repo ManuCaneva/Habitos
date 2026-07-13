@@ -199,7 +199,7 @@ describe("db.createGoal - shape hacia Rust", () => {
     vi.mocked(invoke).mockResolvedValue(mockGoalRow);
   });
 
-  it("envía input con frequency_type aplanado", async () => {
+  it("envía input con frequency como objeto anidado", async () => {
     await createGoal(
       { title: "Test", color: "#ff5500", target: 10, frequency: { type: "daily" } },
       "123e4567-e89b-12d3-a456-426614174000",
@@ -212,8 +212,11 @@ describe("db.createGoal - shape hacia Rust", () => {
         title: "Test",
         color: "#ff5500",
         target: 10,
-        frequency_type: "daily",
-        interval_days: null,
+        frequency: {
+          type: "daily",
+          interval_days: null,
+          days_of_week: null,
+        },
       }),
     });
   });
@@ -251,7 +254,7 @@ describe("db.updateGoal - shape hacia Rust", () => {
     vi.mocked(invoke).mockResolvedValue(mockGoalRow);
   });
 
-  it("aplana el patch al shape que espera Rust", async () => {
+  it("envía input con frequency anidado o undefined", async () => {
     await updateGoal(
       "123e4567-e89b-12d3-a456-426614174000",
       { title: "Nuevo", color: "#eb5757" },
@@ -263,6 +266,24 @@ describe("db.updateGoal - shape hacia Rust", () => {
         title: "Nuevo",
         color: "#eb5757",
         updated_at: "2026-07-05T00:00:00.000Z",
+        frequency: undefined,
+      }),
+    });
+  });
+
+  it("envía frequency anidado en updateGoal cuando el patch incluye frequency", async () => {
+    await updateGoal(
+      "123e4567-e89b-12d3-a456-426614174000",
+      { frequency: { type: "interval", interval_days: 3 } },
+      "2026-07-05T00:00:00.000Z",
+    );
+    expect(invoke).toHaveBeenCalledWith("update_goal", {
+      input: expect.objectContaining({
+        frequency: {
+          type: "interval",
+          interval_days: 3,
+          days_of_week: null,
+        },
       }),
     });
   });

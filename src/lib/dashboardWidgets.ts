@@ -2,6 +2,8 @@ import type { Component } from "vue";
 import HabitsWidget from "@/components/dashboard/HabitsWidget.vue";
 import TasksWidget from "@/components/dashboard/TasksWidget.vue";
 import GoalsWidget from "@/components/dashboard/GoalsWidget.vue";
+import YearCalendarWidget from "@/components/dashboard/YearCalendarWidget.vue";
+import WeeklyScheduleWidget from "@/components/dashboard/WeeklyScheduleWidget.vue";
 
 export interface DashboardWidget {
   id: string;
@@ -52,6 +54,30 @@ export const widgets: DashboardWidget[] = [
     defaultY: 0.4,
     defaultWPercent: 1,
     defaultHPercent: 0.3,
+  },
+  {
+    id: "year-calendar",
+    title: "Calendario Anual",
+    icon: "calendar",
+    component: YearCalendarWidget,
+    minWidthPercent: 1 / 12,
+    minHeightPercent: 0.3,
+    defaultX: 0,
+    defaultY: 0.7,
+    defaultWPercent: 1,
+    defaultHPercent: 0.5,
+  },
+  {
+    id: "weekly-schedule",
+    title: "Cronograma Semanal",
+    icon: "calendar-week",
+    component: WeeklyScheduleWidget,
+    minWidthPercent: 0.4,
+    minHeightPercent: 0.4,
+    defaultX: 0,
+    defaultY: 0.7,
+    defaultWPercent: 1,
+    defaultHPercent: 0.5,
   },
 ];
 

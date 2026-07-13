@@ -9,6 +9,13 @@ describe("dashboardWidgets", () => {
     expect(widget?.title).toBe("Hábitos");
   });
 
+  it("expone el widget de cronograma semanal", () => {
+    const widget = getWidgetById("weekly-schedule");
+    expect(widget).toBeDefined();
+    expect(widget?.id).toBe("weekly-schedule");
+    expect(widget?.title).toBe("Cronograma Semanal");
+  });
+
   it("cada widget tiene dimensiones por defecto válidas (porcentajes)", () => {
     widgets.forEach((w) => {
       expect(w.minWidthPercent).toBeGreaterThan(0);

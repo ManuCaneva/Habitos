@@ -125,6 +125,24 @@ export const useTasksStore = defineStore("tasks", () => {
     );
   }
 
+  async function completeTask(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.updateTask(id, { status: "done" }, now);
+    await db.archiveTask(id, now);
+    tasks.value = tasks.value.map((t) =>
+      t.id === id ? { ...t, status: "done" as const, archived_at: now, updated_at: now } : t,
+    );
+  }
+
+  async function uncompleteTask(id: string): Promise<void> {
+    const now = nowIsoUtc();
+    await db.updateTask(id, { status: "doing" }, now);
+    await db.restoreTask(id, now);
+    tasks.value = tasks.value.map((t) =>
+      t.id === id ? { ...t, status: "doing" as const, archived_at: null, updated_at: now } : t,
+    );
+  }
+
   async function toggleStep(taskId: string, stepId: string): Promise<void> {
     const task = tasks.value.find((t) => t.id === taskId);
     if (!task) return;
@@ -149,6 +167,8 @@ export const useTasksStore = defineStore("tasks", () => {
     deleteTask,
     archiveTask,
     restoreTask,
+    completeTask,
+    uncompleteTask,
     toggleStep,
   };
 });

@@ -28,6 +28,7 @@ export function useDashDrag(
     interactable
       .draggable({
         enabled: editMode.value,
+        ignoreFrom: "button, input, select, textarea, .no-widget-drag, .pointer-events-auto",
         inertia: false,
         modifiers: [],
         listeners: {
@@ -62,8 +63,8 @@ export function useDashDrag(
 
   watch(editMode, (enabled) => {
     if (interactable) {
-      interactable.draggable({ enabled });
-      interactable.resizable({ enabled });
+      interactable.draggable(enabled);
+      interactable.resizable(enabled);
     }
   });
 

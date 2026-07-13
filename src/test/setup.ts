@@ -17,3 +17,12 @@ afterEach(() => {
     localStorage.clear();
   }
 });
+
+if (typeof globalThis.ResizeObserver === "undefined") {
+  class MockResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+}

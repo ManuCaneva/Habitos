@@ -22,8 +22,15 @@ const goalsMock = {
   logs: [],
   incrementLog: vi.fn(),
 };
+const uiMock = {
+  menuOpenForGoalId: null as string | null,
+  toggleGoalMenu: vi.fn(),
+};
 vi.mock("@/stores/goals", () => ({
   useGoalsStore: () => goalsMock,
+}));
+vi.mock("@/stores/ui", () => ({
+  useUiStore: () => uiMock,
 }));
 
 describe("GoalCard", () => {
@@ -31,6 +38,8 @@ describe("GoalCard", () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     goalsMock.logs = [];
+    uiMock.menuOpenForGoalId = null;
+    uiMock.toggleGoalMenu.mockClear();
   });
 
   it("should render goal title", () => {
@@ -134,12 +143,36 @@ describe("GoalCard", () => {
     expect(menuBtn.exists()).toBe(true);
   });
 
-  it("should emit toggle:menu when menu button clicked", async () => {
+  it("should call ui.toggleGoalMenu when menu button clicked", async () => {
     const wrapper = mount(GoalCard, {
       props: { goal: mockGoal },
     });
     const menuBtn = wrapper.find("[data-testid='goal-menu-button']");
     await menuBtn.trigger("click");
-    expect(wrapper.emitted("toggle:menu")).toBeTruthy();
+    expect(uiMock.toggleGoalMenu).toHaveBeenCalledWith("goal-1");
+  });
+
+  it("should render GoalContextMenu when goal menu is open for this goal", () => {
+    uiMock.menuOpenForGoalId = "goal-1";
+    const wrapper = mount(GoalCard, {
+      props: { goal: mockGoal },
+    });
+    expect(wrapper.findComponent({ name: "GoalContextMenu" }).exists()).toBe(true);
+  });
+
+  it("should not render GoalContextMenu when goal menu is open for another goal", () => {
+    uiMock.menuOpenForGoalId = "goal-2";
+    const wrapper = mount(GoalCard, {
+      props: { goal: mockGoal },
+    });
+    expect(wrapper.findComponent({ name: "GoalContextMenu" }).exists()).toBe(false);
+  });
+
+  it("should have z-10 class when goal menu is open", () => {
+    uiMock.menuOpenForGoalId = "goal-1";
+    const wrapper = mount(GoalCard, {
+      props: { goal: mockGoal },
+    });
+    expect(wrapper.find("[data-testid='goal-card']").classes()).toContain("z-10");
   });
 });

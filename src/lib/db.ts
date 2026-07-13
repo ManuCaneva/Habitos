@@ -40,6 +40,17 @@ import {
   type GoalLogRow,
   goalToRow,
 } from "../schemas/goals";
+import {
+  CreateScheduleBlockDraftSchema,
+  ScheduleBlockRowSchema,
+  UpdateScheduleBlockDraftSchema,
+  WeeklyScheduleSettingsSchema,
+  DEFAULT_WEEKLY_SCHEDULE_SETTINGS,
+  type CreateScheduleBlockDraft,
+  type ScheduleBlockRow,
+  type UpdateScheduleBlockDraft,
+  type WeeklyScheduleSettings,
+} from "../schemas/weeklySchedule";
 
 interface CreateLogInput {
   id: string;
@@ -245,9 +256,11 @@ export async function createGoal(
       color: row.color,
       target: validated.target,
       unit: row.unit,
-      frequency_type: row.frequency_type,
-      interval_days: row.interval_days,
-      days_of_week: row.days_of_week,
+      frequency: {
+        type: row.frequency_type,
+        interval_days: row.interval_days,
+        days_of_week: row.days_of_week,
+      },
       sort_order: row.sort_order,
       created_at,
       updated_at,
@@ -277,9 +290,13 @@ export async function updateGoal(
       color: row.color,
       target: validated.target,
       unit: row.unit ?? undefined,
-      frequency_type: row.frequency_type,
-      interval_days: row.interval_days,
-      days_of_week: row.days_of_week,
+      frequency: validated.frequency
+        ? {
+            type: validated.frequency.type,
+            interval_days: validated.frequency.type === "interval" ? validated.frequency.interval_days : null,
+            days_of_week: null,
+          }
+        : undefined,
       sort_order: row.sort_order,
       updated_at,
     },
@@ -354,4 +371,63 @@ export async function saveConfig(key: string, value: string): Promise<void> {
 export async function loadConfig(key: string): Promise<string | null> {
   const raw = await invoke<string | null>("load_config", { key });
   return raw;
+}
+
+// ───────────────────────────────────────────────────────────────
+// Cronograma Semanal
+// ───────────────────────────────────────────────────────────────
+
+export async function listScheduleBlocks(): Promise<ScheduleBlockRow[]> {
+  const raw = await invoke<unknown>("list_schedule_blocks");
+  const arr = Array.isArray(raw) ? raw : [];
+  return arr.map((r) => ScheduleBlockRowSchema.parse(r));
+}
+
+export async function createScheduleBlock(
+  draft: CreateScheduleBlockDraft,
+  id: string,
+  created_at: string,
+  updated_at: string,
+): Promise<ScheduleBlockRow> {
+  const v = CreateScheduleBlockDraftSchema.parse(draft);
+  const raw = await invoke<unknown>("create_schedule_block", {
+    input: { id, ...v, created_at, updated_at },
+  });
+  return ScheduleBlockRowSchema.parse(raw);
+}
+
+export async function updateScheduleBlock(
+  id: string,
+  patch: UpdateScheduleBlockDraft,
+  updated_at: string,
+): Promise<ScheduleBlockRow> {
+  const v = UpdateScheduleBlockDraftSchema.parse(patch);
+  const raw = await invoke<unknown>("update_schedule_block", {
+    input: { id, ...v, updated_at },
+  });
+  return ScheduleBlockRowSchema.parse(raw);
+}
+
+export async function deleteScheduleBlock(id: string): Promise<void> {
+  await invoke("delete_schedule_block", { id });
+}
+
+export async function upsertAllScheduleBlocks(
+  rows: ScheduleBlockRow[],
+): Promise<void> {
+  await invoke("upsert_all_schedule_blocks", { blocks: rows });
+}
+
+// Settings persisten en config table (key weekly-schedule-settings)
+export async function loadWeeklyScheduleSettings(): Promise<WeeklyScheduleSettings> {
+  const json = await loadConfig("weekly-schedule-settings");
+  if (!json) return DEFAULT_WEEKLY_SCHEDULE_SETTINGS;
+  return WeeklyScheduleSettingsSchema.parse(JSON.parse(json));
+}
+
+export async function saveWeeklyScheduleSettings(
+  settings: WeeklyScheduleSettings,
+): Promise<void> {
+  const parsed = WeeklyScheduleSettingsSchema.parse(settings);
+  await saveConfig("weekly-schedule-settings", JSON.stringify(parsed));
 }

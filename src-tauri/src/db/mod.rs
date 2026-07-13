@@ -82,11 +82,12 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 4] = [
+        let migrations: [(i64, &str, &str); 5] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (3, "003_tasks_goals", include_str!("migrations/003_tasks_goals.sql")),
             (4, "004_tasks_goals_archived", include_str!("migrations/004_tasks_goals_archived.sql")),
+            (5, "005_weekly_schedule", include_str!("migrations/005_weekly_schedule.sql")),
         ];
 
         for (version, name, sql) in &migrations {

@@ -10,214 +10,210 @@ Transformar la app de hábitos en una **aplicación centralizada de productivida
 
 ---
 
-## 0. Widgets del Dashboard (PRIORIDAD MÁXIMA)
+## 0. Pantalla de inicio / Onboarding
 
-> **Concepto**: El dashboard será una grilla de **contenedores/widgets** independientes. Cada widget vive dentro de su propio contenedor y el usuario puede organizarlos, moverlos o esconderlos. Todo lo que sigue en esta sección son widgets que residen en el dashboard.
+**Estado: (Por hacer)**
 
-### Widget: Tareas pendientes
-- Lista de tareas dentro de un contenedor en el dashboard
-- Cada tarea puede tener:
-  - **Pasos / sub-tareas**: checklist anidada dentro de la tarea
-  - **Color asignable**: el usuario elige un color para categorizar o priorizar visualmente
-  - **Descripción**: campo de texto con detalles de la tarea
-  - **Fecha de finalización**: deadline
-  - **Contador de falta**: mostrar visualmente cuánto falta para la fecha de vencimiento (ej: "Faltan 3 días", barra de progreso, indicador de urgencia)
-- Todo dentro de un contenedor widget en el dashboard
+Idea general para la primera vez que se inicia la app:
 
-### Widget: Objetivos
-- Seguimiento de objetivos del estilo: "Estudiar 30 min por día" o "Leer 10 páginas por día" (estos son solo ejemplos; la idea son plantearse objetivos según las necesidades del usuario)
-- **Diferencia con hábitos**: los objetivos se cumplen cuando pasan **cosas específicas** (ej: leí 10 páginas, estudié un tema), no son simplemente un check diario binario
-- Cada objetivo puede tener:
-  - Descripción de qué se necesita cumplir
-  - Métrica de progreso (ej: 7/10 páginas hoy)
-  - Frecuencia (diario, semanal, etc.).
-  - Indicador visual de cumplimiento
-- Todo dentro de un contenedor widget en el dashboard
-
-### Widget: Calendario anual
-- Vista de calendario anual completo (los 12 meses en grid)
-- **Conexión con Google Calendar**: sincronización para traer eventos externos
-- Marcadores visuales para días con tareas, objetivos o eventos
-- Navegación entre años
-- Todo dentro de un contenedor widget en el dashboard
-
-### Widget: Cronograma semanal
-- Grilla de **días vs franjas horarias** (ejes: días de la semana cruzados con horarios)
-- Permite colocar **bloques de actividades** en slots específicos:
-  - Materias / cursos
-  - Gimnasio
-  - Trabajo
-  - Cualquier actividad recurrente
-- Drag & drop para mover bloques
-- Bloques coloreables por categoría
-- Vista semanal con scroll vertical en el eje de tiempo
-- Todo dentro de un contenedor widget en el dashboard
+- Pantalla de bienvenida con el logo y nombre de la app
+- Introducción breve a las funcionalidades principales
+- Posibilidad de crear una cuenta o continuar como invitado (si hay sync en el futuro)
+- Setup inicial rápido: elegir qué widgets mostrar en el dashboard
+- Tutorial interactivo corto o tooltips guiados
+- Enlace a documentación o soporte
 
 ---
 
-## 1. Core de gestión del tiempo
+## 1. Dashboard y Widgets
 
-### Calendario integrado
+> **Concepto**: El dashboard es una grilla de **contenedores/widgets** independientes. El usuario puede organizarlos, moverlos, redimensionarlos o esconderlos.
+
+### Sistema de grilla
+**Estado: (Terminado)**
+- Grilla de 12 columnas con posiciones en porcentajes
+- Drag & drop para mover widgets
+- Redimensionamiento con límites mínimos
+- Persistencia del layout en config (SQLite)
+- WidgetPicker para agregar/quitar widgets
+- Reset a layout por defecto
+
+### Widget: Hábitos
+**Estado: (En progreso)**
+- Lista de hábitos del día con check-in
+- Heatmap de historial
+- Rachas (streaks) por hábito
+- Archivado de hábitos
+- Context menu por hábito
+- **Pendiente**: multi-check-in progresivo (hábitos con N repeticiones por día, ej: "Tomar 8 vasos de agua")
+
+### Widget: Tareas
+**Estado: (En progreso)**
+- Lista de tareas dentro del dashboard
+- Sub-tareas / pasos (checklist anidada)
+- Color asignable por tarea
+- Descripción
+- Fecha de vencimiento (due_date)
+- Estados: todo / doing / done
+- Crear, editar, eliminar tareas
+- Ordenamiento manual (sort_order)
+- **Pendiente**: contador visual de falta ("Faltan 3 días", barra de progreso, indicador de urgencia)
+- **Pendiente**: etiquetas / tags flexibles
+- **Pendiente**: prioridades (P1-P4)
+- **Pendiente**: vista Kanban (tableros tipo Trello)
+- **Pendiente**: recurring tasks (tareas que se repiten con deadline)
+- **Pendiente**: quick capture / inbox (captura rápida)
+- **Pendiente**: palette de comandos (Ctrl+K)
+
+### Widget: Objetivos
+**Estado: (Terminado)**
+- Seguimiento de objetivos con métricas cuantificables (ej: "Leer 10 páginas por día")
+- Diferencia con hábitos: se cumplen cuando pasan cosas específicas, no son un check binario
+- Descripción de qué se necesita cumplir
+- Métrica de progreso (ej: 7/10 páginas hoy)
+- Frecuencia: diario, semanal, intervalo personalizado
+- Indicador visual de cumplimiento
+- GoalLogs para registrar avance
+- Archivado de objetivos
+- Context menu por objetivo
+
+### Widget: Calendario anual
+**Estado: (En progreso)**
+- Vista de calendario anual completo (12 meses en grid responsive)
+- Conexión con Google Calendar: OAuth 2.0 PKCE vía deep-link
+- Eventos de Google como puntos de color por día (3 dots max + overflow)
+- Navegación entre años con `<` `>`
+- Botón Conectar/Desconectar en SettingsView
+- Fetch on-demand (sin cache persistente)
+- Días ordenados domingo primero
+- **Pendiente**: crear Google Cloud OAuth credentials (Client ID) y setear `VITE_GCAL_CLIENT_ID`
+
+### Widget: Cronograma semanal
+**Estado: (Terminado)**
+- Grilla de días vs franjas horarias
+- Bloques de actividades en slots específicos (materias, gimnasio, trabajo, etc.)
+- Drag & drop para mover bloques
+- Bloques coloreables por categoría
+- Vista semanal con scroll vertical en el eje de tiempo
+- Modal para crear/editar bloques
+- Settings modal para configuración
+
+---
+
+## 2. Calendario integrado
+
+**Estado: (Por hacer)**
 - Vista diaria / semanal / mensual
 - Drag & drop de eventos
-- Sincronización con Google Calendar / iCal (futuro)
+- Sincronización con Google Calendar / iCal
+- (El widget de calendario anual ya está implementado; esto es un módulo de calendario completo)
 
-### Pomodoro / Timer
-- Temporizadores vinculados a tareas o hábitos
-- Tracking de tiempo enfocado
+---
+
+## 3. Pomodoro / Timer
+
+**Estado: (Por hacer)**
+- Configuración de duración de sesiones (trabajo / descanso / descanso largo)
+- Pomodoros vinculados a hábitos o tareas
+- Conteo de pomodoros completados por día
 - Historial de sesiones
+- Presets configurables (ej: estudio 50/10, trabajo 25/5)
 
-### Planificador diario
+---
+
+## 4. Planificador diario
+
+**Estado: (Por hacer)**
 - Vista tipo "daily planner"
 - Combinar hábitos + tareas + eventos del día en una sola vista
 - Drag & drop para reordenar prioridades
 
 ---
 
-## 2. Gestión de tareas
+## 5. Proyectos
 
-### Tareas con sub-tareas
-- Jerarquía infinita
-- Checklists anidadas
-
-### Etiquetas y prioridades
-- Sistema de tags flexible
-- Prioridad (P1-P4)
-- Estados (todo / doing / done)
-
-### Vista Kanban
-- Tableros tipo Trello
-- Columnas por estado o por proyecto
-
-### Recurring tasks
-- Tareas que se repiten con deadline (diferente a hábitos: tienen fecha de vencimiento)
-
-### Quick capture
-- Captura rápida tipo inbox
-- Palette de comandos (Ctrl+K)
-
----
-
-## 3. Proyectos
-
-### Proyectos con deadlines
+**Estado: (Por hacer)**
 - Agrupar tareas + hábitos bajo un proyecto
 - Fecha de inicio y fin estimada
-
-### Milestones
-- Hitos dentro de proyectos
-- Checkpoints de progreso
-
-### Progreso visual
+- Milestones / hitos dentro de proyectos
 - Barras de progreso
 - Tiempo estimado vs real
-
-### Templates
-- Plantillas de proyectos recurrentes
+- Templates de proyectos recurrentes
 - Duplicar estructura de proyecto existente
 
 ---
 
-## 4. Notas / Knowledge
+## 6. Notas / Knowledge
 
-### Notas rápidas
-- Tipo Apple Notes
-- Vinculables a tareas, proyectos o hábitos
-
-### Journaling diario
-- Diario personal con prompts
+**Estado: (Por hacer)**
+- Notas rápidas tipo Apple Notes, vinculables a tareas, proyectos o hábitos
+- Journaling diario con prompts
 - Mood tracking integrado
-
-### Hábitos como datos
 - Exportar datos de hábitos
 - Gráficos de streaks y tendencias
 - Estadísticas personales a lo largo del tiempo
 
 ---
 
-## 5. Gamificación y motivación
+## 7. Gamificación y motivación
 
-### Sistema de puntos / XP
-- Recompensas por completar tareas y hábitos
-
-### Streaks globales
-- Racha general de productividad (no solo por hábito)
-
-### Logros / achievements
-- Badges por hitos alcanzados
-
-### Estadísticas
+**Estado: (Por hacer)**
+- Sistema de puntos / XP por completar tareas y hábitos
+- Streaks globales (racha general de productividad, no solo por hábito)
+- Logros / achievements (badges por hitos alcanzados)
 - Dashboard con métricas: tiempo enfocado, tareas completadas, hábitos activos
 
 ---
 
-## 6. Personalización (futuro)
+## 8. Personalización
+
+### Temas
+**Estado: (Terminado)**
+- Modo claro / oscuro
+- Toggle en sidebar
+- Persistencia en localStorage
 
 ### Plugins / extensiones
+**Estado: (Por hacer)**
 - Sistema de módulos activables / desactivables
 - El usuario elige qué features tiene visibles
 
-### Themes
-- Temas personalizables
-- Modo claro / oscuro / custom
-
 ### Views custom
+**Estado: (Por hacer)**
 - El usuario crea sus propias vistas (tipo Notion databases)
 - Filtros avanzados por fecha, tag, proyecto, estado
 
 ### Shortcuts personalizables
+**Estado: (Por hacer)**
 - Atajos de teclado configurables
 
 ---
 
-## 7. Pomodoro (post v1)
+## 9. Integraciones
 
-Sesiones de estudio/productividad con temporizador pomodoro configurable.
-
-- Configuración de duración de sesiones (trabajo / descanso / descanso largo)
-- Pomodoros vinculados a hábitos o tareas
-- Conteo de pomodoros completados por día
-- Historial de sesiones
-- Possibilidad de configurar presets (ej: estudio 50/10, trabajo 25/5)
+**Estado: (Por hacer)**
+- Sync entre dispositivos (cloud sync opcional con encriptación)
+- Webhooks / API para conectar con otros servicios
+- Import / Export (CSV, JSON)
 
 ---
 
-## 8. Integraciones
+## Roadmap actualizado
 
-### Sync entre dispositivos
-- Cloud sync opcional con encriptación
-
-### Webhooks / API
-- Conectar con otros servicios
-
-### Import / Export
-- CSV, JSON
-- Integración con otros tools de productividad
-
----
-
-## Roadmap sugerido (orden de prioridad)
-
-| Fase | Features | Por qué primero |
-|------|----------|------------------|
-| 0 | **Widgets del Dashboard** (Tareas pendientes, Objetivos, Calendario anual, Cronograma semanal) | Es la base de la app centralizada. Todo vive como widgets en el dashboard. |
-| 1 | **Tareas** (prioridades, estados, sub-tareas) | Llena el gap más grande junto a hábitos |
-| 2 | **Calendario** | Ya tenemos fechas, se integra naturalmente |
-| 3 | **Proyectos** | Agrupa tareas + hábitos bajo un contexto |
-| 4 | **Quick capture / Inbox** | Captura rápida reduce fricción |
-| 5 | **Gamificación** | Engagement y motivación |
-| 6 | **Notas / Journaling** | Complementa el tracking con reflexión |
-| 7 | **Pomodoro** | Productividad enfocada post-v1 |
-| 8 | **Personalización extrema** | Cuando la base esté sólida |
+| Fase | Features | Estado |
+|------|----------|--------|
+| 0 | **Pantalla de inicio / Onboarding** | Por hacer |
+| 1 | **Dashboard + Widgets** (Hábitos, Tareas, Objetivos, Calendario anual, Cronograma semanal) | Parcialmente terminado (calendario anual y tareas: en progreso) |
+| 2 | **Calendario integrado** (vistas diaria/semanal/mensual) | Por hacer |
+| 3 | **Proyectos** | Por hacer |
+| 4 | **Quick capture / Inbox** | Por hacer |
+| 5 | **Gamificación** | Por hacer |
+| 6 | **Notas / Journaling** | Por hacer |
+| 7 | **Pomodoro** | Por hacer |
+| 8 | **Personalización extrema** (plugins, views custom, shortcuts) | Parcialmente terminado (temas hecho) |
 
 ---
 
 ## Notas abiertas
 
 - *Agregar aquí decisiones de diseño, dudas pendientes, o ideas que surjan durante el desarrollo.*
-
-### Multi-check-in progresivo (hábitos con múltiples repeticiones por día)
-
-Un hábito puede requerir N repeticiones por día (ej: "Tomar 8 vasos de agua", "Hacer 3 series de ejercicio"). Cada tap en el botón de check-in incrementa un contador visual. El color del botón se llena progresivamente (opacity/shade) hasta alcanzar el color completo cuando se llega al target. No es binario check/uncheck — es un contador con feedback visual gradual.
-
-**Estado**: No implementado. La frecuencia queda hardcodeada en `daily` por ahora. El schema ya soporta `target_per_period` y `frequency_type`, pero la UI no lo expone.

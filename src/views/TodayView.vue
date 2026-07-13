@@ -25,7 +25,9 @@ const logs = computed(() => habits.logs);
           :logs="logs.filter((l) => l.habit_id === habit.id)"
         />
       </div>
-      <NewHabitCard />
     </HabitSection>
+    <template #footer>
+      <NewHabitCard />
+    </template>
   </EntityListing>
 </template>

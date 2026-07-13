@@ -14,13 +14,17 @@ const tasksMock = {
   },
 };
 const uiMock = {
-  menuOpenForTaskId: ref<string | null>(null),
+  menuOpenForTaskId: null as string | null,
   toggleTaskMenu: vi.fn(),
   openEditTask: vi.fn(),
 };
-vi.mock("@/stores/tasks", () => ({
-  useTasksStore: () => tasksMock,
-}));
+vi.mock("@/stores/tasks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/stores/tasks")>();
+  return {
+    ...actual,
+    useTasksStore: () => tasksMock,
+  };
+});
 vi.mock("@/stores/ui", () => ({
   useUiStore: () => uiMock,
 }));
@@ -29,7 +33,7 @@ describe("TasksListView", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     tasksState.value = [];
-    uiMock.menuOpenForTaskId.value = null;
+    uiMock.menuOpenForTaskId = null;
   });
 
   it("usa EntityListing con título 'Tareas'", () => {
@@ -84,16 +88,16 @@ describe("TasksListView", () => {
     tasksState.value = [
       { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
     ];
-    uiMock.menuOpenForTaskId.value = "task-1";
+    uiMock.menuOpenForTaskId = "task-1";
     const wrapper = mount(TasksListView);
-    expect(wrapper.find("[data-testid='tasks-panel']").exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "TaskContextMenu" }).exists()).toBe(true);
   });
 
   it("TaskContextMenu no aparece cuando el menú está cerrado", () => {
     tasksState.value = [
       { id: "task-1", title: "Task 1", description: null, color: "#ff0000", status: "todo", due_date: null, steps: [], archived_at: null },
     ];
-    uiMock.menuOpenForTaskId.value = null;
+    uiMock.menuOpenForTaskId = null;
     const wrapper = mount(TasksListView);
     expect(wrapper.findComponent({ name: "TaskContextMenu" }).exists()).toBe(false);
   });

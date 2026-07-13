@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Plus, MoreVertical } from "lucide-vue-next";
+import { Plus, MoreHorizontal } from "lucide-vue-next";
 import { useGoalsStore } from "@/stores/goals";
+import { useUiStore } from "@/stores/ui";
 import type { Goal } from "@/schemas/goals";
 import Container from "@/components/ui/Container.vue";
 import Text from "@/components/ui/Text.vue";
 import IconButton from "@/components/ui/IconButton.vue";
+import GoalContextMenu from "./GoalContextMenu.vue";
 
 const props = defineProps<{ goal: Goal }>();
 
-defineEmits<{
-  "toggle:menu": [];
-}>();
-
 const goals = useGoalsStore();
+const ui = useUiStore();
+
+const isMenuOpen = computed(() => ui.menuOpenForGoalId === props.goal.id);
 
 const currentProgress = computed(() => {
   const today = new Date().toISOString().split("T")[0];
@@ -73,9 +74,10 @@ async function handleIncrement() {
 
 <template>
   <Container
+    data-testid="goal-card"
     variant="ghost"
     padding="sm"
-    class="goal-card-responsive relative group"
+    :class="['goal-card-responsive relative group', isMenuOpen && 'z-10']"
   >
     <div class="flex items-start gap-3">
       <div
@@ -103,12 +105,13 @@ async function handleIncrement() {
 
           <IconButton
             data-testid="goal-menu-button"
+            :data-goal-menu-trigger="goal.id"
             variant="ghost"
             size="sm"
             label="Menú"
-            @click="$emit('toggle:menu')"
+            @click.stop="ui.toggleGoalMenu(goal.id)"
           >
-            <MoreVertical :size="16" />
+            <MoreHorizontal :size="16" />
           </IconButton>
         </div>
 
@@ -153,5 +156,6 @@ async function handleIncrement() {
         </div>
       </div>
     </div>
+    <GoalContextMenu v-if="isMenuOpen" :goal="goal" />
   </Container>
 </template>

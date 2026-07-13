@@ -16,7 +16,7 @@ const goalsMock = {
   loadLogsForRange: vi.fn(),
 };
 const uiMock = {
-  menuOpenForGoalId: ref<string | null>(null),
+  menuOpenForGoalId: null as string | null,
   toggleGoalMenu: vi.fn(),
   openEditGoal: vi.fn(),
 };
@@ -32,7 +32,7 @@ describe("GoalsListView", () => {
     setActivePinia(createPinia());
     goalsState.value = [];
     logsState.value = [];
-    uiMock.menuOpenForGoalId.value = null;
+    uiMock.menuOpenForGoalId = null;
   });
 
   it("usa EntityListing con título 'Objetivos'", () => {
@@ -78,16 +78,16 @@ describe("GoalsListView", () => {
     goalsState.value = [
       { id: "goal-1", title: "Goal 1", description: null, color: "#00ff00", target: 10, unit: null, frequency: { type: "daily" } },
     ];
-    uiMock.menuOpenForGoalId.value = "goal-1";
+    uiMock.menuOpenForGoalId = "goal-1";
     const wrapper = mount(GoalsListView);
-    expect(wrapper.find("[data-testid='goals-panel']").exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "GoalContextMenu" }).exists()).toBe(true);
   });
 
   it("GoalContextMenu no aparece cuando el menú está cerrado", () => {
     goalsState.value = [
       { id: "goal-1", title: "Goal 1", description: null, color: "#00ff00", target: 10, unit: null, frequency: { type: "daily" } },
     ];
-    uiMock.menuOpenForGoalId.value = null;
+    uiMock.menuOpenForGoalId = null;
     const wrapper = mount(GoalsListView);
     expect(wrapper.findComponent({ name: "GoalContextMenu" }).exists()).toBe(false);
   });
