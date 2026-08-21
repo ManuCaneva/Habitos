@@ -6,7 +6,7 @@
 
 ## Visión general
 
-Transformar la app de hábitos en una **aplicación centralizada de productividad** que permita gestionar tiempo, tareas, proyectos y conocimiento personal de forma unificada y personalizable.
+Transformar la app AEON en una **aplicación centralizada de productividad** que permita gestionar tiempo, tareas, proyectos y conocimiento personal de forma unificada y personalizable.
 
 ---
 
