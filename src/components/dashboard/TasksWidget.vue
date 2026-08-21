@@ -8,7 +8,7 @@ import TasksListView from "@/views/TasksListView.vue";
     data-testid="tasks-widget"
     variant="default"
     padding="none"
-    class="h-full overflow-hidden"
+    class="h-full overflow-hidden container-widget"
     style="container-type: inline-size"
   >
     <TasksListView />

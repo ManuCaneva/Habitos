@@ -8,8 +8,8 @@ import {
 
 describe("themes", () => {
   describe("themes array", () => {
-    it("tiene exactamente 2 temas", () => {
-      expect(themes).toHaveLength(2);
+    it("tiene exactamente 3 temas", () => {
+      expect(themes).toHaveLength(3);
     });
 
     it("cada tema tiene id, name, colors y fonts", () => {
@@ -27,6 +27,23 @@ describe("themes", () => {
 
     it("incluye el tema light", () => {
       expect(themes.some((t) => t.id === "light")).toBe(true);
+    });
+
+    it("incluye el tema popi", () => {
+      expect(themes.some((t) => t.id === "popi")).toBe(true);
+    });
+
+    it("cada tema tiene isDark como boolean", () => {
+      for (const theme of themes) {
+        expect(theme).toHaveProperty("isDark");
+        expect(typeof theme.isDark).toBe("boolean");
+      }
+    });
+
+    it("dark y popi son isDark true, light es isDark false", () => {
+      expect(getThemeById("dark")!.isDark).toBe(true);
+      expect(getThemeById("light")!.isDark).toBe(false);
+      expect(getThemeById("popi")!.isDark).toBe(true);
     });
   });
 
@@ -117,6 +134,12 @@ describe("themes", () => {
       expect(theme!.id).toBe("light");
     });
 
+    it('retorna el tema popi cuando busco "popi"', () => {
+      const theme = getThemeById("popi");
+      expect(theme).toBeDefined();
+      expect(theme!.id).toBe("popi");
+    });
+
     it("retorna undefined para un id inexistente", () => {
       expect(getThemeById("inexistente")).toBeUndefined();
     });
@@ -165,6 +188,11 @@ describe("themes", () => {
 
     it('agrega clase "dark" cuando el tema es dark', () => {
       applyTheme(getThemeById("dark")!);
+      expect(root.classList.contains("dark")).toBe(true);
+    });
+
+    it('agrega clase "dark" cuando el tema es popi', () => {
+      applyTheme(getThemeById("popi")!);
       expect(root.classList.contains("dark")).toBe(true);
     });
 

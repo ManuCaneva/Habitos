@@ -52,6 +52,11 @@ vi.mock("@/composables/useTheme", () => ({
         name: "Claro",
         colors: { primary: "94 106 210" },
       },
+      {
+        id: "popi",
+        name: "Popi",
+        colors: { primary: "89 169 106" },
+      },
     ],
     setTheme: mockSetTheme,
   }),

@@ -3,10 +3,10 @@ import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { useWeeklyScheduleStore } from "@/stores/weeklySchedule";
 import { minutesToHHMM } from "@/stores/weeklySchedule";
 import WeeklyScheduleBlock from "./WeeklyScheduleBlock.vue";
-import type { ScheduleBlock } from "@/schemas/weeklySchedule";
+import type { ScheduleBlockWithSlots, ScheduleSlot } from "@/schemas/weeklySchedule";
 
 const store = useWeeklyScheduleStore();
-const emit = defineEmits<{ edit: [block: ScheduleBlock] }>();
+const emit = defineEmits<{ edit: [block: ScheduleBlockWithSlots] }>();
 
 const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -48,10 +48,10 @@ const visibleRows = computed(() => {
 });
 
 const rowHeightPx = computed(() => {
-  const headerHeight = 33;
+  const headerHeight = Math.max(24, Math.min(40, containerHeight.value * 0.06));
   const avail = containerHeight.value - headerHeight;
   const calculated = avail / visibleRows.value;
-  const minHeight = 28;
+  const minHeight = Math.max(20, Math.min(36, containerHeight.value * 0.045));
   return Math.max(minHeight, calculated);
 });
 
@@ -73,73 +73,82 @@ const gridTotalHeightPx = computed(() => visibleRows.value * rowHeightPx.value);
 const gridHeightStyle = computed(() => gridTotalHeightPx.value + "px");
 const rowHeightStyle = computed(() => rowHeightPx.value + "px");
 
-function blockTopPx(b: ScheduleBlock) {
-  return (b.start_minutes - dayStart.value) * minuteHeightPx.value;
+function slotTopPx(s: ScheduleSlot) {
+  return (s.start_minutes - dayStart.value) * minuteHeightPx.value;
 }
 
-function blockHeightPx(b: ScheduleBlock) {
-  return (b.end_minutes - b.start_minutes) * minuteHeightPx.value;
+function slotHeightPx(s: ScheduleSlot) {
+  return (s.end_minutes - s.start_minutes) * minuteHeightPx.value;
 }
 
-// Solo mostramos bloques que entren en el rango horario visible
-const visibleBlocks = computed(() => {
+interface VisibleSlot {
+  slot: ScheduleSlot;
+  block: ScheduleBlockWithSlots;
+}
+
+const visibleSlots = computed((): VisibleSlot[] => {
   const start = store.settings.day_start_minutes;
   const end = store.settings.day_end_minutes;
-  return store.blocks.filter((b) => b.start_minutes >= start && b.end_minutes <= end);
+  const result: VisibleSlot[] = [];
+  for (const bw of store.blocksWithSlots) {
+    for (const slot of bw.slots) {
+      if (slot.start_minutes >= start && slot.end_minutes <= end) {
+        result.push({ slot, block: bw });
+      }
+    }
+  }
+  return result;
 });
 
-function blocksForDay(day: number) {
-  return visibleBlocks.value.filter((b) => b.day_of_week === day);
+function slotsForDay(day: number): VisibleSlot[] {
+  return visibleSlots.value.filter((vs) => vs.slot.day_of_week === day);
 }
 </script>
 
 <template>
   <div ref="containerRef" class="relative w-full h-full min-h-0 flex flex-col select-none">
-    <!-- Contenedor scrollable de la grilla -->
     <div class="flex-1 min-h-0 overflow-y-auto relative bg-canvas scrollbar-gutter-stable">
-      <!-- Header de días (sticky) -->
       <div class="flex border-b border-hairline bg-surface-2 sticky top-0 z-20 flex-shrink-0">
         <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 bg-surface-2" />
         <div class="flex-1 grid grid-cols-7 border-l border-hairline bg-surface-2">
           <div v-for="(day, index) in DAYS" :key="index"
-               class="text-caption text-ink-muted text-center py-2 border-r border-hairline font-semibold text-xs bg-surface-2">
+               class="text-ink-muted text-center border-r border-hairline font-semibold bg-surface-2 schedule-day-label text-caption py-2 text-xs">
             {{ day }}
           </div>
         </div>
       </div>
       
-      <!-- Grilla de fondo con las líneas de horas y días -->
       <div class="flex" :style="{ height: gridHeightStyle }">
-        <!-- Columna de etiquetas de horas -->
         <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 border-r border-hairline bg-surface-1/50 select-none">
           <div v-for="hl in hourLabels" :key="hl.minute"
                :style="{ height: rowHeightStyle }"
-               class="text-[10px] text-ink-subtle px-1 flex items-center justify-end pr-2 font-mono border-b border-hairline/30">
+               class="text-ink-subtle flex items-center justify-end font-mono border-b border-hairline/30 schedule-hour-label text-[10px] px-1 pr-2">
             {{ hl.label }}
           </div>
         </div>
         
-        <!-- Líneas divisorias de la grilla -->
         <div class="flex-1 grid grid-cols-7 border-l border-hairline relative select-none">
           <div v-for="dayIndex in 7" :key="dayIndex" class="border-r border-hairline relative">
-            <!-- Celdas de la grilla para cada slot de hora -->
             <div v-for="hl in hourLabels" :key="hl.minute"
                  :style="{ height: rowHeightStyle }"
                  class="border-b border-hairline/30 w-full" />
             
-            <!-- Bloques de este día específico -->
             <WeeklyScheduleBlock
-              v-for="b in blocksForDay(dayIndex - 1)"
-              :key="b.id"
-              :block="b"
+              v-for="vs in slotsForDay(dayIndex - 1)"
+              :key="vs.slot.id"
+              :title="vs.block.title"
+              :color="vs.block.color"
+              :day-of-week="vs.slot.day_of_week"
+              :start-minutes="vs.slot.start_minutes"
+              :end-minutes="vs.slot.end_minutes"
               class="absolute shadow-sm z-10"
               :style="{
-                top: blockTopPx(b) + 'px',
-                height: blockHeightPx(b) + 'px',
-                left: '2px',
-                width: 'calc(100% - 4px)',
+                top: slotTopPx(vs.slot) + 'px',
+                height: slotHeightPx(vs.slot) + 'px',
+                left: '2%',
+                width: '96%',
               }"
-              @click="emit('edit', b)"
+              @click="emit('edit', vs.block)"
             />
           </div>
         </div>

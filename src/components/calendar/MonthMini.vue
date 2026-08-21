@@ -169,8 +169,8 @@ function overflowCount(date: string | null): number {
 }
 
 .event-dot {
-  width: calc(var(--cell-size) * 0.22);
-  height: calc(var(--cell-size) * 0.22);
+  width: calc(var(--cell-size) * 0.30);
+  height: calc(var(--cell-size) * 0.30);
   border-radius: 9999px;
   flex-shrink: 0;
 }

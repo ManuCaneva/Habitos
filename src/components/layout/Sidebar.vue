@@ -37,7 +37,7 @@ const collapseIcon = computed(() =>
         weight="600"
         class="truncate"
       >
-        Hábitos
+        AEON
       </Text>
     </div>
 

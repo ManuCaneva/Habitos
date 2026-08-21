@@ -46,7 +46,7 @@ function recompute() {
   const availW = el.clientWidth;
   const availH = el.clientHeight;
 
-  const result = computeLayout(availW, availH, targetCols.value);
+  const result = computeLayout(availW, availH);
   if (!result) return;
 
   layout.value = result;
@@ -75,34 +75,21 @@ onUnmounted(() => {
 
 const viewportRef = ref<HTMLElement | null>(null);
 
-const maxScroll = computed(() => {
-  if (!layout.value) return 0;
-  const cols = layout.value.cols;
-  const rows = Math.ceil(12 / cols);
-  const totalH = rows * layout.value.monthHeight + (rows - 1) * layout.value.gridGap;
-  const viewportH = (layout.value.visibleSlots / cols) * (layout.value.monthHeight + layout.value.gridGap) - layout.value.gridGap;
-  return Math.max(0, totalH - viewportH);
-});
-
-const showArrows = computed(() => layout.value ? layout.value.visibleSlots < 12 : false);
+const showArrows = computed(() => layout.value ? !layout.value.showsAll : false);
 const canGoUp = computed(() => offset.value > 0);
 const canGoDown = computed(() => {
   if (!layout.value) return false;
-  const currentScroll = Math.floor(offset.value / layout.value.cols) * (layout.value.monthHeight + layout.value.gridGap);
-  return currentScroll < maxScroll.value - 1;
+  return offset.value + layout.value.visibleSlots < 12;
 });
 
 function goUp() {
   if (!canGoUp.value || !layout.value) return;
-  offset.value = Math.max(0, offset.value - layout.value.cols);
+  offset.value = Math.max(0, offset.value - layout.value.visibleSlots);
 }
 
 function goDown() {
   if (!canGoDown.value || !layout.value) return;
-  const rowH = layout.value.monthHeight + layout.value.gridGap;
-  const maxRowIndex = Math.ceil(maxScroll.value / rowH);
-  const nextOffset = offset.value + layout.value.cols;
-  offset.value = Math.min(maxRowIndex * layout.value.cols, nextOffset);
+  offset.value = Math.min(12 - layout.value.visibleSlots, offset.value + layout.value.visibleSlots);
 }
 
 
@@ -195,7 +182,7 @@ watch(
             :style="{
               '--cols': layout.cols,
               '--grid-gap': `${layout.gridGap}px`,
-              'transform': `translateY(-${Math.min(Math.floor(offset / layout.cols) * (layout.monthHeight + layout.gridGap), maxScroll)}px)`,
+              'transform': `translateY(-${Math.floor(offset / layout.cols) * (layout.monthHeight + layout.gridGap)}px)`,
             }"
           >
             <MonthMini

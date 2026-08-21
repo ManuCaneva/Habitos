@@ -5,43 +5,128 @@ import Button from "@/components/ui/Button.vue";
 import Input from "@/components/ui/Input.vue";
 import TimePicker from "@/components/ui/TimePicker.vue";
 import { useWeeklyScheduleStore } from "@/stores/weeklySchedule";
-import { BLOCK_COLOR_TOKENS, type ScheduleBlock } from "@/schemas/weeklySchedule";
+import { BLOCK_COLOR_TOKENS, type ScheduleBlockWithSlots, type CreateScheduleSlotDraft } from "@/schemas/weeklySchedule";
 import { minutesToHHMM, hhmmToMinutes } from "@/stores/weeklySchedule";
 
-const props = defineProps<{ open: boolean; block: ScheduleBlock | null }>();
+const props = defineProps<{ open: boolean; block: ScheduleBlockWithSlots | null }>();
 const emit = defineEmits<{ close: [] }>();
 const store = useWeeklyScheduleStore();
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-const title = ref(""); const color = ref<(typeof BLOCK_COLOR_TOKENS)[number]>("lavender");
-const day = ref(0); const start = ref("06:00"); const end = ref("07:00");
+const title = ref("");
+const color = ref<(typeof BLOCK_COLOR_TOKENS)[number]>("lavender");
 const error = ref<string | null>(null);
+
+const newSlotDay = ref(0);
+const newSlotStart = ref("06:00");
+const newSlotEnd = ref("07:00");
+const editingSlotId = ref<string | null>(null);
+const createdBlockId = ref<string | null>(null);
 
 watch(() => props.open, (o) => {
   if (!o) return;
   error.value = null;
+  editingSlotId.value = null;
+  createdBlockId.value = null;
   if (props.block) {
-    title.value = props.block.title; color.value = props.block.color;
-    day.value = props.block.day_of_week;
-    start.value = minutesToHHMM(props.block.start_minutes);
-    end.value = minutesToHHMM(props.block.end_minutes);
+    title.value = props.block.title;
+    color.value = props.block.color;
+    newSlotDay.value = 0;
+    newSlotStart.value = "06:00";
+    newSlotEnd.value = "07:00";
   } else {
-    title.value = ""; color.value = "lavender"; day.value = 0;
-    start.value = "06:00"; end.value = "07:00";
+    title.value = "";
+    color.value = "lavender";
+    newSlotDay.value = 0;
+    newSlotStart.value = "06:00";
+    newSlotEnd.value = "07:00";
   }
 }, { immediate: true });
 
 async function save() {
   error.value = null;
   try {
-    const s = hhmmToMinutes(start.value); const e = hhmmToMinutes(end.value);
-    if (e <= s) { error.value = "La hora de fin debe ser mayor que la de inicio"; return; }
-    const draft = { day_of_week: day.value, start_minutes: s, end_minutes: e,
-                    title: title.value, color: color.value, sort_order: 0 };
-    if (props.block) await store.updateBlock(props.block.id, draft);
-    else await store.createBlock(draft);
+    if (!title.value.trim()) {
+      error.value = "El título es obligatorio";
+      return;
+    }
+    if (props.block) {
+      await store.updateBlock(props.block.id, { title: title.value, color: color.value });
+    } else {
+      await store.createBlock(
+        { title: title.value, color: color.value, sort_order: 0 },
+        []
+      );
+    }
     emit("close");
-  } catch (e: any) { error.value = String(e.message || e); }
+  } catch (e: any) {
+    error.value = String(e.message || e);
+  }
+}
+
+async function addSlot() {
+  error.value = null;
+  try {
+    const s = hhmmToMinutes(newSlotStart.value);
+    const e = hhmmToMinutes(newSlotEnd.value);
+    if (e <= s) {
+      error.value = "La hora de fin debe ser mayor que la de inicio";
+      return;
+    }
+    const slotDraft: CreateScheduleSlotDraft = {
+      day_of_week: newSlotDay.value,
+      start_minutes: s,
+      end_minutes: e,
+    };
+    if (props.block) {
+      if (editingSlotId.value) {
+        await store.updateSlot(editingSlotId.value, slotDraft);
+      } else {
+        await store.addSlot(props.block.id, slotDraft);
+      }
+    } else {
+      if (createdBlockId.value) {
+        await store.addSlot(createdBlockId.value, slotDraft);
+      } else {
+        const bw = await store.createBlock(
+          { title: title.value, color: color.value, sort_order: 0 },
+          [slotDraft]
+        );
+        createdBlockId.value = bw.id;
+      }
+    }
+    editingSlotId.value = null;
+    newSlotDay.value = 0;
+    newSlotStart.value = "06:00";
+    newSlotEnd.value = "07:00";
+  } catch (e: any) {
+    error.value = String(e.message || e);
+  }
+}
+
+function editSlot(slotId: string) {
+  if (!props.block) return;
+  const slot = props.block.slots.find((s) => s.id === slotId);
+  if (!slot) return;
+  editingSlotId.value = slotId;
+  newSlotDay.value = slot.day_of_week;
+  newSlotStart.value = minutesToHHMM(slot.start_minutes);
+  newSlotEnd.value = minutesToHHMM(slot.end_minutes);
+}
+
+async function deleteSlot(slotId: string) {
+  error.value = null;
+  try {
+    await store.deleteSlot(slotId);
+    if (editingSlotId.value === slotId) {
+      editingSlotId.value = null;
+      newSlotDay.value = 0;
+      newSlotStart.value = "06:00";
+      newSlotEnd.value = "07:00";
+    }
+  } catch (e: any) {
+    error.value = String(e.message || e);
+  }
 }
 
 async function remove() {
@@ -49,7 +134,9 @@ async function remove() {
   try {
     await store.deleteBlock(props.block.id);
     emit("close");
-  } catch (e: any) { error.value = String(e.message || e); }
+  } catch (e: any) {
+    error.value = String(e.message || e);
+  }
 }
 
 const colorMap: Record<string, string> = {
@@ -85,19 +172,42 @@ function getBgColorStyle(c: string) {
           @click="color = c" :aria-label="c" />
       </div>
       
-      <label class="block text-caption text-ink-muted mt-3 mb-1 font-medium text-xs">Día</label>
-      <select v-model="day" class="bg-surface-2 border border-hairline rounded-sm px-2 py-1.5 text-body w-full">
-        <option v-for="(d, i) in DAYS" :key="i" :value="i">{{ d }}</option>
-      </select>
-      
-      <div class="flex gap-3 mt-3">
-        <div class="flex-1">
-          <label class="block text-caption text-ink-muted mb-1.5 font-medium text-xs text-center">Inicio</label>
-          <TimePicker v-model="start" />
+      <div v-if="block" class="mt-4">
+        <label class="block text-caption text-ink-muted mb-2 font-medium text-xs">Horarios</label>
+        <div v-if="block.slots.length === 0" class="text-body-sm text-ink-subtle text-sm italic mb-2">
+          Sin horarios asignados
         </div>
-        <div class="flex-1">
-          <label class="block text-caption text-ink-muted mb-1.5 font-medium text-xs text-center">Fin</label>
-          <TimePicker v-model="end" />
+        <div v-for="slot in block.slots" :key="slot.id" class="flex items-center gap-2 mb-2 p-2 bg-surface-2 border border-hairline rounded-sm">
+          <div class="flex-1 text-body-sm text-sm">
+            <span class="font-medium">{{ DAYS[slot.day_of_week] }}</span>
+            <span class="text-ink-subtle ml-2">{{ minutesToHHMM(slot.start_minutes) }} - {{ minutesToHHMM(slot.end_minutes) }}</span>
+          </div>
+          <button type="button" class="text-primary hover:text-primary-hover text-xs px-2 py-1" @click="editSlot(slot.id)">Editar</button>
+          <button type="button" class="text-red-500 hover:text-red-600 text-xs px-2 py-1" @click="deleteSlot(slot.id)">Eliminar</button>
+        </div>
+      </div>
+      
+      <div class="mt-4 p-3 bg-surface-2 border border-hairline rounded-sm">
+        <label class="block text-caption text-ink-muted mb-2 font-medium text-xs">
+          {{ editingSlotId ? "Editar horario" : "Agregar horario" }}
+        </label>
+        <label class="block text-caption text-ink-muted mb-1 font-medium text-xs">Día</label>
+        <select v-model="newSlotDay" class="bg-surface-2 border border-hairline rounded-sm px-2 py-1.5 text-body w-full mb-2">
+          <option v-for="(d, i) in DAYS" :key="i" :value="i">{{ d }}</option>
+        </select>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="block text-caption text-ink-muted mb-1.5 font-medium text-xs text-center">Inicio</label>
+            <TimePicker v-model="newSlotStart" />
+          </div>
+          <div class="flex-1">
+            <label class="block text-caption text-ink-muted mb-1.5 font-medium text-xs text-center">Fin</label>
+            <TimePicker v-model="newSlotEnd" />
+          </div>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <Button size="sm" @click="addSlot">{{ editingSlotId ? "Actualizar" : "Agregar" }}</Button>
+          <Button v-if="editingSlotId" size="sm" variant="ghost" @click="editingSlotId = null; newSlotDay = 0; newSlotStart = '06:00'; newSlotEnd = '07:00'">Cancelar</Button>
         </div>
       </div>
       
@@ -108,7 +218,8 @@ function getBgColorStyle(c: string) {
         <div v-else />
         <div class="flex gap-2">
           <Button variant="ghost" @click="emit('close')">Cancelar</Button>
-          <Button @click="save">{{ block ? "Guardar" : "Crear" }}</Button>
+          <Button v-if="!block" @click="save">Crear</Button>
+          <Button v-else @click="save">Guardar</Button>
         </div>
       </div>
     </div>

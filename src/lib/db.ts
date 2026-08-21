@@ -42,12 +42,16 @@ import {
 } from "../schemas/goals";
 import {
   CreateScheduleBlockDraftSchema,
+  CreateScheduleSlotDraftSchema,
   ScheduleBlockRowSchema,
+  ScheduleSlotRowSchema,
   UpdateScheduleBlockDraftSchema,
   WeeklyScheduleSettingsSchema,
   DEFAULT_WEEKLY_SCHEDULE_SETTINGS,
   type CreateScheduleBlockDraft,
+  type CreateScheduleSlotDraft,
   type ScheduleBlockRow,
+  type ScheduleSlotRow,
   type UpdateScheduleBlockDraft,
   type WeeklyScheduleSettings,
 } from "../schemas/weeklySchedule";
@@ -383,6 +387,12 @@ export async function listScheduleBlocks(): Promise<ScheduleBlockRow[]> {
   return arr.map((r) => ScheduleBlockRowSchema.parse(r));
 }
 
+export async function listScheduleSlots(): Promise<ScheduleSlotRow[]> {
+  const raw = await invoke<unknown>("list_schedule_slots");
+  const arr = Array.isArray(raw) ? raw : [];
+  return arr.map((r) => ScheduleSlotRowSchema.parse(r));
+}
+
 export async function createScheduleBlock(
   draft: CreateScheduleBlockDraft,
   id: string,
@@ -394,6 +404,20 @@ export async function createScheduleBlock(
     input: { id, ...v, created_at, updated_at },
   });
   return ScheduleBlockRowSchema.parse(raw);
+}
+
+export async function createScheduleSlot(
+  draft: CreateScheduleSlotDraft,
+  id: string,
+  block_id: string,
+  created_at: string,
+  updated_at: string,
+): Promise<ScheduleSlotRow> {
+  const v = CreateScheduleSlotDraftSchema.parse(draft);
+  const raw = await invoke<unknown>("create_schedule_slot", {
+    input: { id, block_id, ...v, created_at, updated_at },
+  });
+  return ScheduleSlotRowSchema.parse(raw);
 }
 
 export async function updateScheduleBlock(
@@ -408,14 +432,23 @@ export async function updateScheduleBlock(
   return ScheduleBlockRowSchema.parse(raw);
 }
 
+export async function updateScheduleSlot(
+  id: string,
+  patch: { day_of_week?: number; start_minutes?: number; end_minutes?: number },
+  updated_at: string,
+): Promise<ScheduleSlotRow> {
+  const raw = await invoke<unknown>("update_schedule_slot", {
+    input: { id, ...patch, updated_at },
+  });
+  return ScheduleSlotRowSchema.parse(raw);
+}
+
 export async function deleteScheduleBlock(id: string): Promise<void> {
   await invoke("delete_schedule_block", { id });
 }
 
-export async function upsertAllScheduleBlocks(
-  rows: ScheduleBlockRow[],
-): Promise<void> {
-  await invoke("upsert_all_schedule_blocks", { blocks: rows });
+export async function deleteScheduleSlot(id: string): Promise<void> {
+  await invoke("delete_schedule_slot", { id });
 }
 
 // Settings persisten en config table (key weekly-schedule-settings)

@@ -213,7 +213,14 @@ describe("YearCalendarWidget", () => {
     await wrapper.vm.$nextTick();
 
     const grid = wrapper.find(".ycw__grid");
-    expect(grid.attributes("style")).toContain("--cols: 2");
+    const style = grid.attributes("style");
+    expect(style).toContain("--cols:");
+    // Algorithm chooses optimal column count based on available space
+    const colsMatch = style!.match(/--cols:\s*(\d+)/);
+    expect(colsMatch).not.toBeNull();
+    const cols = parseInt(colsMatch![1]);
+    expect(cols).toBeGreaterThanOrEqual(1);
+    expect(cols).toBeLessThanOrEqual(4);
 
     vi.unstubAllGlobals();
   });

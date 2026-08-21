@@ -3,8 +3,12 @@ import {
   BLOCK_COLOR_TOKENS,
   blockColorSchema,
   ScheduleBlockSchema,
+  ScheduleSlotSchema,
+  ScheduleBlockWithSlotsSchema,
   rowToScheduleBlock,
   scheduleBlockToRow,
+  rowToScheduleSlot,
+  scheduleSlotToRow,
   WeeklyScheduleSettingsSchema,
   DEFAULT_WEEKLY_SCHEDULE_SETTINGS,
 } from "./weeklySchedule";
@@ -28,9 +32,6 @@ describe("weeklySchedule schema tests", () => {
   describe("ScheduleBlockSchema", () => {
     const validBlock = {
       id: validUuid,
-      day_of_week: 1, // Martes
-      start_minutes: 360, // 06:00
-      end_minutes: 420, // 07:00
       title: "Gimnasio",
       color: "lavender",
       sort_order: 0,
@@ -51,34 +52,105 @@ describe("weeklySchedule schema tests", () => {
       const block = { ...validBlock, title: "" };
       expect(() => ScheduleBlockSchema.parse(block)).toThrow();
     });
+  });
+
+  describe("ScheduleSlotSchema", () => {
+    const validSlot = {
+      id: validUuid,
+      block_id: validUuid,
+      day_of_week: 1, // Martes
+      start_minutes: 360, // 06:00
+      end_minutes: 420, // 07:00
+      created_at: validIso,
+      updated_at: validIso,
+    };
+
+    it("acepta un slot válido", () => {
+      expect(ScheduleSlotSchema.parse(validSlot)).toEqual(validSlot);
+    });
 
     it("rechaza día de semana fuera de rango", () => {
-      const block = { ...validBlock, day_of_week: 7 };
-      expect(() => ScheduleBlockSchema.parse(block)).toThrow();
+      const slot = { ...validSlot, day_of_week: 7 };
+      expect(() => ScheduleSlotSchema.parse(slot)).toThrow();
     });
 
     it("rechaza start_minutes fuera de rango", () => {
-      const block = { ...validBlock, start_minutes: 1440 };
-      expect(() => ScheduleBlockSchema.parse(block)).toThrow();
+      const slot = { ...validSlot, start_minutes: 1440 };
+      expect(() => ScheduleSlotSchema.parse(slot)).toThrow();
     });
 
     it("rechaza end_minutes fuera de rango", () => {
-      const block = { ...validBlock, end_minutes: 1441 };
-      expect(() => ScheduleBlockSchema.parse(block)).toThrow();
+      const slot = { ...validSlot, end_minutes: 1441 };
+      expect(() => ScheduleSlotSchema.parse(slot)).toThrow();
     });
 
     it("rechaza si end_minutes <= start_minutes", () => {
-      const block = { ...validBlock, start_minutes: 420, end_minutes: 360 };
-      expect(() => ScheduleBlockSchema.parse(block)).toThrow();
+      const slot = { ...validSlot, start_minutes: 420, end_minutes: 360 };
+      expect(() => ScheduleSlotSchema.parse(slot)).toThrow();
+    });
+  });
+
+  describe("ScheduleBlockWithSlotsSchema", () => {
+    const validBlockWithSlots = {
+      id: validUuid,
+      title: "Redes de datos",
+      color: "cyan",
+      sort_order: 0,
+      created_at: validIso,
+      updated_at: validIso,
+      slots: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440001",
+          block_id: validUuid,
+          day_of_week: 1, // Martes
+          start_minutes: 995, // 16:35
+          end_minutes: 1230, // 20:30
+          created_at: validIso,
+          updated_at: validIso,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440002",
+          block_id: validUuid,
+          day_of_week: 3, // Jueves
+          start_minutes: 1230, // 20:30
+          end_minutes: 1365, // 22:45
+          created_at: validIso,
+          updated_at: validIso,
+        },
+      ],
+    };
+
+    it("acepta un bloque con múltiples slots", () => {
+      expect(ScheduleBlockWithSlotsSchema.parse(validBlockWithSlots)).toEqual(validBlockWithSlots);
+    });
+
+    it("acepta un bloque sin slots", () => {
+      const blockWithEmptySlots = { ...validBlockWithSlots, slots: [] };
+      expect(ScheduleBlockWithSlotsSchema.parse(blockWithEmptySlots)).toEqual(blockWithEmptySlots);
+    });
+
+    it("rechaza si algún slot es inválido", () => {
+      const blockWithInvalidSlot = {
+        ...validBlockWithSlots,
+        slots: [
+          {
+            id: "550e8400-e29b-41d4-a716-446655440001",
+            block_id: validUuid,
+            day_of_week: 7, // inválido
+            start_minutes: 995,
+            end_minutes: 1230,
+            created_at: validIso,
+            updated_at: validIso,
+          },
+        ],
+      };
+      expect(() => ScheduleBlockWithSlotsSchema.parse(blockWithInvalidSlot)).toThrow();
     });
   });
 
   describe("Mappers", () => {
-    const validRow = {
+    const validBlockRow = {
       id: validUuid,
-      day_of_week: 1,
-      start_minutes: 360,
-      end_minutes: 420,
       title: "Gimnasio",
       color: "lavender",
       sort_order: 0,
@@ -88,9 +160,6 @@ describe("weeklySchedule schema tests", () => {
 
     const validBlock = {
       id: validUuid,
-      day_of_week: 1,
-      start_minutes: 360,
-      end_minutes: 420,
       title: "Gimnasio",
       color: "lavender" as const,
       sort_order: 0,
@@ -98,12 +167,45 @@ describe("weeklySchedule schema tests", () => {
       updated_at: validIso,
     };
 
-    it("convierte fila a bloque de dominio", () => {
-      expect(rowToScheduleBlock(validRow)).toEqual(validBlock);
+    const validSlotRow = {
+      id: validUuid,
+      block_id: validUuid,
+      day_of_week: 1,
+      start_minutes: 360,
+      end_minutes: 420,
+      created_at: validIso,
+      updated_at: validIso,
+    };
+
+    const validSlot = {
+      id: validUuid,
+      block_id: validUuid,
+      day_of_week: 1,
+      start_minutes: 360,
+      end_minutes: 420,
+      created_at: validIso,
+      updated_at: validIso,
+    };
+
+    it("convierte fila de bloque a bloque de dominio", () => {
+      expect(rowToScheduleBlock(validBlockRow)).toEqual(validBlock);
     });
 
     it("convierte bloque de dominio a fila", () => {
-      expect(scheduleBlockToRow(validBlock)).toEqual(validRow);
+      expect(scheduleBlockToRow(validBlock)).toEqual(validBlockRow);
+    });
+
+    it("convierte fila de slot a slot de dominio", () => {
+      expect(rowToScheduleSlot(validSlotRow)).toEqual(validSlot);
+    });
+
+    it("convierte slot de dominio a fila", () => {
+      expect(scheduleSlotToRow(validSlot)).toEqual(validSlotRow);
+    });
+
+    it("rowToScheduleBlock normaliza colores legacy", () => {
+      const legacyRow = { ...validBlockRow, color: "primary" };
+      expect(rowToScheduleBlock(legacyRow).color).toBe("lavender");
     });
   });
 

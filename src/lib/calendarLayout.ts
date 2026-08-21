@@ -21,7 +21,7 @@ export interface LayoutResult {
 
 // Inner DOM metrics
 const MIN_CELL_SIZE = 4;       // minimum readable day cell size in pixels
-const MAX_CELL_SIZE = 28;      // maximum day cell size in pixels
+const MAX_CELL_SIZE = 120;     // upper bound - algorithm iterates down from here
 
 export function computeForCols(
   c: number,
@@ -31,8 +31,8 @@ export function computeForCols(
   if (rawW <= 0 || rawH <= 0) return null;
 
   // Subtract container paddings, top-level day-of-week headers height, and a 4px safety margin
-  const bodyPadding = 4;
-  const colHeaderHeight = rawH < 500 ? 14 : 18;
+  const bodyPadding = 2;
+  const colHeaderHeight = rawH < 500 ? 12 : 16;
 
   const availW = rawW - 2 * bodyPadding;
   const availH = rawH - 2 * bodyPadding - colHeaderHeight - 4;
@@ -43,9 +43,9 @@ export function computeForCols(
   function getSpacing(cs: number) {
     const cellGap = cs < 10 ? 1 : Math.max(1, Math.round(cs * 0.12));
     const monthPadding = 0;
-    const gridGap = Math.max(2, Math.round(cs * 0.4));
-    const nameGap = Math.max(2, Math.round(cs * 0.3));
-    const monthHeader = Math.max(9, Math.round(cs * 1.2));
+    const gridGap = Math.max(3, Math.round(cs * 0.5));
+    const nameGap = Math.max(3, Math.round(cs * 0.35));
+    const monthHeader = Math.max(10, Math.round(cs * 1.3));
 
     // Width of 1 month card
     const monthW = 7 * cs + 6 * cellGap + 2 * monthPadding;
@@ -163,7 +163,7 @@ export function computeLayout(availW: number, availH: number, targetCols?: numbe
 
   let best: LayoutResult | null = null;
 
-  // Scan columns up to maxCols to find the layout that maximizes month visibility and readability
+  // Scan columns up to maxCols to find the layout with the largest day cells
   for (let c = 1; c <= maxCols; c++) {
     const cand = computeForCols(c, availW, availH);
     if (!cand) continue;
@@ -173,31 +173,15 @@ export function computeLayout(availW: number, availH: number, targetCols?: numbe
       continue;
     }
 
-    // 1. Prefer layouts that show all 12 months
-    if (cand.showsAll && !best.showsAll) {
+    // Prefer larger day cells (more readable)
+    if (cand.cellSizePct > best.cellSizePct) {
       best = cand;
       continue;
     }
-    if (!cand.showsAll && best.showsAll) {
-      continue;
-    }
 
-    // 2. If both show all 12 months, choose the one with the larger day cell size (more readable)
-    if (cand.showsAll && best.showsAll) {
-      if (cand.cellSizePct > best.cellSizePct) {
-        best = cand;
-      }
-      continue;
-    }
-
-    // 3. If neither shows all 12 months, maximize the number of visible months
-    if (cand.visibleSlots > best.visibleSlots) {
+    // If cells are the same size, prefer showing more months
+    if (cand.cellSizePct === best.cellSizePct && cand.visibleSlots > best.visibleSlots) {
       best = cand;
-    } else if (cand.visibleSlots === best.visibleSlots) {
-      // Tie breaker: prefer larger day cells
-      if (cand.cellSizePct > best.cellSizePct) {
-        best = cand;
-      }
     }
   }
 

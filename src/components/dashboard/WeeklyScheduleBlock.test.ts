@@ -4,9 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import WeeklyScheduleBlock from "./WeeklyScheduleBlock.vue";
 
 vi.mock("@/stores/weeklySchedule", () => ({
-  useWeeklyScheduleStore: () => ({
-    moveBlockAfterDrag: vi.fn(),
-  }),
+  useWeeklyScheduleStore: () => ({}),
 }));
 
 describe("WeeklyScheduleBlock", () => {
@@ -14,24 +12,14 @@ describe("WeeklyScheduleBlock", () => {
     setActivePinia(createPinia());
   });
 
-  const validBlock = {
-    id: "333e8400-e29b-41d4-a716-446655440000",
-    day_of_week: 1,
-    start_minutes: 360,
-    end_minutes: 420,
-    title: "Gimnasio",
-    color: "lavender" as const,
-    sort_order: 0,
-    created_at: "2026-07-12T19:00:00.000Z",
-    updated_at: "2026-07-12T19:00:00.000Z",
-  };
-
-  it("renderiza el bloque con el título y clase de color correspondiente", () => {
+  it("renderiza el título y clase de color correspondiente", () => {
     const wrapper = mount(WeeklyScheduleBlock, {
       props: {
-        block: validBlock,
-        minuteHeightPx: 1,
-        dayStart: 360,
+        title: "Gimnasio",
+        color: "lavender",
+        dayOfWeek: 1,
+        startMinutes: 360,
+        endMinutes: 420,
       },
     });
 
@@ -42,9 +30,11 @@ describe("WeeklyScheduleBlock", () => {
   it("emite click cuando el usuario hace click en el bloque", async () => {
     const wrapper = mount(WeeklyScheduleBlock, {
       props: {
-        block: validBlock,
-        minuteHeightPx: 1,
-        dayStart: 360,
+        title: "Gimnasio",
+        color: "lavender",
+        dayOfWeek: 1,
+        startMinutes: 360,
+        endMinutes: 420,
       },
     });
 

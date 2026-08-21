@@ -11,10 +11,13 @@ import * as db from "@/lib/db";
 
 vi.mock("@/lib/db", () => ({
   listScheduleBlocks: vi.fn().mockResolvedValue([]),
+  listScheduleSlots: vi.fn().mockResolvedValue([]),
   createScheduleBlock: vi.fn(),
+  createScheduleSlot: vi.fn(),
   updateScheduleBlock: vi.fn(),
+  updateScheduleSlot: vi.fn(),
   deleteScheduleBlock: vi.fn(),
-  upsertAllScheduleBlocks: vi.fn(),
+  deleteScheduleSlot: vi.fn(),
   loadWeeklyScheduleSettings: vi.fn().mockResolvedValue({
     granularity_minutes: 30,
     day_start_minutes: 360,
@@ -23,6 +26,9 @@ vi.mock("@/lib/db", () => ({
   }),
   saveWeeklyScheduleSettings: vi.fn(),
 }));
+
+const validUuid = "550e8400-e29b-41d4-a716-446655440000";
+const validIso = "2026-07-12T19:00:00.000Z";
 
 describe("weeklySchedule store", () => {
   beforeEach(() => {
@@ -62,20 +68,16 @@ describe("weeklySchedule store", () => {
 
   describe("overlaps", () => {
     it("detecta solapamientos", () => {
-      // Bloque A: 06:00 a 07:00 (360-420)
-      // Bloque B: 06:30 a 07:30 (390-450)
       expect(overlaps(
         { start_minutes: 360, end_minutes: 420 },
         { start_minutes: 390, end_minutes: 450 }
       )).toBe(true);
 
-      // Bloque A y B no se solapan (tocan pero no solapan)
       expect(overlaps(
         { start_minutes: 360, end_minutes: 420 },
         { start_minutes: 420, end_minutes: 480 }
       )).toBe(false);
 
-      // Bloque A contiene a B
       expect(overlaps(
         { start_minutes: 360, end_minutes: 480 },
         { start_minutes: 390, end_minutes: 420 }
@@ -84,159 +86,205 @@ describe("weeklySchedule store", () => {
   });
 
   describe("Lógica del Store", () => {
-    it("carga bloques y configuraciones", async () => {
+    it("carga bloques con sus slots", async () => {
       const store = useWeeklyScheduleStore();
-      const mockRow = {
-        id: "111e8400-e29b-41d4-a716-446655440000",
-        day_of_week: 0,
-        start_minutes: 360,
-        end_minutes: 420,
-        title: "Gimnasio",
-        color: "lavender",
+      const mockBlockRow = {
+        id: validUuid,
+        title: "Redes de datos",
+        color: "cyan",
         sort_order: 0,
-        created_at: "2026-07-12T19:00:00.000Z",
-        updated_at: "2026-07-12T19:00:00.000Z",
+        created_at: validIso,
+        updated_at: validIso,
       };
-      vi.mocked(db.listScheduleBlocks).mockResolvedValue([mockRow]);
+      const mockSlotRows = [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440001",
+          block_id: validUuid,
+          day_of_week: 1,
+          start_minutes: 995,
+          end_minutes: 1230,
+          created_at: validIso,
+          updated_at: validIso,
+        },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440002",
+          block_id: validUuid,
+          day_of_week: 3,
+          start_minutes: 1230,
+          end_minutes: 1365,
+          created_at: validIso,
+          updated_at: validIso,
+        },
+      ];
+      vi.mocked(db.listScheduleBlocks).mockResolvedValue([mockBlockRow]);
+      vi.mocked(db.listScheduleSlots).mockResolvedValue(mockSlotRows);
 
       await store.loadAll();
 
-      expect(store.blocks).toHaveLength(1);
-      expect(store.blocks[0]).toEqual({
-        id: "111e8400-e29b-41d4-a716-446655440000",
-        day_of_week: 0,
-        start_minutes: 360,
-        end_minutes: 420,
-        title: "Gimnasio",
-        color: "lavender",
-        sort_order: 0,
-        created_at: "2026-07-12T19:00:00.000Z",
-        updated_at: "2026-07-12T19:00:00.000Z",
-      });
+      expect(store.blocksWithSlots).toHaveLength(1);
+      expect(store.blocksWithSlots[0].title).toBe("Redes de datos");
+      expect(store.blocksWithSlots[0].slots).toHaveLength(2);
+      expect(store.blocksWithSlots[0].slots[0].day_of_week).toBe(1);
+      expect(store.blocksWithSlots[0].slots[1].day_of_week).toBe(3);
       expect(store.settings.granularity_minutes).toBe(30);
     });
 
-    it("crea un bloque nuevo si no hay solapamiento", async () => {
+    it("crea un bloque con slots si no hay solapamiento", async () => {
       const store = useWeeklyScheduleStore();
-      const mockRow = {
-        id: "222e8400-e29b-41d4-a716-446655440000",
-        day_of_week: 1,
-        start_minutes: 480,
-        end_minutes: 540,
+      const mockBlockRow = {
+        id: validUuid,
         title: "Estudio",
         color: "green",
         sort_order: 0,
-        created_at: "2026-07-12T19:00:00.000Z",
-        updated_at: "2026-07-12T19:00:00.000Z",
+        created_at: validIso,
+        updated_at: validIso,
       };
-      vi.mocked(db.createScheduleBlock).mockResolvedValue(mockRow);
-
-      const draft = {
+      const mockSlotRow = {
+        id: "550e8400-e29b-41d4-a716-446655440001",
+        block_id: validUuid,
         day_of_week: 1,
         start_minutes: 480,
         end_minutes: 540,
+        created_at: validIso,
+        updated_at: validIso,
+      };
+      vi.mocked(db.createScheduleBlock).mockResolvedValue(mockBlockRow);
+      vi.mocked(db.createScheduleSlot).mockResolvedValue(mockSlotRow);
+
+      const blockDraft = {
         title: "Estudio",
         color: "green" as const,
         sort_order: 0,
       };
+      const slotsDraft = [
+        { day_of_week: 1, start_minutes: 480, end_minutes: 540 },
+      ];
 
-      const block = await store.createBlock(draft);
+      const block = await store.createBlock(blockDraft, slotsDraft);
 
-      expect(block.id).toBe("222e8400-e29b-41d4-a716-446655440000");
-      expect(store.blocks).toContainEqual(block);
+      expect(block.id).toBe(validUuid);
+      expect(block.title).toBe("Estudio");
+      expect(block.slots).toHaveLength(1);
+      expect(store.blocksWithSlots).toContainEqual(block);
       expect(db.createScheduleBlock).toHaveBeenCalledTimes(1);
+      expect(db.createScheduleSlot).toHaveBeenCalledTimes(1);
     });
 
-    it("rechaza la creación de un bloque si hay solapamiento", async () => {
+    it("rechaza la creación si un slot se solapa", async () => {
       const store = useWeeklyScheduleStore();
-      store.blocks = [{
+      store.blocksWithSlots = [{
         id: "333e8400-e29b-41d4-a716-446655440000",
-        day_of_week: 1,
-        start_minutes: 480,
-        end_minutes: 540,
         title: "Gimnasio",
         color: "lavender",
         sort_order: 0,
-        created_at: "2026-07-12T19:00:00.000Z",
-        updated_at: "2026-07-12T19:00:00.000Z",
+        created_at: validIso,
+        updated_at: validIso,
+        slots: [{
+          id: "333e8400-e29b-41d4-a716-446655440001",
+          block_id: "333e8400-e29b-41d4-a716-446655440000",
+          day_of_week: 1,
+          start_minutes: 480,
+          end_minutes: 540,
+          created_at: validIso,
+          updated_at: validIso,
+        }],
       }];
 
-      const draft = {
-        day_of_week: 1,
-        start_minutes: 500, // solapa con 480-540
-        end_minutes: 560,
+      const blockDraft = {
         title: "Estudio",
         color: "green" as const,
         sort_order: 0,
       };
+      const slotsDraft = [
+        { day_of_week: 1, start_minutes: 500, end_minutes: 560 },
+      ];
 
-      await expect(store.createBlock(draft)).rejects.toThrow("solapa");
+      await expect(store.createBlock(blockDraft, slotsDraft)).rejects.toThrow("solapa");
       expect(db.createScheduleBlock).not.toHaveBeenCalled();
     });
 
-    it("mueve un bloque tras DnD si no hay solapamiento", async () => {
+    it("agrega un slot a un bloque existente", async () => {
       const store = useWeeklyScheduleStore();
-      const initialBlock = {
-        id: "333e8400-e29b-41d4-a716-446655440000",
-        day_of_week: 1,
-        start_minutes: 480,
-        end_minutes: 540,
+      store.blocksWithSlots = [{
+        id: validUuid,
         title: "Gimnasio",
-        color: "lavender" as const,
+        color: "lavender",
         sort_order: 0,
-        created_at: "2026-07-12T19:00:00.000Z",
-        updated_at: "2026-07-12T19:00:00.000Z",
-      };
-      store.blocks = [initialBlock];
+        created_at: validIso,
+        updated_at: validIso,
+        slots: [],
+      }];
 
-      const mockUpdatedRow = {
-        ...initialBlock,
+      const mockSlotRow = {
+        id: "550e8400-e29b-41d4-a716-446655440001",
+        block_id: validUuid,
         day_of_week: 2,
         start_minutes: 600,
         end_minutes: 660,
-        updated_at: "2026-07-12T19:05:00.000Z",
+        created_at: validIso,
+        updated_at: validIso,
       };
-      vi.mocked(db.updateScheduleBlock).mockResolvedValue(mockUpdatedRow);
+      vi.mocked(db.createScheduleSlot).mockResolvedValue(mockSlotRow);
 
-      await store.moveBlockAfterDrag("333e8400-e29b-41d4-a716-446655440000", 2, 600, 660);
+      const slotDraft = { day_of_week: 2, start_minutes: 600, end_minutes: 660 };
+      const slot = await store.addSlot(validUuid, slotDraft);
 
-      expect(store.blocks[0].day_of_week).toBe(2);
-      expect(store.blocks[0].start_minutes).toBe(600);
-      expect(db.updateScheduleBlock).toHaveBeenCalledTimes(1);
+      expect(slot.day_of_week).toBe(2);
+      expect(store.blocksWithSlots[0].slots).toHaveLength(1);
+      expect(db.createScheduleSlot).toHaveBeenCalledTimes(1);
     });
 
-    it("rechaza mover un bloque si hay solapamiento", async () => {
+    it("elimina un slot individual", async () => {
       const store = useWeeklyScheduleStore();
-      store.blocks = [
-        {
-          id: "333e8400-e29b-41d4-a716-446655440000",
+      const slotId = "550e8400-e29b-41d4-a716-446655440001";
+      store.blocksWithSlots = [{
+        id: validUuid,
+        title: "Gimnasio",
+        color: "lavender",
+        sort_order: 0,
+        created_at: validIso,
+        updated_at: validIso,
+        slots: [{
+          id: slotId,
+          block_id: validUuid,
           day_of_week: 1,
           start_minutes: 480,
           end_minutes: 540,
-          title: "Gimnasio",
-          color: "lavender",
-          sort_order: 0,
-          created_at: "2026-07-12T19:00:00.000Z",
-          updated_at: "2026-07-12T19:00:00.000Z",
-        },
-        {
-          id: "444e8400-e29b-41d4-a716-446655440000",
-          day_of_week: 2,
-          start_minutes: 600,
-          end_minutes: 660,
-          title: "Estudio",
-          color: "green",
-          sort_order: 0,
-          created_at: "2026-07-12T19:00:00.000Z",
-          updated_at: "2026-07-12T19:00:00.000Z",
-        }
-      ];
+          created_at: validIso,
+          updated_at: validIso,
+        }],
+      }];
 
-      await expect(
-        store.moveBlockAfterDrag("333e8400-e29b-41d4-a716-446655440000", 2, 620, 680) // solapa con obstacle (600-660) en el día 2
-      ).rejects.toThrow("overlap");
+      await store.deleteSlot(slotId);
 
-      expect(db.updateScheduleBlock).not.toHaveBeenCalled();
+      expect(store.blocksWithSlots[0].slots).toHaveLength(0);
+      expect(db.deleteScheduleSlot).toHaveBeenCalledWith(slotId);
+    });
+
+    it("elimina un bloque completo con todos sus slots", async () => {
+      const store = useWeeklyScheduleStore();
+      store.blocksWithSlots = [{
+        id: validUuid,
+        title: "Gimnasio",
+        color: "lavender",
+        sort_order: 0,
+        created_at: validIso,
+        updated_at: validIso,
+        slots: [{
+          id: "550e8400-e29b-41d4-a716-446655440001",
+          block_id: validUuid,
+          day_of_week: 1,
+          start_minutes: 480,
+          end_minutes: 540,
+          created_at: validIso,
+          updated_at: validIso,
+        }],
+      }];
+
+      await store.deleteBlock(validUuid);
+
+      expect(store.blocksWithSlots).toHaveLength(0);
+      expect(db.deleteScheduleBlock).toHaveBeenCalledWith(validUuid);
     });
   });
 });

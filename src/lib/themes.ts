@@ -27,6 +27,7 @@ export interface ThemeFonts {
 export interface ThemeDefinition {
   id: string;
   name: string;
+  isDark: boolean;
   colors: ThemeColors;
   fonts: ThemeFonts;
 }
@@ -40,6 +41,7 @@ export const themes: readonly ThemeDefinition[] = [
   {
     id: "dark",
     name: "Oscuro",
+    isDark: true,
     colors: {
       canvas: "1 1 2",
       surface1: "14 15 18",
@@ -65,6 +67,7 @@ export const themes: readonly ThemeDefinition[] = [
   {
     id: "light",
     name: "Claro",
+    isDark: false,
     colors: {
       canvas: "255 255 255",
       surface1: "247 248 248",
@@ -83,6 +86,32 @@ export const themes: readonly ThemeDefinition[] = [
       primaryFocus: "94 105 209",
       brandSecure: "122 127 173",
       success: "29 138 54",
+      overlay: "0 0 0",
+    },
+    fonts: sharedFonts,
+  },
+  {
+    id: "popi",
+    name: "Popi",
+    isDark: true,
+    colors: {
+      canvas: "71 74 44",
+      surface1: "80 84 52",
+      surface2: "99 105 64",
+      surface3: "89 169 106",
+      surface4: "155 222 172",
+      hairline: "90 96 56",
+      hairlineStrong: "99 105 64",
+      hairlineTertiary: "120 140 90",
+      ink: "180 231 206",
+      inkMuted: "155 222 172",
+      inkSubtle: "120 170 120",
+      inkTertiary: "100 130 85",
+      primary: "89 169 106",
+      primaryHover: "155 222 172",
+      primaryFocus: "89 169 106",
+      brandSecure: "99 105 64",
+      success: "155 222 172",
       overlay: "0 0 0",
     },
     fonts: sharedFonts,
@@ -121,5 +150,5 @@ export function applyTheme(theme: ThemeDefinition): void {
   root.style.setProperty("--font-sans", theme.fonts.sans.join(", "));
   root.style.setProperty("--font-mono", theme.fonts.mono.join(", "));
 
-  root.classList.toggle("dark", theme.id === "dark");
+  root.classList.toggle("dark", theme.isDark);
 }

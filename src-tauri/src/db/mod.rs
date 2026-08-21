@@ -82,12 +82,13 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 5] = [
+        let migrations: [(i64, &str, &str); 6] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (3, "003_tasks_goals", include_str!("migrations/003_tasks_goals.sql")),
             (4, "004_tasks_goals_archived", include_str!("migrations/004_tasks_goals_archived.sql")),
             (5, "005_weekly_schedule", include_str!("migrations/005_weekly_schedule.sql")),
+            (6, "006_block_slots", ""), // Migración 006 se ejecuta en Rust (run_migration_006)
         ];
 
         for (version, name, sql) in &migrations {
@@ -100,16 +101,168 @@ impl Db {
                 .unwrap_or(false);
 
             if !already_applied {
-                conn.execute_batch(sql)
-                    .map_err(|e| DbError::Migration(format!("{name}.sql: {e}")))?;
-                conn.execute(
-                    "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
-                    params![version, now_iso8601()],
-                )?;
+                // Para la migración 006, manejar el caso de migración parcial
+                if *version == 6 {
+                    Self::run_migration_006(&conn)?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                } else {
+                    conn.execute_batch(sql)
+                        .map_err(|e| DbError::Migration(format!("{name}.sql: {e}")))?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                }
             }
         }
 
         Ok(())
+    }
+
+    fn run_migration_006(conn: &Connection) -> DbResult<()> {
+        // Migración robusta con transacción para atomicidad
+        conn.execute_batch("BEGIN TRANSACTION;")
+            .map_err(|e| DbError::Migration(format!("006: begin transaction: {e}")))?;
+
+        let result = (|| -> DbResult<()> {
+            // Verificar si la tabla schedule_block_slots existe
+            let slots_table_exists: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_block_slots')",
+                [],
+                |r| r.get(0),
+            )?;
+
+            if !slots_table_exists {
+                // Crear la tabla schedule_block_slots
+                conn.execute_batch(
+                    "CREATE TABLE schedule_block_slots (
+                        id            TEXT PRIMARY KEY,
+                        block_id      TEXT NOT NULL REFERENCES schedule_blocks(id) ON DELETE CASCADE,
+                        day_of_week   INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+                        start_minutes INTEGER NOT NULL CHECK (start_minutes >= 0 AND start_minutes < 1440),
+                        end_minutes   INTEGER NOT NULL CHECK (end_minutes > 0 AND end_minutes <= 1440),
+                        created_at    TEXT NOT NULL,
+                        updated_at    TEXT NOT NULL,
+                        CHECK (end_minutes > start_minutes)
+                    );
+                    CREATE INDEX idx_schedule_block_slots_block ON schedule_block_slots(block_id);
+                    CREATE INDEX idx_schedule_block_slots_day ON schedule_block_slots(day_of_week);"
+                ).map_err(|e| DbError::Migration(format!("006: crear tabla slots: {e}")))?;
+            }
+
+            // Verificar si schedule_blocks existe
+            let blocks_table_exists: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_blocks')",
+                [],
+                |r| r.get(0),
+            )?;
+
+            if !blocks_table_exists {
+                // schedule_blocks no existe, verificar si schedule_blocks_new existe (migración parcial)
+                let new_table_exists: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_blocks_new')",
+                    [],
+                    |r| r.get(0),
+                )?;
+
+                if new_table_exists {
+                    // Completar el rename
+                    conn.execute_batch(
+                        "ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;"
+                    ).map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
+                } else {
+                    // Ni schedule_blocks ni schedule_blocks_new existen, crear desde cero
+                    conn.execute_batch(
+                        "CREATE TABLE schedule_blocks (
+                            id            TEXT PRIMARY KEY,
+                            title         TEXT NOT NULL,
+                            color         TEXT NOT NULL,
+                            sort_order    REAL NOT NULL DEFAULT 0,
+                            created_at    TEXT NOT NULL,
+                            updated_at    TEXT NOT NULL
+                        );"
+                    ).map_err(|e| DbError::Migration(format!("006: crear schedule_blocks: {e}")))?;
+                }
+                return Ok(());
+            }
+
+            // schedule_blocks existe, verificar si tiene las columnas viejas
+            let has_old_columns: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM pragma_table_info('schedule_blocks') WHERE name='day_of_week')",
+                [],
+                |r| r.get(0),
+            )?;
+
+            if has_old_columns {
+                // Migrar datos existentes de schedule_blocks a schedule_block_slots
+                conn.execute_batch(
+                    "INSERT OR IGNORE INTO schedule_block_slots (id, block_id, day_of_week, start_minutes, end_minutes, created_at, updated_at)
+                     SELECT 
+                       'slot-' || id as id,
+                       id as block_id,
+                       day_of_week,
+                       start_minutes,
+                       end_minutes,
+                       created_at,
+                       updated_at
+                     FROM schedule_blocks;"
+                ).map_err(|e| DbError::Migration(format!("006: migrar datos: {e}")))?;
+
+                // Eliminar índice viejo
+                conn.execute_batch("DROP INDEX IF EXISTS idx_schedule_blocks_day;")
+                    .map_err(|e| DbError::Migration(format!("006: drop index: {e}")))?;
+
+                // Verificar si schedule_blocks_new existe (migración parcial)
+                let new_table_exists: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_blocks_new')",
+                    [],
+                    |r| r.get(0),
+                )?;
+
+                if !new_table_exists {
+                    // Crear tabla nueva sin columnas viejas
+                    conn.execute_batch(
+                        "CREATE TABLE schedule_blocks_new (
+                            id            TEXT PRIMARY KEY,
+                            title         TEXT NOT NULL,
+                            color         TEXT NOT NULL,
+                            sort_order    REAL NOT NULL DEFAULT 0,
+                            created_at    TEXT NOT NULL,
+                            updated_at    TEXT NOT NULL
+                        );
+                        INSERT INTO schedule_blocks_new (id, title, color, sort_order, created_at, updated_at)
+                        SELECT id, title, color, sort_order, created_at, updated_at
+                        FROM schedule_blocks;
+                        DROP TABLE schedule_blocks;
+                        ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;"
+                    ).map_err(|e| DbError::Migration(format!("006: recrear tabla: {e}")))?;
+                } else {
+                    // La tabla new existe pero no se completó el rename
+                    conn.execute_batch(
+                        "DROP TABLE IF EXISTS schedule_blocks;
+                         ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;"
+                    ).map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
+                }
+            }
+
+            Ok(())
+        })();
+
+        match result {
+            Ok(_) => {
+                conn.execute_batch("COMMIT;")
+                    .map_err(|e| DbError::Migration(format!("006: commit: {e}")))?;
+                Ok(())
+            }
+            Err(e) => {
+                conn.execute_batch("ROLLBACK;")
+                    .map_err(|e2| DbError::Migration(format!("006: rollback failed: {e2}, original error: {e}")))?;
+                Err(e)
+            }
+        }
     }
 }
 

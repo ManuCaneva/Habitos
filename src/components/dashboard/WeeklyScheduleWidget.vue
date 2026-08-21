@@ -8,31 +8,31 @@ import WeeklyScheduleGrid from "./WeeklyScheduleGrid.vue";
 import WeeklyScheduleModal from "./WeeklyScheduleModal.vue";
 import WeeklyScheduleSettingsModal from "./WeeklyScheduleSettingsModal.vue";
 import { useWeeklyScheduleStore } from "@/stores/weeklySchedule";
-import type { ScheduleBlock } from "@/schemas/weeklySchedule";
+import type { ScheduleBlockWithSlots } from "@/schemas/weeklySchedule";
 
 const store = useWeeklyScheduleStore();
-const editingBlock = ref<ScheduleBlock | null>(null);
+const editingBlock = ref<ScheduleBlockWithSlots | null>(null);
 const showCreate = ref(false);
 const showSettings = ref(false);
 
 onMounted(() => store.loadAll());
 
-function openEdit(b: ScheduleBlock) { editingBlock.value = b; }
+function openEdit(b: ScheduleBlockWithSlots) { editingBlock.value = b; }
 </script>
 
 <template>
-  <Container variant="default" padding="none" class="h-full overflow-hidden"
-             style="container-type: inline-size" data-testid="weekly-schedule-widget">
+    <Container variant="default" padding="none" class="h-full overflow-hidden container-widget"
+               style="container-type: inline-size" data-testid="weekly-schedule-widget">
     <div class="flex flex-col h-full min-h-0">
-      <header class="grid grid-cols-[1fr_auto_1fr] items-center px-3 py-2 border-b border-hairline bg-surface-2 flex-shrink-0">
+      <header class="schedule-widget-header grid grid-cols-[1fr_auto_1fr] items-center px-2 py-1 border-b border-hairline bg-surface-2 flex-shrink-0">
         <div></div>
         <Text variant="card-title" weight="600" class="text-center truncate min-w-0">Cronograma Semanal</Text>
         <div class="flex items-center gap-1 justify-end">
-          <IconButton label="Ajustes" @click="showSettings = true">
-            <Settings class="h-4 w-4 text-ink-muted" />
+          <IconButton label="Ajustes" size="sm" @click="showSettings = true">
+            <Settings class="h-3.5 w-3.5 text-ink-muted" />
           </IconButton>
-          <IconButton label="Nuevo bloque" @click="showCreate = true">
-            <Plus class="h-4 w-4 text-ink-muted" />
+          <IconButton label="Nuevo bloque" size="sm" @click="showCreate = true">
+            <Plus class="h-3.5 w-3.5 text-ink-muted" />
           </IconButton>
         </div>
       </header>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Hábitos",
+  "productName": "AEON",
   "version": "0.1.0",
   "identifier": "com.aeon",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Hábitos",
+        "title": "AEON",
         "width": 800,
         "height": 600,
         "minWidth": 600,

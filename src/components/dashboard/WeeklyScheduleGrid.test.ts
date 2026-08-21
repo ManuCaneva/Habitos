@@ -4,17 +4,25 @@ import { createPinia, setActivePinia } from "pinia";
 import WeeklyScheduleGrid from "./WeeklyScheduleGrid.vue";
 
 const mockStore = {
-  blocks: [
+  blocksWithSlots: [
     {
       id: "333e8400-e29b-41d4-a716-446655440000",
-      day_of_week: 1,
-      start_minutes: 360,
-      end_minutes: 420,
       title: "Gimnasio",
-      color: "primary",
+      color: "lavender",
       sort_order: 0,
       created_at: "2026-07-12T19:00:00.000Z",
       updated_at: "2026-07-12T19:00:00.000Z",
+      slots: [
+        {
+          id: "550e8400-e29b-41d4-a716-446655440001",
+          block_id: "333e8400-e29b-41d4-a716-446655440000",
+          day_of_week: 1,
+          start_minutes: 360,
+          end_minutes: 420,
+          created_at: "2026-07-12T19:00:00.000Z",
+          updated_at: "2026-07-12T19:00:00.000Z",
+        },
+      ],
     },
   ],
   settings: {

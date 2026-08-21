@@ -53,10 +53,13 @@ pub fn run() {
             commands::goal_logs::delete_goal_log,
             commands::goal_logs::list_goal_logs_in_range,
             commands::weekly_schedule::list_schedule_blocks,
+            commands::weekly_schedule::list_schedule_slots,
             commands::weekly_schedule::create_schedule_block,
+            commands::weekly_schedule::create_schedule_slot,
             commands::weekly_schedule::update_schedule_block,
+            commands::weekly_schedule::update_schedule_slot,
             commands::weekly_schedule::delete_schedule_block,
-            commands::weekly_schedule::upsert_all_schedule_blocks,
+            commands::weekly_schedule::delete_schedule_slot,
             commands::oauth::start_oauth_server,
         ])
         .run(tauri::generate_context!())

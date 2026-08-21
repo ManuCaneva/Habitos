@@ -8,7 +8,7 @@ import TodayView from "@/views/TodayView.vue";
     data-testid="habits-widget"
     variant="default"
     padding="none"
-    class="h-full overflow-hidden"
+    class="h-full overflow-hidden container-widget"
     style="container-type: inline-size"
   >
     <TodayView />

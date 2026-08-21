@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { shadeFor } from "@/lib/habitColors";
-import type { ScheduleBlock } from "@/schemas/weeklySchedule";
 
 const props = defineProps<{
-  block: ScheduleBlock;
+  title: string;
+  color: string;
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
 }>();
 
 const emit = defineEmits<{
@@ -32,7 +35,7 @@ const blockStyle = computed(() => {
       color: "rgb(185, 28, 28)",
     };
   }
-  const hex = colorHexMap[props.block.color] || colorHexMap.lavender;
+  const hex = colorHexMap[props.color] || colorHexMap.lavender;
   return {
     backgroundColor: shadeFor(hex, 0.15),
     borderColor: hex,
@@ -44,14 +47,15 @@ const blockStyle = computed(() => {
 <template>
   <button
     :class="[
-      'absolute rounded-sm border px-1.5 py-1 text-button text-left truncate overflow-hidden transition-all duration-150 cursor-pointer'
+      'absolute rounded-sm border text-left truncate overflow-hidden transition-all duration-150 cursor-pointer',
+      'schedule-block'
     ]"
     :style="blockStyle"
-    :data-day="block.day_of_week"
-    :data-start="block.start_minutes"
-    :data-end="block.end_minutes"
+    :data-day="dayOfWeek"
+    :data-start="startMinutes"
+    :data-end="endMinutes"
     @click="emit('click')"
   >
-    <div class="font-medium text-xs leading-tight truncate">{{ block.title }}</div>
+    <div class="font-medium truncate schedule-block-title leading-tight">{{ title }}</div>
   </button>
 </template>

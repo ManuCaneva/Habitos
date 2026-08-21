@@ -8,7 +8,7 @@ import GoalsListView from "@/views/GoalsListView.vue";
     data-testid="goals-widget"
     variant="default"
     padding="none"
-    class="h-full overflow-hidden"
+    class="h-full overflow-hidden container-widget"
     style="container-type: inline-size"
   >
     <GoalsListView />

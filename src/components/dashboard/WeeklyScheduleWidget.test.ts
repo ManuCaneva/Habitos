@@ -5,7 +5,7 @@ import WeeklyScheduleWidget from "./WeeklyScheduleWidget.vue";
 
 vi.mock("@/stores/weeklySchedule", () => ({
   useWeeklyScheduleStore: () => ({
-    blocks: [],
+    blocksWithSlots: [],
     settings: {
       granularity_minutes: 30,
       day_start_minutes: 360,

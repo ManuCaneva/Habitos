@@ -16,10 +16,10 @@ defineProps<{
     >
       <Text variant="card-title" weight="600">{{ title }}</Text>
     </div>
-    <div class="flex-1 overflow-auto p-1.5 scrollbar-gutter-stable">
+    <div class="flex-1 overflow-auto p-1.5 scrollbar-gutter-stable entity-body-responsive">
       <slot />
     </div>
-    <div v-if="$slots.footer" class="shrink-0 p-1.5 border-t border-hairline">
+    <div v-if="$slots.footer" class="shrink-0 p-1.5 border-t border-hairline entity-footer-responsive">
       <slot name="footer" />
     </div>
   </div>

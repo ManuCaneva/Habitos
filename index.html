@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#010102" />
-    <title>Hábitos</title>
+    <title>AEON</title>
     <script>
       (function () {
         try {
+          var darkThemes = ["dark", "popi"];
           var stored = localStorage.getItem("habitos.theme");
-          var isDark = stored !== "light";
+          var isDark = darkThemes.indexOf(stored) !== -1;
           var cl = document.documentElement.classList;
           cl.toggle("dark", isDark);
           cl.toggle("light", !isDark);
