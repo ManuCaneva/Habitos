@@ -75,7 +75,8 @@ export function findFreePosition(
   return null;
 }
 
-const STORAGE_KEY = "habitos-dashboard-layout";
+const STORAGE_KEY = "aeon-dashboard-layout";
+const LEGACY_STORAGE_KEY = "habitos-dashboard-layout";
 
 function getDefaultLayout(): Layout {
   return widgets.map((widget) =>
@@ -171,10 +172,23 @@ export const useDashboardStore = defineStore("dashboard", () => {
         const parsed = JSON.parse(raw);
         const validated = validateLayout(parsed);
         if (validated) layout.value = validated;
+        return;
       } catch {
-        // datos corruptos → usar default
+        // datos corruptos → fallback
       }
     }
+    // Fallback a la clave legada (pre rebranding) para no perder el layout.
+    loadConfig(LEGACY_STORAGE_KEY).then((raw) => {
+      if (raw !== null) {
+        try {
+          const parsed = JSON.parse(raw);
+          const validated = validateLayout(parsed);
+          if (validated) layout.value = validated;
+        } catch {
+          // datos corruptos → usar default
+        }
+      }
+    });
   });
 
   function persist() {

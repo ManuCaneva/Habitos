@@ -6,8 +6,11 @@ import {
   DEFAULT_THEME,
   type ThemeDefinition,
 } from "@/lib/themes";
+import { migrateStorageKey } from "@/lib/storageKey";
 
-const currentId = useStorage<string>("habitos.theme", DEFAULT_THEME.id);
+migrateStorageKey("habitos.theme", "aeon.theme");
+
+const currentId = useStorage<string>("aeon.theme", DEFAULT_THEME.id);
 
 export function useTheme() {
   const current = computed<ThemeDefinition>(

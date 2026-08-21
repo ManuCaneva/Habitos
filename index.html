@@ -11,7 +11,8 @@
       (function () {
         try {
           var darkThemes = ["dark", "popi"];
-          var stored = localStorage.getItem("habitos.theme");
+          var stored = localStorage.getItem("aeon.theme");
+          if (stored === null) stored = localStorage.getItem("habitos.theme");
           var isDark = darkThemes.indexOf(stored) !== -1;
           var cl = document.documentElement.classList;
           cl.toggle("dark", isDark);

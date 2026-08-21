@@ -1,8 +1,8 @@
 <br />
 <div align="center">
-  <h3 align="center">Hábitos</h3>
+  <h3 align="center">AEON</h3>
   <p align="center">
-    Tracker de hábitos <strong>local-first</strong> minimalista para escritorio.<br />
+    Dashboard de productividad <strong>local-first</strong> para escritorio.<br />
     Inspirado en el design system de Linear, pensado para ser compartible.<br />
     <a href="docs/ARCHITECTURE.md"><strong>Arquitectura »</strong></a>
     ·
@@ -16,11 +16,11 @@
 
 ## Sobre el proyecto
 
-Hábitos es un tracker de hábitos **local-first** para escritorio. Tus datos viven en tu máquina, sin cuentas ni servidores remotos. La app está pensada para ser compartible con quien quiera adoptarla, con una arquitectura simple donde la lógica vive en el frontend y Rust solo persiste.
+AEON es un dashboard de productividad **local-first** para escritorio. Tus datos viven en tu máquina, sin cuentas ni servidores remotos obligatorios. Incluye hábitos, tareas, objetivos, calendario anual y cronograma semanal, con una arquitectura simple donde la lógica vive en el frontend y Rust solo persiste.
 
-**MVP-1 (actual)**: hábitos diarios binarios con racha estricta. Vista de Hoy / Archivados / Settings, modal único de crear/editar, tema claro/oscuro.
+**Estado actual**: dashboard configurable con widgets de hábitos, tareas, objetivos, calendario anual y cronograma semanal. La navegación usa vistas controladas por Pinia y el layout se persiste en SQLite.
 
-**MVP-2+**: semanales con días específicos, integración con Google Calendar, activities con horarios, recordatorios.
+**Próximamente**: multi-check-in para hábitos y mejoras de tareas. La escritura bidireccional de Google Calendar queda pausada.
 
 ### ¿Por qué?
 
@@ -70,9 +70,11 @@ La primera compilación de Rust tarda 1–2 minutos; las siguientes son segundos
 
 **Datos**: la DB SQLite vive en
 
-- Linux: `~/.local/share/com.goya.habitos/habitos.sqlite`
-- macOS: `~/Library/Application Support/com.goya.habitos/habitos.sqlite`
-- Windows: `%APPDATA%/com.goya.habitos/habitos.sqlite`
+- Linux: `~/.local/share/com.aeon/aeon.sqlite`
+- macOS: `~/Library/Application Support/com.aeon/aeon.sqlite`
+- Windows: `%APPDATA%/com.aeon/aeon.sqlite`
+
+En la primera ejecución posterior al renombrado, AEON migra automáticamente `habitos.sqlite` a `aeon.sqlite`, incluyendo sus archivos WAL/SHM.
 
 Para resetear, cerrá la app y borrá ese archivo.
 
@@ -95,7 +97,7 @@ Para la convención de tests y TDD, ver [AGENTS.md](AGENTS.md).
 
 ## Roadmap
 
-**MVP-1 — Hábitos diarios (actual)**
+**Base de productividad (actual)**
 
 - [x] Schema SQLite + migraciones
 - [x] Dual Zod (domain + row) cruzando la frontera Tauri
@@ -105,24 +107,18 @@ Para la convención de tests y TDD, ver [AGENTS.md](AGENTS.md).
 - [x] Tema claro/oscuro con persistencia
 - [x] Tests de schemas con Vitest
 
-**MVP-2 — Hábitos semanales con días específicos**
+- [x] Dashboard configurable con drag, resize y widgets
+- [x] Hábitos, tareas y objetivos con persistencia local
+- [x] Cronograma semanal con bloques y slots
+- [x] Calendario anual con lectura opcional de Google Calendar
+- [x] Temas claro, oscuro y Popi
 
-- [ ] Frecuencia `weekly` con `days_of_week` editable (JSON en la columna)
-- [ ] UI: heatmap semanal en cada `HabitRow`
+**Siguiente trabajo**
 
-**MVP-3 — Activities con horarios**
-
-- [ ] Nueva entidad `activities` (bloques de tiempo, no recurrentes)
-- [ ] Vista semanal tipo calendario
-
-**MVP-4 — Google Calendar sync**
-
-- [ ] OAuth 2.0
-- [ ] Sync bidireccional de activities
-
-**MVP-5 — Recordatorios nativos**
-
-- [ ] Notificaciones del sistema al cierre de cada ventana horaria
+- [ ] Multi-check-in progresivo para hábitos
+- [ ] Indicadores de urgencia, tags y prioridades en tareas
+- [ ] Kanban, tareas recurrentes, inbox y command palette
+- [ ] Onboarding y calendario integrado
 
 ## Contribuir
 

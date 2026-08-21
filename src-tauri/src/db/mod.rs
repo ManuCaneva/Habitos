@@ -53,6 +53,7 @@ impl Db {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
+        Self::migrate_legacy_db_filename(path)?;
         let conn = Connection::open(path)?;
         // WAL: mejor concurrencia lectura/escritura. Foreign keys ON para ON DELETE CASCADE.
         conn.pragma_update(None, "journal_mode", "WAL")?;
@@ -71,6 +72,39 @@ impl Db {
         Ok(db)
     }
 
+    /// Renombra la DB legada con el nombre viejo ("habitos.sqlite") al
+    /// nombre actual ("aeon.sqlite") la primera vez, conservando la data.
+    /// También mueve los archivos WAL/SHM asociados si existen. Es una
+    /// migración de identidad del archivo, no de esquema.
+    fn migrate_legacy_db_filename(path: &Path) -> DbResult<()> {
+        let file_name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("aeon.sqlite");
+        // Solo aplica para el nombre canónico de producción.
+        if file_name != "aeon.sqlite" {
+            return Ok(());
+        }
+        let dir = path.parent().unwrap_or_else(|| Path::new("."));
+        let new_path = dir.join("aeon.sqlite");
+        if new_path.exists() {
+            return Ok(()); // ya migrado
+        }
+        let legacy = dir.join("habitos.sqlite");
+        if !legacy.exists() {
+            return Ok(()); // no hay nada que migrar
+        }
+        std::fs::rename(&legacy, &new_path)?;
+        // Mueve sidecar WAL/SHM si quedaron (renombre mantiene coherencia).
+        for ext in ["-wal", "-shm"] {
+            let from = dir.join(format!("habitos.sqlite{ext}"));
+            if from.exists() {
+                let _ = std::fs::rename(&from, dir.join(format!("aeon.sqlite{ext}")));
+            }
+        }
+        Ok(())
+    }
+
     fn run_migrations(&self) -> DbResult<()> {
         let conn = self.conn.lock().unwrap();
 
@@ -82,13 +116,14 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 6] = [
+        let migrations: [(i64, &str, &str); 7] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (3, "003_tasks_goals", include_str!("migrations/003_tasks_goals.sql")),
             (4, "004_tasks_goals_archived", include_str!("migrations/004_tasks_goals_archived.sql")),
             (5, "005_weekly_schedule", include_str!("migrations/005_weekly_schedule.sql")),
             (6, "006_block_slots", ""), // Migración 006 se ejecuta en Rust (run_migration_006)
+            (7, "007_aeon_storage_keys", ""), // Migración 007 se ejecuta en Rust (run_migration_007)
         ];
 
         for (version, name, sql) in &migrations {
@@ -101,9 +136,15 @@ impl Db {
                 .unwrap_or(false);
 
             if !already_applied {
-                // Para la migración 006, manejar el caso de migración parcial
+                // Para migraciones 006/007, manejar por lógica Rust (rutas parciales)
                 if *version == 6 {
                     Self::run_migration_006(&conn)?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                } else if *version == 7 {
+                    Self::run_migration_007(&conn)?;
                     conn.execute(
                         "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
                         params![version, now_iso8601()],
@@ -260,6 +301,77 @@ impl Db {
             Err(e) => {
                 conn.execute_batch("ROLLBACK;")
                     .map_err(|e2| DbError::Migration(format!("006: rollback failed: {e2}, original error: {e}")))?;
+                Err(e)
+            }
+        }
+    }
+
+    /// Migración 007: renombra la clave de config del layout del dashboard
+    /// ("habitos-dashboard-layout" -> "aeon-dashboard-layout") para quedar
+    /// consistente con el rebranding a AEON. Idempotente: si la clave nueva
+    /// ya existe, se prioriza la nueva y se descarta la legada; si solo
+    /// existe la legada, se renombra; si no hay ninguna, no hace nada.
+    /// También migra cualquier otra clave de config habitual con prefijo
+    /// "habitos." del pasado (token de OAuth, settings) manteniendo la data.
+    fn run_migration_007(conn: &Connection) -> DbResult<()> {
+        conn.execute_batch("BEGIN TRANSACTION;")
+            .map_err(|e| DbError::Migration(format!("007: begin transaction: {e}")))?;
+
+        let result = (|| -> DbResult<()> {
+            // Renombrar key de layout si la nueva no existe.
+            let new_exists: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM config WHERE key = 'aeon-dashboard-layout')",
+                [],
+                |r| r.get(0),
+            )?;
+
+            let legacy_exists: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM config WHERE key = 'habitos-dashboard-layout')",
+                [],
+                |r| r.get(0),
+            )?;
+
+            if legacy_exists && !new_exists {
+                conn.execute(
+                    "UPDATE config SET key = 'aeon-dashboard-layout' WHERE key = 'habitos-dashboard-layout'",
+                    [],
+                )?;
+            }
+
+            // Migrar las claves de config "habitos.*" a "aeon.*", si existen.
+            // NO migra claves de localStorage (esas van en el frontend).
+            let renames: &[(&str, &str)] = &[
+                ("habitos.theme", "aeon.theme"),
+                ("habitos.viewMode", "aeon.viewMode"),
+                ("habitos.sidebarCollapsed", "aeon.sidebarCollapsed"),
+                ("habitos-dashboard-layout", "aeon-dashboard-layout"),
+            ];
+            for (old_key, new_key) in renames {
+                let new_key_exists: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM config WHERE key = ?1)",
+                    params![new_key],
+                    |r| r.get(0),
+                )?;
+                if !new_key_exists {
+                    conn.execute(
+                        "UPDATE config SET key = ?1 WHERE key = ?2",
+                        params![new_key, old_key],
+                    )?;
+                }
+            }
+
+            Ok(())
+        })();
+
+        match result {
+            Ok(_) => {
+                conn.execute_batch("COMMIT;")
+                    .map_err(|e| DbError::Migration(format!("007: commit failed: {e}")))?;
+                Ok(())
+            }
+            Err(e) => {
+                conn.execute_batch("ROLLBACK;")
+                    .map_err(|e2| DbError::Migration(format!("007: rollback failed: {e2}, original error: {e}")))?;
                 Err(e)
             }
         }

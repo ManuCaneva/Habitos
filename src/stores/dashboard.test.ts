@@ -80,7 +80,7 @@ describe("dashboard store", () => {
     const store = useDashboardStore();
     await flush();
     store.updateLayout([{ i: "habits", xPercent: 0.1, yPercent: 0, wPercent: 0.3, hPercent: 0.5 }]);
-    expect(saveConfig).toHaveBeenCalledWith("habitos-dashboard-layout", expect.any(String));
+    expect(saveConfig).toHaveBeenCalledWith("aeon-dashboard-layout", expect.any(String));
     const call = vi.mocked(saveConfig).mock.calls[0];
     const savedData = JSON.parse(call[1] as string);
     expect(savedData[0].wPercent).toBeCloseTo(0.3);

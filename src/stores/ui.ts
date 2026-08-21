@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useStorage } from "@vueuse/core";
+import { migrateStorageKey } from "@/lib/storageKey";
 
 export type ViewMode = "dashboard" | "archived" | "settings";
 
@@ -56,7 +57,10 @@ function createEntityUi() {
 }
 
 export const useUiStore = defineStore("ui", () => {
-  const stored = useStorage<ViewMode>("habitos.viewMode", "dashboard", undefined, {
+  migrateStorageKey("habitos.viewMode", "aeon.viewMode");
+  migrateStorageKey("habitos.sidebarCollapsed", "aeon.sidebarCollapsed");
+
+  const stored = useStorage<ViewMode>("aeon.viewMode", "dashboard", undefined, {
     serializer: {
       read: (raw) => {
         try {
@@ -76,7 +80,7 @@ export const useUiStore = defineStore("ui", () => {
     stored.value = v;
   });
 
-  const sidebarCollapsed = useStorage<boolean>("habitos.sidebarCollapsed", false);
+  const sidebarCollapsed = useStorage<boolean>("aeon.sidebarCollapsed", false);
 
   const editMode = ref(false);
 

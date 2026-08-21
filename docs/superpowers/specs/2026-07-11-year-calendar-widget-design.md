@@ -36,7 +36,7 @@ Agregar un widget de dashboard "Calendario Anual" que muestra los 12 meses del a
 |---|---|---|
 | Credenciales OAuth | Guía de creación incluida; Client ID compilado en la app (vite `VITE_GCAL_CLIENT_ID`). | Arrancar limpio, sin compartir secretos. |
 | Flujo OAuth | Authorization Code + PKCE (S256). | Estándar桌面/desktop, no requiere Client Secret. |
-| Recepción del redirect | `tauri-plugin-deep-link` con scheme `com.goya.habitos://oauth/callback`. | UX limpia; el redirect vuelve a la app solo. |
+| Recepción del redirect | `tauri-plugin-deep-link` con scheme `com.aeon://oauth/callback`. | UX limpia; el redirect vuelve a la app solo. |
 | Almacenamiento del token | `config` KV table existente (`save_config`/`load_config`). | Local-first, sin migration nueva; aceptado por el usuario. |
 | Render por día | Puntos de color (1 por evento, color de Google; cap N + `+`). | Compacto, escala a celdas chicas. |
 | Sync | On-demand + memoria. | Mínimo scope; sin cache, sin tabla nueva. |
@@ -122,9 +122,9 @@ Implementación:
 ## 8. Flujo OAuth paso a paso
 
 1. `connect()` genera `code_verifier` + `code_challenge` (S256 vía `crypto.subtle`).
-2. `buildAuthUrl(client_id, redirect=com.goya.habitos://oauth/callback, scope=calendar.readonly, state, code_challenge)`.
+2. `buildAuthUrl(client_id, redirect=com.aeon://oauth/callback, scope=calendar.readonly, state, code_challenge)`.
 3. `opener.openUrl(authUrl)` (plugin ya instalado `@tauri-apps/plugin-opener`) → navegador por defecto.
-4. Google consent → redirect a `com.goya.habitos://oauth/callback?code=...` → `tauri-plugin-deep-link` captura evento, pasa URL al JS.
+4. Google consent → redirect a `com.aeon://oauth/callback?code=...` → `tauri-plugin-deep-link` captura evento, pasa URL al JS.
 5. `parseRedirectUri` extrae `code` (o `error`).
 6. POST `https://oauth2.googleapis.com/token` (vía `tauri-plugin-http` `fetch`) con `code + code_verifier` → `access_token`, `refresh_token`, `expires_in`.
 7. `saveConfig("gcal_refresh_token", ...)` etc. `connected=true`.
@@ -159,7 +159,7 @@ Por cada archivo `.ts`/`.vue` el `.test.ts` al lado, primero rojo, después verd
 
 ## 10. Riesgos técnicos
 
-1. **Deep-link con scheme custom en Google OAuth** (mayor riesgo): Google históricamente es restrictivo con redirect URIs que no son loopback/https. Hay que registrar `com.goya.habitos://oauth/callback` como "Authorized redirect URI" y validar que Google lo acepte. **Mitigación**: spike temprano (test manual) como PRIMER paso de implementación — si Google lo rechaza, fallback a "Copia manual del code" (cero plugin deep-link). Documentado como paso 1 de la impl.
+1. **Deep-link con scheme custom en Google OAuth** (mayor riesgo): Google históricamente es restrictivo con redirect URIs que no son loopback/https. Hay que registrar `com.aeon://oauth/callback` como "Authorized redirect URI" y validar que Google lo acepte. **Mitigación**: spike temprano (test manual) como PRIMER paso de implementación — si Google lo rechaza, fallback a "Copia manual del code" (cero plugin deep-link). Documentado como paso 1 de la impl.
 2. **Multi-calendario por cuenta**: fetch por cada calendar del usuario (parallelizable con `Promise.all`); respetar quotas de Google.
 3. **Timezone**: Google devuelve RFC3339 con tz; bucketear por fecha local del usuario (helper `calendarDates.ts`).
 4. **Token en texto plano en SQLite**: acordado por el usuario. Documentar el riesgo en README/AGENTS si hace falta, sin cambiar la estrategia.
@@ -170,7 +170,7 @@ Por cada archivo `.ts`/`.vue` el `.test.ts` al lado, primero rojo, después verd
 1. Google Cloud Console → crear/seleccionar project.
 2. APIs & Services → Enable **Google Calendar API**.
 3. OAuth consent screen → External, completar app name `Habitos`, scopes: `.../auth/calendar.readonly`.
-4. Credentials → Create OAuth client ID → **Web application** → Authorized redirect URIs: añadir `com.goya.habitos://oauth/callback`.
+4. Credentials → Create OAuth client ID → **Web application** → Authorized redirect URIs: añadir `com.aeon://oauth/callback`.
 5. Copiar **Client ID** (el Client Secret NO hace falta con PKCE para desktop). Pegar en `.env` como `VITE_GCAL_CLIENT_ID`.
 6. Mientras la app esté en "Testing", añadir la cuenta como test user.
 

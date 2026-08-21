@@ -80,7 +80,7 @@ No levantar el runtime de Tauri en tests unitarios. Tests de integración que ab
 
 - **Frontend**: Vue 3.5 + TypeScript + Pinia + VueUse + Zod + Tailwind 3.4
 - **Backend**: Tauri 2 + Rust + rusqlite (bundled, sin CGO)
-- **Persistencia**: SQLite local en `app_data_dir/habitos.sqlite` (WAL mode)
+- **Persistencia**: SQLite local en `app_data_dir/aeon.sqlite` (WAL mode). Las instalaciones existentes migran automáticamente desde `habitos.sqlite`.
 - **Validación**: dual layer Zod (dominio + row) cruzando la frontera Tauri
 - **Estilos**: tokens de `docs/DESIGN.md` via Tailwind, no hardcodear colores/tamaños en componentes
 - **Componentes UI**: en `src/components/ui/`. No agregar dependencias de UI nuevas sin discutir.

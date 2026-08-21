@@ -21,7 +21,7 @@ pub fn run() {
                 .path()
                 .app_data_dir()
                 .expect("no se pudo resolver app_data_dir");
-            let db_path = dir.join("habitos.sqlite");
+            let db_path = dir.join("aeon.sqlite");
             let database = Db::open(&db_path).expect("error inicializando SQLite");
             app.manage(database);
             Ok(())
