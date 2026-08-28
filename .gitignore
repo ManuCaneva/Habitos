@@ -48,6 +48,7 @@ src-tauri/gen/schemas/
 .opencode/
 .playwright/
 .cache/
+test-results/
 
 # ── Misc ─────────────────────────────────────────────────────
 *.bak
