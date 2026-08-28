@@ -119,6 +119,9 @@ function overflowCount(date: string | null): number {
   height: var(--month-h, auto);
   box-sizing: border-box;
   width: 100%;
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--month-h, auto);
 }
 
 .month-mini__name {

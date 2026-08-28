@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
@@ -53,9 +53,52 @@ describe('WeeklyScheduleGrid', () => {
     setActivePinia(createPinia())
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('renderiza las columnas de los días de la semana', () => {
     const wrapper = mount(WeeklyScheduleGrid)
     expect(wrapper.text()).toContain('Lun')
     expect(wrapper.text()).toContain('Dom')
+    wrapper.unmount()
+  })
+
+  it('difiere measure() a rAF: el resize del contenedor no vuelve a medir en cada frame', async () => {
+    let resizeCallback: (() => void) | null = null
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resizeCallback = callback
+        }
+        observe() {}
+        disconnect() {}
+      }
+    )
+
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const el = wrapper.element
+    const rect = { height: 500, width: 900 }
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+
+    // Llamadas repetidas del RO dentro del mismo frame: sin rAF, la medición
+    // volvería a correr cada vez. Con rAF, se coalescen en una sola.
+    ;(resizeCallback as unknown as () => void)()
+    ;(resizeCallback as unknown as () => void)()
+    ;(resizeCallback as unknown as () => void)()
+    await wrapper.vm.$nextTick()
+
+    // Sin pasar un frame, la altura del container sigue siendo el valor por defecto
+    const defaultHourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
+    expect(defaultHourHeight).toContain('height:')
+
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+    await wrapper.vm.$nextTick()
+
+    // Tras el rAF, las filas de hora se recalcularon con la altura real
+    const hourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
+    expect(hourHeight).not.toBe(defaultHourHeight)
+    wrapper.unmount()
   })
 })

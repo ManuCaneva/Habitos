@@ -5,6 +5,10 @@ import YearCalendarWidget from './YearCalendarWidget.vue'
 import MonthMini from '@/components/calendar/MonthMini.vue'
 import DayDetailsModal from '@/components/dashboard/DayDetailsModal.vue'
 
+function flushRaf() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+}
+
 const mockStore = {
   connected: false,
   currentYear: 2026,
@@ -55,12 +59,14 @@ describe('YearCalendarWidget', () => {
     if (resizeCallback) {
       ;(resizeCallback as () => void)()
     }
+    await flushRaf()
     await wrapper.vm.$nextTick()
 
     const months = wrapper.findAll("[data-testid='month-mini']")
     expect(months).toHaveLength(12)
 
     vi.unstubAllGlobals()
+    wrapper.unmount()
   })
 
   it('llama syncYear al montarse', () => {
@@ -125,6 +131,7 @@ describe('YearCalendarWidget', () => {
     if (resizeCallback) {
       ;(resizeCallback as () => void)()
     }
+    await flushRaf()
     await wrapper.vm.$nextTick()
 
     const month = wrapper.findComponent(MonthMini)
@@ -178,14 +185,51 @@ describe('YearCalendarWidget', () => {
     Object.defineProperty(bodyEl, 'clientWidth', { value: 300, configurable: true })
     Object.defineProperty(bodyEl, 'clientHeight', { value: 300, configurable: true })
 
-    // Esperar a que el callback del ResizeObserver se ejecute
+    // Esperar a que el callback del ResizeObserver se ejecute y el recompute corra en rAF
     await new Promise((resolve) => setTimeout(resolve, 10))
+    await flushRaf()
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find("[data-testid='month-up']").exists()).toBe(true)
     expect(wrapper.find("[data-testid='month-down']").exists()).toBe(true)
 
     vi.unstubAllGlobals()
+  })
+
+  it('difiere el recompute a rAF y no vuelve a calcular en cada frame del resize', async () => {
+    let resizeCallback: (() => void) | null = null
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resizeCallback = callback
+        }
+        observe() {}
+        disconnect() {}
+      }
+    )
+
+    const wrapper = mount(YearCalendarWidget, { attachTo: document.body })
+    const bodyEl = wrapper.find('.ycw__body').element as HTMLElement
+    Object.defineProperty(bodyEl, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 900, configurable: true })
+
+    if (resizeCallback) {
+      ;(resizeCallback as () => void)()
+    }
+    await wrapper.vm.$nextTick()
+
+    // Sin que pase un frame, el layout aún no se aplicó al DOM
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(0)
+
+    // Al avanzar el frame, el recompute pendiente corre una sola vez
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(12)
+
+    vi.unstubAllGlobals()
+    wrapper.unmount()
   })
 
   it('forces layout columns to match the dashboard item width', async () => {
@@ -222,10 +266,11 @@ describe('YearCalendarWidget', () => {
     Object.defineProperty(bodyEl, 'clientHeight', { value: 800, configurable: true })
 
     await new Promise((resolve) => setTimeout(resolve, 10))
+    await flushRaf()
     await wrapper.vm.$nextTick()
 
-    const grid = wrapper.find('.ycw__grid')
-    const style = grid.attributes('style')
+    const root = wrapper.find('.ycw')
+    const style = root.attributes('style')
     expect(style).toContain('--cols:')
     // Algorithm chooses optimal column count based on available space
     const colsMatch = style!.match(/--cols:\s*(\d+)/)

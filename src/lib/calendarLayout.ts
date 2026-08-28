@@ -23,6 +23,21 @@ export interface LayoutResult {
 const MIN_CELL_SIZE = 4 // minimum readable day cell size in pixels
 const MAX_CELL_SIZE = 120 // upper bound - algorithm iterates down from here
 
+export function spacingFor(cs: number) {
+  const cellGap = cs < 10 ? 1 : Math.max(1, Math.round(cs * 0.12))
+  const monthPadding = 0
+  const gridGap = Math.max(3, Math.round(cs * 0.5))
+  const nameGap = Math.max(3, Math.round(cs * 0.35))
+  const monthHeader = Math.max(10, Math.round(cs * 1.3))
+
+  // Width of 1 month card
+  const monthW = 7 * cs + 6 * cellGap + 2 * monthPadding
+  // Height of 1 month card
+  const monthH = 6 * cs + 5 * cellGap + 2 * monthPadding + monthHeader + nameGap
+
+  return { cellGap, monthPadding, gridGap, monthHeader, nameGap, monthW, monthH }
+}
+
 export function computeForCols(c: number, rawW: number, rawH: number): LayoutResult | null {
   if (rawW <= 0 || rawH <= 0) return null
 
@@ -35,22 +50,6 @@ export function computeForCols(c: number, rawW: number, rawH: number): LayoutRes
 
   if (availW <= 0 || availH <= 0) return null
 
-  // We define helper functions to calculate spacing relative to the day cell size (cs)
-  function getSpacing(cs: number) {
-    const cellGap = cs < 10 ? 1 : Math.max(1, Math.round(cs * 0.12))
-    const monthPadding = 0
-    const gridGap = Math.max(3, Math.round(cs * 0.5))
-    const nameGap = Math.max(3, Math.round(cs * 0.35))
-    const monthHeader = Math.max(10, Math.round(cs * 1.3))
-
-    // Width of 1 month card
-    const monthW = 7 * cs + 6 * cellGap + 2 * monthPadding
-    // Height of 1 month card
-    const monthH = 6 * cs + 5 * cellGap + 2 * monthPadding + monthHeader + nameGap
-
-    return { cellGap, monthPadding, gridGap, monthHeader, nameGap, monthW, monthH }
-  }
-
   // 1. Try to fit all 12 months (skip if c === 1 to force semester view)
   const rowsAll = Math.ceil(12 / c)
   let bestCs = -1
@@ -59,7 +58,7 @@ export function computeForCols(c: number, rawW: number, rawH: number): LayoutRes
 
   if (c > 1) {
     for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
-      const space = getSpacing(cs)
+      const space = spacingFor(cs)
       const totalW = c * space.monthW + (c - 1) * space.gridGap
       const totalH = rowsAll * space.monthH + (rowsAll - 1) * space.gridGap
 
@@ -78,7 +77,7 @@ export function computeForCols(c: number, rawW: number, rawH: number): LayoutRes
     const rowsSix = Math.ceil(targetMonths / c)
 
     for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
-      const space = getSpacing(cs)
+      const space = spacingFor(cs)
       const totalW = c * space.monthW + (c - 1) * space.gridGap
       const totalH = rowsSix * space.monthH + (rowsSix - 1) * space.gridGap
 
@@ -101,7 +100,7 @@ export function computeForCols(c: number, rawW: number, rawH: number): LayoutRes
   // 3. Fallback: at least 1 row fits
   if (bestCs === -1) {
     for (let cs = MAX_CELL_SIZE; cs >= MIN_CELL_SIZE; cs--) {
-      const space = getSpacing(cs)
+      const space = spacingFor(cs)
       const totalW = c * space.monthW + (c - 1) * space.gridGap
       const totalH = space.monthH
 
@@ -117,7 +116,7 @@ export function computeForCols(c: number, rawW: number, rawH: number): LayoutRes
   if (bestCs === -1) return null
 
   const cs = bestCs
-  const space = getSpacing(cs)
+  const space = spacingFor(cs)
 
   return {
     cols: c,

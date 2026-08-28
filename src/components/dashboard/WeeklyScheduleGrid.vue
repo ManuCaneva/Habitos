@@ -14,7 +14,25 @@ const containerRef = ref<HTMLElement | null>(null)
 const containerHeight = ref(400)
 const containerWidth = ref(800)
 
+let rafId: number | null = null
+
 function measure() {
+  if (rafId !== null) return
+  rafId = requestAnimationFrame(() => {
+    rafId = null
+    if (containerRef.value) {
+      const rect = containerRef.value.getBoundingClientRect()
+      containerHeight.value = rect.height
+      containerWidth.value = rect.width
+    }
+  })
+}
+
+function flushMeasure() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
   if (containerRef.value) {
     const rect = containerRef.value.getBoundingClientRect()
     containerHeight.value = rect.height
@@ -29,7 +47,7 @@ const labelWidthStyle = computed(() => labelWidthPx.value + 'px')
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
-  measure()
+  flushMeasure()
   if (containerRef.value) {
     observer = new ResizeObserver(measure)
     observer.observe(containerRef.value)
@@ -38,6 +56,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect()
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
 })
 
 watch(() => store.settings, measure, { deep: true })

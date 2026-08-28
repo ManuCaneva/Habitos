@@ -7,6 +7,7 @@ import DayDetailsModal from '@/components/dashboard/DayDetailsModal.vue'
 import Text from '@/components/ui/Text.vue'
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Loader2 } from 'lucide-vue-next'
 import { computeLayout, type LayoutResult } from '@/lib/calendarLayout'
+import { significantChange, layoutVars, quantizeLayout } from '@/lib/calendarResize'
 import { DAY_LABELS } from '@/lib/calendarDates'
 import type { LayoutItem } from '@/stores/dashboard'
 
@@ -49,41 +50,87 @@ const targetCols = computed(() => {
   return props.item.w
 })
 
-function recompute() {
+// El tamaño viene del contentRect del ResizeObserver, NO de leer el DOM
+// (clientWidth/clientHeight) que fuerza un layout síncrono por frame.
+let pendingSize: { w: number; h: number } | null = null
+
+let rafId: number | null = null
+
+function scheduleRecompute(size?: { w: number; h: number }) {
+  if (size) pendingSize = size
+  if (rafId !== null) return
+  rafId = requestAnimationFrame(() => {
+    rafId = null
+    runRecompute()
+  })
+}
+
+function runRecompute() {
   const el = bodyRef.value
   if (!el) return
 
-  const availW = el.clientWidth
-  const availH = el.clientHeight
+  const availW = pendingSize?.w ?? el.clientWidth
+  const availH = pendingSize?.h ?? el.clientHeight
+  pendingSize = null
 
-  const result = computeLayout(availW, availH)
-  if (!result) return
+  const raw = computeLayout(availW, availH)
+  if (!raw) return
 
-  layout.value = result
+  const candidate = quantizeLayout(raw)
+  const change = significantChange(layout.value, candidate)
 
-  const maxOffset = Math.max(0, 12 - result.visibleSlots)
+  if (change === 'none') return
+
+  // 'layout' siempre es la fuente de verdad: se actualiza con cualquier cambio
+  // significativo (estructura o tamaño en un paso discreto). Los 12 MonthMini
+  // reciben props estables, así que Vue no los re-renderiza: solo el shell del
+  // widget se actualiza (variables CSS + footer), que es barato.
+  layout.value = candidate
+
+  const maxOffset = Math.max(0, 12 - candidate.visibleSlots)
   offset.value = Math.min(offset.value, maxOffset)
-  offset.value = Math.floor(offset.value / result.cols) * result.cols
+  offset.value = Math.floor(offset.value / candidate.cols) * candidate.cols
+}
+
+function flushRecompute() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  runRecompute()
 }
 
 watch(targetCols, () => {
-  recompute()
+  flushRecompute()
 })
 
 onMounted(() => {
   store.syncYear(store.currentYear)
   if (bodyRef.value) {
-    resizeObserver = new ResizeObserver(() => recompute())
+    resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries?.[0]
+      if (entry) {
+        scheduleRecompute({ w: entry.contentRect.width, h: entry.contentRect.height })
+      } else {
+        scheduleRecompute()
+      }
+    })
     resizeObserver.observe(bodyRef.value)
   }
-  recompute()
+  flushRecompute()
 })
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
 })
 
 const viewportRef = ref<HTMLElement | null>(null)
+
+const layoutStyle = computed(() => (layout.value ? layoutVars(layout.value) : {}))
 
 const showArrows = computed(() => (layout.value ? !layout.value.showsAll : false))
 const canGoUp = computed(() => offset.value > 0)
@@ -127,27 +174,7 @@ watch(
     class="h-full overflow-hidden"
     data-testid="year-calendar-widget"
   >
-    <div
-      class="ycw"
-      :class="layout ? `cols-${layout.cols}` : ''"
-      :style="
-        layout
-          ? {
-              '--cols': layout.cols,
-              '--cell-size': `${layout.cellSize}px`,
-              '--grid-gap': `${layout.gridGap}px`,
-              '--month-padding': `${layout.monthPadding}px`,
-              '--cell-gap-x': `${layout.cellGapX}px`,
-              '--cell-gap-y': `${layout.cellGapY}px`,
-              '--month-h': `${layout.monthHeight}px`,
-              '--month-header': `${layout.monthHeader}px`,
-              '--name-gap': `${layout.nameGap}px`,
-              '--font-size': `${Math.max(0.72, layout.cellSize * 0.075)}rem`,
-              '--title-font-size': `${Math.max(0.55, layout.cellSize * 0.042)}rem`,
-            }
-          : {}
-      "
-    >
+    <div class="ycw" :class="layout ? `cols-${layout.cols}` : ''" :style="layoutStyle">
       <header
         class="ycw__header"
         :style="{ '--title-font-size': 'var(--title-font-size, 0.75rem)' }"
@@ -183,7 +210,7 @@ watch(
           :style="
             !layout.showsAll
               ? {
-                  height: `${(layout.visibleSlots / layout.cols) * (layout.monthHeight + layout.gridGap) - layout.gridGap}px`,
+                  height: `var(--viewport-h)`,
                   flex: 'none',
                 }
               : {}
@@ -192,9 +219,7 @@ watch(
           <div
             class="ycw__grid"
             :style="{
-              '--cols': layout.cols,
-              '--grid-gap': `${layout.gridGap}px`,
-              transform: `translateY(-${Math.floor(offset / layout.cols) * (layout.monthHeight + layout.gridGap)}px)`,
+              transform: `translateY(calc(-1 * (var(--month-step) * ${Math.floor(offset / layout.cols)})))`,
             }"
           >
             <MonthMini
