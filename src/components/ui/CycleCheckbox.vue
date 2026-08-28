@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { Check } from "lucide-vue-next";
+import { computed } from 'vue'
+import { Check } from 'lucide-vue-next'
 
-type CycleState = "todo" | "doing" | "done";
+type CycleState = 'todo' | 'doing' | 'done'
 
 const props = defineProps<{
-  modelValue: CycleState;
-  disabled?: boolean;
-}>();
+  modelValue: CycleState
+  disabled?: boolean
+}>()
 
 const emit = defineEmits<{
-  "update:modelValue": [value: CycleState];
-}>();
+  'update:modelValue': [value: CycleState]
+}>()
 
 function next(): CycleState {
-  const order: CycleState[] = ["todo", "doing", "done"];
-  const idx = order.indexOf(props.modelValue);
-  return order[(idx + 1) % order.length];
+  const order: CycleState[] = ['todo', 'doing', 'done']
+  const idx = order.indexOf(props.modelValue)
+  return order[(idx + 1) % order.length]
 }
 
 const boxClasses = computed(() => {
-  const base = "h-4 w-4 rounded border transition-colors duration-150 flex items-center justify-center";
-  if (props.modelValue === "todo") {
-    return `${base} bg-surface-1 border-hairline-strong`;
+  const base =
+    'h-4 w-4 rounded border transition-colors duration-150 flex items-center justify-center'
+  if (props.modelValue === 'todo') {
+    return `${base} bg-surface-1 border-hairline-strong`
   }
-  if (props.modelValue === "doing") {
-    return `${base} bg-primary/40 border-primary`;
+  if (props.modelValue === 'doing') {
+    return `${base} bg-primary/40 border-primary`
   }
-  return `${base} bg-primary border-primary`;
-});
+  return `${base} bg-primary border-primary`
+})
 </script>
 
 <template>

@@ -1,46 +1,46 @@
-import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
-import { useStorage } from "@vueuse/core";
-import { migrateStorageKey } from "@/lib/storageKey";
+import { defineStore } from 'pinia'
+import { computed, ref, watch } from 'vue'
+import { useStorage } from '@vueuse/core'
+import { migrateStorageKey } from '@/lib/storageKey'
 
-export type ViewMode = "dashboard" | "archived" | "settings";
+export type ViewMode = 'dashboard' | 'archived' | 'settings'
 
-const VALID_MODES: readonly ViewMode[] = ["dashboard", "archived", "settings"];
+const VALID_MODES: readonly ViewMode[] = ['dashboard', 'archived', 'settings']
 
 function isViewMode(v: unknown): v is ViewMode {
-  return typeof v === "string" && (VALID_MODES as readonly string[]).includes(v);
+  return typeof v === 'string' && (VALID_MODES as readonly string[]).includes(v)
 }
 
 function createEntityUi() {
-  const createOpen = ref(false);
-  const editingId = ref<string | null>(null);
-  const menuOpenForId = ref<string | null>(null);
+  const createOpen = ref(false)
+  const editingId = ref<string | null>(null)
+  const menuOpenForId = ref<string | null>(null)
 
-  const isEditing = computed(() => editingId.value !== null);
+  const isEditing = computed(() => editingId.value !== null)
 
   function openCreate() {
-    editingId.value = null;
-    createOpen.value = true;
-    menuOpenForId.value = null;
+    editingId.value = null
+    createOpen.value = true
+    menuOpenForId.value = null
   }
 
   function openEdit(id: string) {
-    editingId.value = id;
-    createOpen.value = true;
-    menuOpenForId.value = null;
+    editingId.value = id
+    createOpen.value = true
+    menuOpenForId.value = null
   }
 
   function closeModal() {
-    createOpen.value = false;
-    editingId.value = null;
+    createOpen.value = false
+    editingId.value = null
   }
 
   function toggleMenu(entityId: string) {
-    menuOpenForId.value = menuOpenForId.value === entityId ? null : entityId;
+    menuOpenForId.value = menuOpenForId.value === entityId ? null : entityId
   }
 
   function closeMenu() {
-    menuOpenForId.value = null;
+    menuOpenForId.value = null
   }
 
   return {
@@ -53,54 +53,54 @@ function createEntityUi() {
     closeModal,
     toggleMenu,
     closeMenu,
-  };
+  }
 }
 
-export const useUiStore = defineStore("ui", () => {
-  migrateStorageKey("habitos.viewMode", "aeon.viewMode");
-  migrateStorageKey("habitos.sidebarCollapsed", "aeon.sidebarCollapsed");
+export const useUiStore = defineStore('ui', () => {
+  migrateStorageKey('habitos.viewMode', 'aeon.viewMode')
+  migrateStorageKey('habitos.sidebarCollapsed', 'aeon.sidebarCollapsed')
 
-  const stored = useStorage<ViewMode>("aeon.viewMode", "dashboard", undefined, {
+  const stored = useStorage<ViewMode>('aeon.viewMode', 'dashboard', undefined, {
     serializer: {
       read: (raw) => {
         try {
-          const parsed: unknown = JSON.parse(raw);
-          return isViewMode(parsed) ? parsed : "dashboard";
+          const parsed: unknown = JSON.parse(raw)
+          return isViewMode(parsed) ? parsed : 'dashboard'
         } catch {
-          return "dashboard";
+          return 'dashboard'
         }
       },
       write: (v) => JSON.stringify(v),
     },
-  });
+  })
 
-  const viewMode = ref<ViewMode>(stored.value);
+  const viewMode = ref<ViewMode>(stored.value)
 
   watch(viewMode, (v) => {
-    stored.value = v;
-  });
+    stored.value = v
+  })
 
-  const sidebarCollapsed = useStorage<boolean>("aeon.sidebarCollapsed", false);
+  const sidebarCollapsed = useStorage<boolean>('aeon.sidebarCollapsed', false)
 
-  const editMode = ref(false);
+  const editMode = ref(false)
 
-  const habits = createEntityUi();
-  const tasks = createEntityUi();
-  const goals = createEntityUi();
+  const habits = createEntityUi()
+  const tasks = createEntityUi()
+  const goals = createEntityUi()
 
   function setViewMode(mode: ViewMode) {
-    viewMode.value = mode;
-    habits.closeMenu();
-    tasks.closeMenu();
-    goals.closeMenu();
+    viewMode.value = mode
+    habits.closeMenu()
+    tasks.closeMenu()
+    goals.closeMenu()
   }
 
   function toggleSidebar() {
-    sidebarCollapsed.value = !sidebarCollapsed.value;
+    sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
   function toggleEditMode() {
-    editMode.value = !editMode.value;
+    editMode.value = !editMode.value
   }
 
   return {
@@ -137,5 +137,5 @@ export const useUiStore = defineStore("ui", () => {
     closeGoalModal: goals.closeModal,
     toggleGoalMenu: goals.toggleMenu,
     closeGoalMenu: goals.closeMenu,
-  };
-});
+  }
+})

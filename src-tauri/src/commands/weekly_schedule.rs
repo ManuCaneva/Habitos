@@ -127,8 +127,12 @@ pub fn create_schedule_block(
                (id, title, color, sort_order, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
-                input.id, input.title, input.color,
-                input.sort_order, input.created_at, input.updated_at,
+                input.id,
+                input.title,
+                input.color,
+                input.sort_order,
+                input.created_at,
+                input.updated_at,
             ],
         )?;
         let row = conn
@@ -156,9 +160,13 @@ pub fn create_schedule_slot(
                (id, block_id, day_of_week, start_minutes, end_minutes, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
-                input.id, input.block_id, input.day_of_week,
-                input.start_minutes, input.end_minutes,
-                input.created_at, input.updated_at,
+                input.id,
+                input.block_id,
+                input.day_of_week,
+                input.start_minutes,
+                input.end_minutes,
+                input.created_at,
+                input.updated_at,
             ],
         )?;
         let row = conn
@@ -189,8 +197,11 @@ pub fn update_schedule_block(
                updated_at   = ?5
              WHERE id = ?1",
             params![
-                input.id, input.title, input.color,
-                input.sort_order, input.updated_at,
+                input.id,
+                input.title,
+                input.color,
+                input.sort_order,
+                input.updated_at,
             ],
         )?;
         let row = conn
@@ -221,8 +232,11 @@ pub fn update_schedule_slot(
                updated_at   = ?5
              WHERE id = ?1",
             params![
-                input.id, input.day_of_week, input.start_minutes,
-                input.end_minutes, input.updated_at,
+                input.id,
+                input.day_of_week,
+                input.start_minutes,
+                input.end_minutes,
+                input.updated_at,
             ],
         )?;
         let row = conn
@@ -252,7 +266,10 @@ pub fn delete_schedule_block(db: State<'_, Db>, id: String) -> Result<(), String
 pub fn delete_schedule_slot(db: State<'_, Db>, id: String) -> Result<(), String> {
     let result: DbResult<()> = (|| {
         let conn = db.conn.lock().unwrap();
-        conn.execute("DELETE FROM schedule_block_slots WHERE id = ?1", params![id])?;
+        conn.execute(
+            "DELETE FROM schedule_block_slots WHERE id = ?1",
+            params![id],
+        )?;
         Ok(())
     })();
     result.to_str_err()

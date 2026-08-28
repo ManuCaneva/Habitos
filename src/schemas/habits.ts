@@ -10,10 +10,10 @@
 // entre la frecuencia polimórfica y las columnas SQLite.
 // =============================================================
 
-import { z } from "zod";
-import { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp } from "./primitives";
+import { z } from 'zod'
+import { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp } from './primitives'
 
-export { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp };
+export { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp }
 
 // ───────────────────────────────────────────────────────────────
 // Frecuencia (discriminated union)
@@ -21,28 +21,28 @@ export { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp };
 
 const FrequencyBase = z.object({
   target_per_period: z.number().int().min(1).max(7).default(1),
-});
+})
 
 const DailyFrequency = FrequencyBase.extend({
-  type: z.literal("daily"),
-});
+  type: z.literal('daily'),
+})
 
 const WeeklyFrequency = FrequencyBase.extend({
-  type: z.literal("weekly"),
-});
+  type: z.literal('weekly'),
+})
 
 const IntervalFrequency = FrequencyBase.extend({
-  type: z.literal("interval"),
+  type: z.literal('interval'),
   interval_days: z.number().int().min(1).max(365),
-});
+})
 
-export const HabitFrequencySchema = z.discriminatedUnion("type", [
+export const HabitFrequencySchema = z.discriminatedUnion('type', [
   DailyFrequency,
   WeeklyFrequency,
   IntervalFrequency,
-]);
+])
 
-export type HabitFrequency = z.infer<typeof HabitFrequencySchema>;
+export type HabitFrequency = z.infer<typeof HabitFrequencySchema>
 
 // ───────────────────────────────────────────────────────────────
 // Entidad de dominio: Habit
@@ -59,9 +59,9 @@ export const HabitSchema = z.object({
   created_at: isoTimestamp,
   updated_at: isoTimestamp,
   archived_at: isoTimestamp.nullable().default(null),
-});
+})
 
-export type Habit = z.infer<typeof HabitSchema>;
+export type Habit = z.infer<typeof HabitSchema>
 
 // ───────────────────────────────────────────────────────────────
 // Entidad de dominio: HabitLog
@@ -74,9 +74,9 @@ export const HabitLogSchema = z.object({
   completed_at: isoTimestamp,
   note: z.string().trim().max(280).nullable().default(null),
   created_at: isoTimestamp,
-});
+})
 
-export type HabitLog = z.infer<typeof HabitLogSchema>;
+export type HabitLog = z.infer<typeof HabitLogSchema>
 
 // ───────────────────────────────────────────────────────────────
 // Drafts (input del usuario — sin id ni timestamps de servidor)
@@ -89,26 +89,26 @@ export const CreateHabitDraftSchema = z.object({
   color: hexColor,
   frequency: HabitFrequencySchema,
   sort_order: z.number().int().optional(),
-});
+})
 
-export type CreateHabitDraft = z.infer<typeof CreateHabitDraftSchema>;
+export type CreateHabitDraft = z.infer<typeof CreateHabitDraftSchema>
 
-export const UpdateHabitDraftSchema = CreateHabitDraftSchema.partial();
-export type UpdateHabitDraft = z.infer<typeof UpdateHabitDraftSchema>;
+export const UpdateHabitDraftSchema = CreateHabitDraftSchema.partial()
+export type UpdateHabitDraft = z.infer<typeof UpdateHabitDraftSchema>
 
 export const CreateHabitLogDraftSchema = z.object({
   habit_id: uuid,
   log_date: localDate.optional(), // si falta, el store calcula "hoy" en local
   note: z.string().trim().max(280).nullable().optional(),
-});
+})
 
-export type CreateHabitLogDraft = z.infer<typeof CreateHabitLogDraftSchema>;
+export type CreateHabitLogDraft = z.infer<typeof CreateHabitLogDraftSchema>
 
 // ───────────────────────────────────────────────────────────────
 // Mappers: row ⇄ dominio
 // ───────────────────────────────────────────────────────────────
 
-export const FrequencyTypeSchema = z.enum(["daily", "weekly", "interval"]);
+export const FrequencyTypeSchema = z.enum(['daily', 'weekly', 'interval'])
 
 export const HabitRowSchema = z.object({
   id: uuid,
@@ -124,9 +124,9 @@ export const HabitRowSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   archived_at: z.string().nullable(),
-});
+})
 
-export type HabitRow = z.infer<typeof HabitRowSchema>;
+export type HabitRow = z.infer<typeof HabitRowSchema>
 
 export const HabitLogRowSchema = z.object({
   id: uuid,
@@ -135,9 +135,9 @@ export const HabitLogRowSchema = z.object({
   completed_at: z.string(),
   note: z.string().nullable(),
   created_at: z.string(),
-});
+})
 
-export type HabitLogRow = z.infer<typeof HabitLogRowSchema>;
+export type HabitLogRow = z.infer<typeof HabitLogRowSchema>
 
 // ───────────────────────────────────────────────────────────────
 // Mappers: row ⇄ dominio
@@ -146,17 +146,17 @@ export type HabitLogRow = z.infer<typeof HabitLogRowSchema>;
 export function rowToHabit(row: HabitRow): Habit {
   const base = {
     target_per_period: row.target_per_period,
-  };
+  }
   const frequency: HabitFrequency =
-    row.frequency_type === "daily"
-      ? { type: "daily", ...base }
-      : row.frequency_type === "weekly"
-        ? { type: "weekly", ...base }
+    row.frequency_type === 'daily'
+      ? { type: 'daily', ...base }
+      : row.frequency_type === 'weekly'
+        ? { type: 'weekly', ...base }
         : {
-            type: "interval",
+            type: 'interval',
             ...base,
             interval_days: row.interval_days ?? 1,
-          };
+          }
 
   return HabitSchema.parse({
     id: row.id,
@@ -169,7 +169,7 @@ export function rowToHabit(row: HabitRow): Habit {
     created_at: normalizeTimestamp(row.created_at),
     updated_at: normalizeTimestamp(row.updated_at),
     archived_at: row.archived_at ? normalizeTimestamp(row.archived_at) : null,
-  });
+  })
 }
 
 export function rowToHabitLog(row: HabitLogRow): HabitLog {
@@ -177,13 +177,13 @@ export function rowToHabitLog(row: HabitLogRow): HabitLog {
     ...row,
     completed_at: normalizeTimestamp(row.completed_at),
     created_at: normalizeTimestamp(row.created_at),
-  };
-  return HabitLogSchema.parse(normalized);
+  }
+  return HabitLogSchema.parse(normalized)
 }
 
 /** Aplana un Habit (o draft) a la forma de fila que espera Rust/SQLite. */
 export function habitToRow(h: CreateHabitDraft | UpdateHabitDraft | Habit) {
-  const frequency: HabitFrequency | undefined = "frequency" in h ? h.frequency : undefined;
+  const frequency: HabitFrequency | undefined = 'frequency' in h ? h.frequency : undefined
 
   const base = {
     name: h.name,
@@ -191,23 +191,23 @@ export function habitToRow(h: CreateHabitDraft | UpdateHabitDraft | Habit) {
     icon: h.icon ?? null,
     color: h.color,
     sort_order: h.sort_order ?? 0,
-  };
+  }
 
   if (!frequency) {
     return {
       ...base,
-      frequency_type: "daily" as const,
+      frequency_type: 'daily' as const,
       target_per_period: 1,
       interval_days: null,
       days_of_week: null,
-    };
+    }
   }
 
   return {
     ...base,
     frequency_type: frequency.type,
     target_per_period: frequency.target_per_period,
-    interval_days: frequency.type === "interval" ? frequency.interval_days : null,
+    interval_days: frequency.type === 'interval' ? frequency.interval_days : null,
     days_of_week: null,
-  };
+  }
 }

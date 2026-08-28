@@ -17,16 +17,13 @@ pub fn save_config(db: State<'_, Db>, key: String, value: String) -> Result<(), 
 
 #[tauri::command]
 pub fn load_config(db: State<'_, Db>, key: String) -> Result<Option<String>, String> {
-    let result: DbResult<Option<String>> = (|| {
-        let conn = db.conn.lock().unwrap();
-        let value = conn
-            .query_row(
-                "SELECT value FROM config WHERE key = ?1",
-                params![key],
-                |r| r.get(0),
-            )
-            .ok();
-        Ok(value)
-    })();
-    result.to_str_err()
+    let conn = db.conn.lock().unwrap();
+    let value = conn
+        .query_row(
+            "SELECT value FROM config WHERE key = ?1",
+            params![key],
+            |r| r.get(0),
+        )
+        .ok();
+    Ok(value)
 }

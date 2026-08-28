@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Container from "@/components/ui/Container.vue";
-import TodayView from "@/views/TodayView.vue";
+import Container from '@/components/ui/Container.vue'
+import TodayView from '@/views/TodayView.vue'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import TodayView from "@/views/TodayView.vue";
     data-testid="habits-widget"
     variant="default"
     padding="none"
-    class="h-full overflow-hidden container-widget"
+    class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
   >
     <TodayView />

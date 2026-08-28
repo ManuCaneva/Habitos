@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Container from "@/components/ui/Container.vue";
-import TasksListView from "@/views/TasksListView.vue";
+import Container from '@/components/ui/Container.vue'
+import TasksListView from '@/views/TasksListView.vue'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import TasksListView from "@/views/TasksListView.vue";
     data-testid="tasks-widget"
     variant="default"
     padding="none"
-    class="h-full overflow-hidden container-widget"
+    class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
   >
     <TasksListView />

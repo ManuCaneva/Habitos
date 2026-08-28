@@ -1,115 +1,123 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from "vue";
-import { useCalendarStore } from "@/stores/calendar";
-import MonthMini from "@/components/calendar/MonthMini.vue";
-import Container from "@/components/ui/Container.vue";
-import DayDetailsModal from "@/components/dashboard/DayDetailsModal.vue";
-import Text from "@/components/ui/Text.vue";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Loader2 } from "lucide-vue-next";
-import { computeLayout, type LayoutResult } from "@/lib/calendarLayout";
-import { DAY_LABELS } from "@/lib/calendarDates";
-import type { LayoutItem } from "@/stores/dashboard";
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { useCalendarStore } from '@/stores/calendar'
+import MonthMini from '@/components/calendar/MonthMini.vue'
+import Container from '@/components/ui/Container.vue'
+import DayDetailsModal from '@/components/dashboard/DayDetailsModal.vue'
+import Text from '@/components/ui/Text.vue'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Loader2 } from 'lucide-vue-next'
+import { computeLayout, type LayoutResult } from '@/lib/calendarLayout'
+import { DAY_LABELS } from '@/lib/calendarDates'
+import type { LayoutItem } from '@/stores/dashboard'
 
 const props = defineProps<{
-  item?: LayoutItem;
-}>();
+  item?: LayoutItem
+}>()
 
-const store = useCalendarStore();
+const store = useCalendarStore()
 
 const MONTH_NAMES = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
 
-const bodyRef = ref<HTMLElement | null>(null);
-const layout = ref<LayoutResult | null>(null);
-const offset = ref(0);
-const selectedDate = ref("");
-const showDayModal = ref(false);
+const bodyRef = ref<HTMLElement | null>(null)
+const layout = ref<LayoutResult | null>(null)
+const offset = ref(0)
+const selectedDate = ref('')
+const showDayModal = ref(false)
 
 function openDayModal(date: string) {
-  selectedDate.value = date;
-  showDayModal.value = true;
+  selectedDate.value = date
+  showDayModal.value = true
 }
 
-let resizeObserver: ResizeObserver | null = null;
+let resizeObserver: ResizeObserver | null = null
 
 const targetCols = computed(() => {
-  if (!props.item) return undefined;
-  return Math.round(props.item.wPercent * 12);
-});
+  if (!props.item) return undefined
+  return Math.round(props.item.wPercent * 12)
+})
 
 function recompute() {
-  const el = bodyRef.value;
-  if (!el) return;
+  const el = bodyRef.value
+  if (!el) return
 
-  const availW = el.clientWidth;
-  const availH = el.clientHeight;
+  const availW = el.clientWidth
+  const availH = el.clientHeight
 
-  const result = computeLayout(availW, availH);
-  if (!result) return;
+  const result = computeLayout(availW, availH)
+  if (!result) return
 
-  layout.value = result;
+  layout.value = result
 
-  const maxOffset = Math.max(0, 12 - result.visibleSlots);
-  offset.value = Math.min(offset.value, maxOffset);
-  offset.value = Math.floor(offset.value / result.cols) * result.cols;
+  const maxOffset = Math.max(0, 12 - result.visibleSlots)
+  offset.value = Math.min(offset.value, maxOffset)
+  offset.value = Math.floor(offset.value / result.cols) * result.cols
 }
 
 watch(targetCols, () => {
-  recompute();
-});
+  recompute()
+})
 
 onMounted(() => {
-  store.syncYear(store.currentYear);
+  store.syncYear(store.currentYear)
   if (bodyRef.value) {
-    resizeObserver = new ResizeObserver(() => recompute());
-    resizeObserver.observe(bodyRef.value);
+    resizeObserver = new ResizeObserver(() => recompute())
+    resizeObserver.observe(bodyRef.value)
   }
-  recompute();
-});
+  recompute()
+})
 
 onUnmounted(() => {
-  resizeObserver?.disconnect();
-});
+  resizeObserver?.disconnect()
+})
 
-const viewportRef = ref<HTMLElement | null>(null);
+const viewportRef = ref<HTMLElement | null>(null)
 
-const showArrows = computed(() => layout.value ? !layout.value.showsAll : false);
-const canGoUp = computed(() => offset.value > 0);
+const showArrows = computed(() => (layout.value ? !layout.value.showsAll : false))
+const canGoUp = computed(() => offset.value > 0)
 const canGoDown = computed(() => {
-  if (!layout.value) return false;
-  return offset.value + layout.value.visibleSlots < 12;
-});
+  if (!layout.value) return false
+  return offset.value + layout.value.visibleSlots < 12
+})
 
 function goUp() {
-  if (!canGoUp.value || !layout.value) return;
-  offset.value = Math.max(0, offset.value - layout.value.visibleSlots);
+  if (!canGoUp.value || !layout.value) return
+  offset.value = Math.max(0, offset.value - layout.value.visibleSlots)
 }
 
 function goDown() {
-  if (!canGoDown.value || !layout.value) return;
-  offset.value = Math.min(12 - layout.value.visibleSlots, offset.value + layout.value.visibleSlots);
+  if (!canGoDown.value || !layout.value) return
+  offset.value = Math.min(12 - layout.value.visibleSlots, offset.value + layout.value.visibleSlots)
 }
 
-
-
 function goPrev() {
-  store.goPrevYear();
+  store.goPrevYear()
 }
 
 function goNext() {
-  store.goNextYear();
+  store.goNextYear()
 }
 
 watch(
   () => store.currentYear,
   (newYear, oldYear) => {
     if (newYear !== oldYear) {
-      store.syncYear(newYear);
+      store.syncYear(newYear)
     }
-  },
-);
+  }
+)
 </script>
 
 <template>
@@ -119,29 +127,36 @@ watch(
     class="h-full overflow-hidden"
     data-testid="year-calendar-widget"
   >
-    <div 
+    <div
       class="ycw"
       :class="layout ? `cols-${layout.cols}` : ''"
-      :style="layout ? {
-        '--cols': layout.cols,
-        '--cell-size': `${layout.cellSize}px`,
-        '--grid-gap': `${layout.gridGap}px`,
-        '--month-padding': `${layout.monthPadding}px`,
-        '--cell-gap-x': `${layout.cellGapX}px`,
-        '--cell-gap-y': `${layout.cellGapY}px`,
-        '--month-h': `${layout.monthHeight}px`,
-        '--month-header': `${layout.monthHeader}px`,
-        '--name-gap': `${layout.nameGap}px`,
-        '--font-size': `${Math.max(0.72, layout.cellSize * 0.075)}rem`,
-        '--title-font-size': `${Math.max(0.55, layout.cellSize * 0.042)}rem`,
-      } : {}"
+      :style="
+        layout
+          ? {
+              '--cols': layout.cols,
+              '--cell-size': `${layout.cellSize}px`,
+              '--grid-gap': `${layout.gridGap}px`,
+              '--month-padding': `${layout.monthPadding}px`,
+              '--cell-gap-x': `${layout.cellGapX}px`,
+              '--cell-gap-y': `${layout.cellGapY}px`,
+              '--month-h': `${layout.monthHeight}px`,
+              '--month-header': `${layout.monthHeader}px`,
+              '--name-gap': `${layout.nameGap}px`,
+              '--font-size': `${Math.max(0.72, layout.cellSize * 0.075)}rem`,
+              '--title-font-size': `${Math.max(0.55, layout.cellSize * 0.042)}rem`,
+            }
+          : {}
+      "
     >
-      <header class="ycw__header" :style="{ '--title-font-size': 'var(--title-font-size, 0.75rem)' }">
+      <header
+        class="ycw__header"
+        :style="{ '--title-font-size': 'var(--title-font-size, 0.75rem)' }"
+      >
         <Text variant="caption" weight="600" class="ycw__title">Calendario Anual</Text>
         <Loader2
           v-if="store.syncing"
           :size="12"
-          class="animate-spin text-ink-tertiary ycw__spinner"
+          class="ycw__spinner animate-spin text-ink-tertiary"
           data-testid="sync-spinner"
         />
       </header>
@@ -154,35 +169,32 @@ watch(
         {{ store.syncError }}
       </div>
 
-      <div class="ycw__body" ref="bodyRef">
-        <div
-          v-if="layout"
-          class="ycw__grid-header"
-        >
-          <div
-            v-for="c in layout.cols"
-            :key="c"
-            class="ycw__col-header"
-          >
+      <div ref="bodyRef" class="ycw__body">
+        <div v-if="layout" class="ycw__grid-header">
+          <div v-for="c in layout.cols" :key="c" class="ycw__col-header">
             <span v-for="day in DAY_LABELS" :key="day" class="ycw__day-label">{{ day }}</span>
           </div>
         </div>
 
-        <div 
-          class="ycw__grid-viewport" 
-          ref="viewportRef" 
+        <div
           v-if="layout"
-          :style="!layout.showsAll ? {
-            height: `${(layout.visibleSlots / layout.cols) * (layout.monthHeight + layout.gridGap) - layout.gridGap}px`,
-            flex: 'none'
-          } : {}"
+          ref="viewportRef"
+          class="ycw__grid-viewport"
+          :style="
+            !layout.showsAll
+              ? {
+                  height: `${(layout.visibleSlots / layout.cols) * (layout.monthHeight + layout.gridGap) - layout.gridGap}px`,
+                  flex: 'none',
+                }
+              : {}
+          "
         >
           <div
             class="ycw__grid"
             :style="{
               '--cols': layout.cols,
               '--grid-gap': `${layout.gridGap}px`,
-              'transform': `translateY(-${Math.floor(offset / layout.cols) * (layout.monthHeight + layout.gridGap)}px)`,
+              transform: `translateY(-${Math.floor(offset / layout.cols) * (layout.monthHeight + layout.gridGap)}px)`,
             }"
           >
             <MonthMini
@@ -201,57 +213,58 @@ watch(
 
       <footer class="ycw__footer">
         <div class="ycw__nav-container">
-          <button 
-            class="ycw__btn" 
-            data-testid="year-prev" 
-            @click="goPrev"
+          <button
+            class="ycw__btn"
+            data-testid="year-prev"
             :style="{
               width: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
-              height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`
+              height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
             }"
+            @click="goPrev"
           >
             <ChevronLeft />
           </button>
-          <span 
+          <span
             class="ycw__year"
             :style="{
-              fontSize: `${Math.max(9, Math.min(16, (layout?.cellSize || 9) * 1.05))}px`
+              fontSize: `${Math.max(9, Math.min(16, (layout?.cellSize || 9) * 1.05))}px`,
             }"
-          >{{ store.currentYear }}</span>
-          <button 
-            class="ycw__btn" 
-            data-testid="year-next" 
-            @click="goNext"
+            >{{ store.currentYear }}</span
+          >
+          <button
+            class="ycw__btn"
+            data-testid="year-next"
             :style="{
               width: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
-              height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`
+              height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
             }"
+            @click="goNext"
           >
             <ChevronRight />
           </button>
-          
+
           <template v-if="showArrows">
-            <button 
-              class="ycw__btn" 
-              :disabled="!canGoUp" 
-              data-testid="month-up" 
-              @click="goUp"
+            <button
+              class="ycw__btn"
+              :disabled="!canGoUp"
+              data-testid="month-up"
               :style="{
                 width: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
-                height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`
+                height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
               }"
+              @click="goUp"
             >
               <ChevronUp />
             </button>
-            <button 
-              class="ycw__btn" 
-              :disabled="!canGoDown" 
-              data-testid="month-down" 
-              @click="goDown"
+            <button
+              class="ycw__btn"
+              :disabled="!canGoDown"
+              data-testid="month-down"
               :style="{
                 width: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
-                height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`
+                height: `${Math.max(11, Math.min(28, (layout?.cellSize || 9) * 1.5))}px`,
               }"
+              @click="goDown"
             >
               <ChevronDown />
             </button>
@@ -259,11 +272,7 @@ watch(
         </div>
       </footer>
     </div>
-    <DayDetailsModal
-      :open="showDayModal"
-      :date="selectedDate"
-      @close="showDayModal = false"
-    />
+    <DayDetailsModal :open="showDayModal" :date="selectedDate" @close="showDayModal = false" />
   </Container>
 </template>
 
@@ -346,7 +355,9 @@ watch(
   background: rgb(var(--color-surface-1));
   color: rgb(var(--color-ink-muted));
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   padding: 0;
   flex-shrink: 0;
 }

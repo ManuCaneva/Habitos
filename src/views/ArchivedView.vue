@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useHabitsStore } from "@/stores/habits";
-import HabitList from "@/components/habits/HabitList.vue";
-import Text from "@/components/ui/Text.vue";
+import { computed } from 'vue'
+import { useHabitsStore } from '@/stores/habits'
+import HabitList from '@/components/habits/HabitList.vue'
+import Text from '@/components/ui/Text.vue'
 
-const habits = useHabitsStore();
-const list = computed(() => habits.archivedHabits);
+const habits = useHabitsStore()
+const list = computed(() => habits.archivedHabits)
 </script>
 
 <template>
-  <main class="h-full overflow-y-auto scrollbar-gutter-stable">
+  <main class="scrollbar-gutter-stable h-full overflow-y-auto">
     <div v-if="list.length === 0" class="flex items-center justify-center py-section">
       <Text variant="subhead" color="muted">No tenés hábitos archivados.</Text>
     </div>

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useHabitsStore } from "@/stores/habits";
-import HabitCard from "@/components/habits/HabitCard.vue";
-import NewHabitCard from "@/components/habits/NewHabitCard.vue";
-import EmptyState from "@/components/habits/EmptyState.vue";
-import HabitSection from "@/components/habits/HabitSection.vue";
-import EntityListing from "@/components/ui/EntityListing.vue";
+import { computed } from 'vue'
+import { useHabitsStore } from '@/stores/habits'
+import HabitCard from '@/components/habits/HabitCard.vue'
+import NewHabitCard from '@/components/habits/NewHabitCard.vue'
+import EmptyState from '@/components/habits/EmptyState.vue'
+import HabitSection from '@/components/habits/HabitSection.vue'
+import EntityListing from '@/components/ui/EntityListing.vue'
 
-const habits = useHabitsStore();
+const habits = useHabitsStore()
 
-const list = computed(() => habits.activeHabits);
-const logs = computed(() => habits.logs);
+const list = computed(() => habits.activeHabits)
+const logs = computed(() => habits.logs)
 </script>
 
 <template>

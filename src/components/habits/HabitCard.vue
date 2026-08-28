@@ -1,29 +1,27 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { Check, Plus, MoreHorizontal } from "lucide-vue-next";
-import type { Habit, HabitLog } from "@/schemas/habits";
-import { useHabitsStore } from "@/stores/habits";
-import { useUiStore } from "@/stores/ui";
-import { iconFor } from "@/lib/icons";
-import { frequencyLabel } from "@/lib/frequencyLabel";
-import HabitContextMenu from "./HabitContextMenu.vue";
-import HeatmapGrid from "./HeatmapGrid.vue";
-import Container from "@/components/ui/Container.vue";
+import { computed } from 'vue'
+import { Check, Plus, MoreHorizontal } from 'lucide-vue-next'
+import type { Habit, HabitLog } from '@/schemas/habits'
+import { useHabitsStore } from '@/stores/habits'
+import { useUiStore } from '@/stores/ui'
+import { iconFor } from '@/lib/icons'
+import { frequencyLabel } from '@/lib/frequencyLabel'
+import HabitContextMenu from './HabitContextMenu.vue'
+import HeatmapGrid from './HeatmapGrid.vue'
+import Container from '@/components/ui/Container.vue'
 
-const props = defineProps<{ habit: Habit; logs: HabitLog[] }>();
-const habits = useHabitsStore();
-const ui = useUiStore();
+const props = defineProps<{ habit: Habit; logs: HabitLog[] }>()
+const habits = useHabitsStore()
+const ui = useUiStore()
 
-const checked = computed(() => habits.completedToday.has(props.habit.id));
-const icon = computed(() => iconFor(props.habit.icon));
-const subtitle = computed(
-  () => props.habit.description ?? frequencyLabel(props.habit.frequency)
-);
-const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
+const checked = computed(() => habits.completedToday.has(props.habit.id))
+const icon = computed(() => iconFor(props.habit.icon))
+const subtitle = computed(() => props.habit.description ?? frequencyLabel(props.habit.frequency))
+const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id)
 
 async function toggleCheck() {
-  if (checked.value) await habits.undoCheckIn(props.habit.id, habits.getTodayDate());
-  else await habits.checkIn(props.habit.id);
+  if (checked.value) await habits.undoCheckIn(props.habit.id, habits.getTodayDate())
+  else await habits.checkIn(props.habit.id)
 }
 </script>
 
@@ -32,10 +30,10 @@ async function toggleCheck() {
     data-testid="habit-card"
     variant="ghost"
     padding="sm"
-    :class="['group relative habit-card-responsive', isMenuOpen && 'z-10']"
+    :class="['habit-card-responsive group relative', isMenuOpen && 'z-10']"
   >
-    <div class="flex items-center gap-1.5 mb-1.5 habit-card-row">
-      <span data-testid="habit-icon" class="text-white shrink-0 habit-card-icon">
+    <div class="habit-card-row mb-1.5 flex items-center gap-1.5">
+      <span data-testid="habit-icon" class="habit-card-icon shrink-0 text-white">
         <component :is="icon.icon" :size="14" :stroke-width="2" />
       </span>
       <button
@@ -43,16 +41,18 @@ async function toggleCheck() {
         class="min-w-0 flex-1 text-left"
         @click="ui.openEdit(habit.id)"
       >
-        <div class="font-medium text-body-sm text-ink truncate habit-card-title">{{ habit.name }}</div>
-        <div data-testid="habit-subtitle" class="text-caption text-ink-muted habit-card-subtitle">
+        <div class="habit-card-title truncate text-body-sm font-medium text-ink">
+          {{ habit.name }}
+        </div>
+        <div data-testid="habit-subtitle" class="habit-card-subtitle text-caption text-ink-muted">
           {{ subtitle }}
         </div>
       </button>
-      <div class="flex items-center gap-1 shrink-0">
+      <div class="flex shrink-0 items-center gap-1">
         <button
           data-testid="menu-button"
           :data-habit-menu-trigger="habit.id"
-          class="w-7 h-7 flex items-center justify-center habit-card-btn"
+          class="habit-card-btn flex h-7 w-7 items-center justify-center"
           aria-label="Más opciones"
           @click="ui.toggleMenu(habit.id)"
         >
@@ -61,7 +61,7 @@ async function toggleCheck() {
         <button
           data-testid="checkin-button"
           :class="[
-            'w-7 h-7 flex items-center justify-center transition-all active:scale-95 rounded-full habit-card-checkin',
+            'habit-card-checkin flex h-7 w-7 items-center justify-center rounded-full transition-all active:scale-95',
             !checked && 'border-2 bg-surface-3/30',
           ]"
           :style="checked ? { backgroundColor: habit.color } : { borderColor: habit.color }"

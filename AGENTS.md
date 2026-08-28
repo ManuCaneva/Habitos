@@ -52,26 +52,26 @@ Para esos cambios, una verificación manual con `npm run dev` o `npm run tauri d
 
 ### Qué testear (por capa)
 
-| Capa | Qué testear | Ejemplo |
-|------|-------------|---------|
-| `src/schemas/` | Reglas de validación Zod, casos válidos y rechazados | `habits.test.ts` |
-| `src/lib/` | Funciones puras (helpers, mappers, constantes) | `habitColors.test.ts` |
-| `src/stores/` | Lógica de dominio que no toca I/O: racha, frecuencia, normalización. Las llamadas a `db.*` se mockean con `vi.mock()`. | `habits.test.ts` |
-| `src/components/` | Componentes Vue con `@vue/test-utils` (props, emits, render condicional) | `HabitRow.test.ts` |
-| `src/views/` | Similar a components, verificar que cambia con el store | `TodayView.test.ts` |
+| Capa              | Qué testear                                                                                                            | Ejemplo               |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `src/schemas/`    | Reglas de validación Zod, casos válidos y rechazados                                                                   | `habits.test.ts`      |
+| `src/lib/`        | Funciones puras (helpers, mappers, constantes)                                                                         | `habitColors.test.ts` |
+| `src/stores/`     | Lógica de dominio que no toca I/O: racha, frecuencia, normalización. Las llamadas a `db.*` se mockean con `vi.mock()`. | `habits.test.ts`      |
+| `src/components/` | Componentes Vue con `@vue/test-utils` (props, emits, render condicional)                                               | `HabitRow.test.ts`    |
+| `src/views/`      | Similar a components, verificar que cambia con el store                                                                | `TodayView.test.ts`   |
 
 ### Mocking de Tauri
 
 La capa `src/lib/db.ts` envuelve `invoke()` de Tauri. En tests, **mockear todo el módulo**:
 
 ```ts
-import { vi } from "vitest";
+import { vi } from 'vitest'
 
-vi.mock("@/lib/db", () => ({
+vi.mock('@/lib/db', () => ({
   listHabits: vi.fn().mockResolvedValue([]),
-  createHabit: vi.fn().mockResolvedValue({ /* habit row */ }),
+  createHabit: vi.fn().mockResolvedValue({/* habit row */}),
   // ...
-}));
+}))
 ```
 
 No levantar el runtime de Tauri en tests unitarios. Tests de integración que abren la app real viven en otro lado (o se omiten por ahora).
@@ -127,10 +127,28 @@ Antes de considerar una tarea completa:
 
 - [ ] `npm run test` pasa
 - [ ] `npm run build` pasa (types + build)
+- [ ] `npm run lint` pasa
+- [ ] `npm run format:check` pasa
 - [ ] `cargo check` pasa (si tocaste Rust)
+- [ ] `cargo fmt --check` pasa (si tocaste Rust)
+- [ ] `cargo clippy` pasa (si tocaste Rust)
 - [ ] No hay TODOs ni código comentado
 - [ ] Mensaje de commit describe el **qué** y el **por qué**, no el **cómo**
 
 ## Antes de pedir review
 
 Si el cambio es más de 50 líneas, o toca la arquitectura, o agrega una dependencia nueva, abrí un PR con descripción y screenshot. Cambios chicos (typo, fix de bug puntual) van directo a main.
+
+## Agent skills
+
+### Issue tracker
+
+Issues y specs viven como markdown en `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Cinco roles canónicos de triage (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+single-context: `CONTEXT.md` en la raíz + `docs/adr/`. See `docs/agents/domain.md`.

@@ -1,256 +1,281 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from "vue";
+import { ref, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps<{
-  modelValue: string; // "HH:MM"
-}>();
+  modelValue: string // "HH:MM"
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: string): void;
-}>();
+  (e: 'update:modelValue', value: string): void
+}>()
 
-const hoursContainer = ref<HTMLElement | null>(null);
-const minutesContainer = ref<HTMLElement | null>(null);
+const hoursContainer = ref<HTMLElement | null>(null)
+const minutesContainer = ref<HTMLElement | null>(null)
 
-const selectedHour = ref(12);
-const selectedMinute = ref(0);
+const selectedHour = ref(12)
+const selectedMinute = ref(0)
 
 // Parse input modelValue
 function parseTime(val: string) {
-  const [hStr, mStr] = (val || "12:00").split(":");
-  const h = parseInt(hStr, 10);
-  const m = parseInt(mStr, 10);
+  const [hStr, mStr] = (val || '12:00').split(':')
+  const h = parseInt(hStr, 10)
+  const m = parseInt(mStr, 10)
   return {
     h: isNaN(h) ? 12 : Math.max(0, Math.min(23, h)),
     m: isNaN(m) ? 0 : Math.max(0, Math.min(59, m)),
-  };
+  }
 }
 
 function updateFromProps() {
-  const { h, m } = parseTime(props.modelValue);
-  selectedHour.value = h;
-  selectedMinute.value = m;
-  scrollToSelected();
+  const { h, m } = parseTime(props.modelValue)
+  selectedHour.value = h
+  selectedMinute.value = m
+  scrollToSelected()
 }
 
-let isScrolling = false;
-let hasDragged = false;
+let isScrolling = false
+let hasDragged = false
 
 function scrollToSelected() {
   nextTick(() => {
-    isScrolling = true;
+    isScrolling = true
     if (hoursContainer.value) {
-      hoursContainer.value.scrollTop = selectedHour.value * 32;
+      hoursContainer.value.scrollTop = selectedHour.value * 32
     }
     if (minutesContainer.value) {
-      minutesContainer.value.scrollTop = selectedMinute.value * 32;
+      minutesContainer.value.scrollTop = selectedMinute.value * 32
     }
     setTimeout(() => {
-      isScrolling = false;
-    }, 150);
-  });
+      isScrolling = false
+    }, 150)
+  })
 }
 
 onMounted(() => {
-  updateFromProps();
+  updateFromProps()
   if (hoursContainer.value) {
-    makeGrabScrollable(hoursContainer.value, onHoursScroll, handleScrollEndHours);
+    makeGrabScrollable(hoursContainer.value, onHoursScroll, handleScrollEndHours)
   }
   if (minutesContainer.value) {
-    makeGrabScrollable(minutesContainer.value, onMinutesScroll, handleScrollEndMinutes);
+    makeGrabScrollable(minutesContainer.value, onMinutesScroll, handleScrollEndMinutes)
   }
-});
+})
 
-watch(() => props.modelValue, () => {
-  const { h, m } = parseTime(props.modelValue);
-  if (h !== selectedHour.value || m !== selectedMinute.value) {
-    selectedHour.value = h;
-    selectedMinute.value = m;
-    scrollToSelected();
+watch(
+  () => props.modelValue,
+  () => {
+    const { h, m } = parseTime(props.modelValue)
+    if (h !== selectedHour.value || m !== selectedMinute.value) {
+      selectedHour.value = h
+      selectedMinute.value = m
+      scrollToSelected()
+    }
   }
-});
+)
 
 function emitTime() {
-  const hStr = String(selectedHour.value).padStart(2, "0");
-  const mStr = String(selectedMinute.value).padStart(2, "0");
-  emit("update:modelValue", `${hStr}:${mStr}`);
+  const hStr = String(selectedHour.value).padStart(2, '0')
+  const mStr = String(selectedMinute.value).padStart(2, '0')
+  emit('update:modelValue', `${hStr}:${mStr}`)
 }
 
 function selectHour(h: number) {
-  if (hasDragged) return;
-  selectedHour.value = h;
-  scrollToSelected();
-  emitTime();
+  if (hasDragged) return
+  selectedHour.value = h
+  scrollToSelected()
+  emitTime()
 }
 
 function selectMinute(m: number) {
-  if (hasDragged) return;
-  selectedMinute.value = m;
-  scrollToSelected();
-  emitTime();
+  if (hasDragged) return
+  selectedMinute.value = m
+  scrollToSelected()
+  emitTime()
 }
 
 function onHoursScroll() {
-  if (isScrolling || !hoursContainer.value) return;
-  const top = hoursContainer.value.scrollTop;
-  const idx = Math.round(top / 32);
-  const clamped = Math.max(0, Math.min(23, idx));
+  if (isScrolling || !hoursContainer.value) return
+  const top = hoursContainer.value.scrollTop
+  const idx = Math.round(top / 32)
+  const clamped = Math.max(0, Math.min(23, idx))
   if (clamped !== selectedHour.value) {
-    selectedHour.value = clamped;
-    emitTime();
+    selectedHour.value = clamped
+    emitTime()
   }
 }
 
 function onMinutesScroll() {
-  if (isScrolling || !minutesContainer.value) return;
-  const top = minutesContainer.value.scrollTop;
-  const idx = Math.round(top / 32);
-  const clamped = Math.max(0, Math.min(59, idx));
+  if (isScrolling || !minutesContainer.value) return
+  const top = minutesContainer.value.scrollTop
+  const idx = Math.round(top / 32)
+  const clamped = Math.max(0, Math.min(59, idx))
   if (clamped !== selectedMinute.value) {
-    selectedMinute.value = clamped;
-    emitTime();
+    selectedMinute.value = clamped
+    emitTime()
   }
 }
 
 // Ensure snapping after scroll ends
-let scrollTimeoutHours: any = null;
-let scrollTimeoutMinutes: any = null;
+let scrollTimeoutHours: ReturnType<typeof setTimeout> | null = null
+let scrollTimeoutMinutes: ReturnType<typeof setTimeout> | null = null
+
+function clearScrollTimeout(timer: ReturnType<typeof setTimeout> | null) {
+  if (timer !== null) clearTimeout(timer)
+}
+
+function handleHoursScroll() {
+  onHoursScroll()
+  handleScrollEndHours()
+}
+
+function handleMinutesScroll() {
+  onMinutesScroll()
+  handleScrollEndMinutes()
+}
 
 function handleScrollEndHours() {
-  if (!hoursContainer.value) return;
-  clearTimeout(scrollTimeoutHours);
+  if (!hoursContainer.value) return
+  clearScrollTimeout(scrollTimeoutHours)
   scrollTimeoutHours = setTimeout(() => {
-    if (isScrolling || !hoursContainer.value) return;
-    const top = hoursContainer.value.scrollTop;
-    const idx = Math.round(top / 32);
-    isScrolling = true;
-    hoursContainer.value.scrollTo({ top: idx * 32, behavior: "smooth" });
+    if (isScrolling || !hoursContainer.value) return
+    const top = hoursContainer.value.scrollTop
+    const idx = Math.round(top / 32)
+    isScrolling = true
+    hoursContainer.value.scrollTo({ top: idx * 32, behavior: 'smooth' })
     setTimeout(() => {
-      isScrolling = false;
-    }, 150);
-  }, 100);
+      isScrolling = false
+    }, 150)
+  }, 100)
 }
 
 function handleScrollEndMinutes() {
-  if (!minutesContainer.value) return;
-  clearTimeout(scrollTimeoutMinutes);
+  if (!minutesContainer.value) return
+  clearScrollTimeout(scrollTimeoutMinutes)
   scrollTimeoutMinutes = setTimeout(() => {
-    if (isScrolling || !minutesContainer.value) return;
-    const top = minutesContainer.value.scrollTop;
-    const idx = Math.round(top / 32);
-    isScrolling = true;
-    minutesContainer.value.scrollTo({ top: idx * 32, behavior: "smooth" });
+    if (isScrolling || !minutesContainer.value) return
+    const top = minutesContainer.value.scrollTop
+    const idx = Math.round(top / 32)
+    isScrolling = true
+    minutesContainer.value.scrollTo({ top: idx * 32, behavior: 'smooth' })
     setTimeout(() => {
-      isScrolling = false;
-    }, 150);
-  }, 100);
+      isScrolling = false
+    }, 150)
+  }, 100)
 }
 
-function makeGrabScrollable(
-  el: HTMLElement,
-  onScrollFn: () => void,
-  onScrollEndFn: () => void
-) {
-  let isDown = false;
-  let startY = 0;
-  let scrollTop = 0;
+function makeGrabScrollable(el: HTMLElement, onScrollFn: () => void, onScrollEndFn: () => void) {
+  let isDown = false
+  let startY = 0
+  let scrollTop = 0
 
-  el.style.cursor = "grab";
+  el.style.cursor = 'grab'
 
-  el.addEventListener("mousedown", (e) => {
-    isDown = true;
-    hasDragged = false;
-    el.style.cursor = "grabbing";
-    startY = e.pageY - el.offsetTop;
-    scrollTop = el.scrollTop;
-    
+  el.addEventListener('mousedown', (e) => {
+    isDown = true
+    hasDragged = false
+    el.style.cursor = 'grabbing'
+    startY = e.pageY - el.offsetTop
+    scrollTop = el.scrollTop
+
     // Disable scroll snapping and smooth behavior during active drag
-    el.style.scrollSnapType = "none";
-    el.style.scrollBehavior = "auto";
-  });
+    el.style.scrollSnapType = 'none'
+    el.style.scrollBehavior = 'auto'
+  })
 
   const handleDragEnd = () => {
-    if (!isDown) return;
-    isDown = false;
-    el.style.cursor = "grab";
-    
+    if (!isDown) return
+    isDown = false
+    el.style.cursor = 'grab'
+
     // Restore snap and smooth behavior, then snap
-    el.style.scrollSnapType = "y mandatory";
-    el.style.scrollBehavior = "smooth";
-    onScrollEndFn();
-    
+    el.style.scrollSnapType = 'y mandatory'
+    el.style.scrollBehavior = 'smooth'
+    onScrollEndFn()
+
     setTimeout(() => {
-      hasDragged = false;
-    }, 50);
-  };
+      hasDragged = false
+    }, 50)
+  }
 
-  el.addEventListener("mouseleave", handleDragEnd);
-  el.addEventListener("mouseup", handleDragEnd);
+  el.addEventListener('mouseleave', handleDragEnd)
+  el.addEventListener('mouseup', handleDragEnd)
 
-  el.addEventListener("mousemove", (e) => {
-    if (!isDown) return;
-    e.preventDefault();
-    const y = e.pageY - el.offsetTop;
-    const walk = (y - startY) * 1.5;
+  el.addEventListener('mousemove', (e) => {
+    if (!isDown) return
+    e.preventDefault()
+    const y = e.pageY - el.offsetTop
+    const walk = (y - startY) * 1.5
     if (Math.abs(walk) > 5) {
-      hasDragged = true;
+      hasDragged = true
     }
-    el.scrollTop = scrollTop - walk;
-    onScrollFn();
-  });
+    el.scrollTop = scrollTop - walk
+    onScrollFn()
+  })
 }
 </script>
 
 <template>
-  <div class="flex items-center justify-center gap-2 bg-surface-2 border border-hairline rounded-md px-4 py-2 w-full max-w-[140px] mx-auto select-none relative h-40 overflow-hidden">
+  <div
+    class="relative mx-auto flex h-40 w-full max-w-[140px] select-none items-center justify-center gap-2 overflow-hidden rounded-md border border-hairline bg-surface-2 px-4 py-2"
+  >
     <!-- Highlight overlay in the middle -->
-    <div class="absolute left-0 right-0 h-8 pointer-events-none border-y border-primary/20 bg-primary/5 top-[64px] z-0" />
-    
+    <div
+      class="pointer-events-none absolute left-0 right-0 top-[64px] z-0 h-8 border-y border-primary/20 bg-primary/5"
+    />
+
     <!-- Hours Column -->
-    <div 
-      ref="hoursContainer" 
-      class="flex-1 h-full overflow-y-auto scrollbar-none snap-y snap-mandatory z-10 scroll-smooth"
-      @scroll="onHoursScroll(); handleScrollEndHours()"
+    <div
+      ref="hoursContainer"
+      class="scrollbar-none z-10 h-full flex-1 snap-y snap-mandatory overflow-y-auto scroll-smooth"
+      @scroll="handleHoursScroll"
     >
-      <div class="h-16" /> <!-- padding top -->
+      <div class="h-16" />
+      <!-- padding top -->
       <button
         v-for="h in 24"
         :key="h"
         type="button"
         :class="[
-          'w-full h-8 flex items-center justify-center text-sm font-semibold transition-colors duration-150 snap-center outline-none',
-          selectedHour === h - 1 ? 'text-primary scale-110 font-bold' : 'text-ink-subtle hover:text-ink'
+          'flex h-8 w-full snap-center items-center justify-center text-sm font-semibold outline-none transition-colors duration-150',
+          selectedHour === h - 1
+            ? 'scale-110 font-bold text-primary'
+            : 'text-ink-subtle hover:text-ink',
         ]"
         @click="selectHour(h - 1)"
       >
-        {{ String(h - 1).padStart(2, "0") }}
+        {{ String(h - 1).padStart(2, '0') }}
       </button>
-      <div class="h-16" /> <!-- padding bottom -->
+      <div class="h-16" />
+      <!-- padding bottom -->
     </div>
 
     <!-- Separator -->
-    <div class="text-ink-subtle font-semibold text-lg z-10 select-none pb-0.5">:</div>
+    <div class="z-10 select-none pb-0.5 text-lg font-semibold text-ink-subtle">:</div>
 
     <!-- Minutes Column -->
-    <div 
-      ref="minutesContainer" 
-      class="flex-1 h-full overflow-y-auto scrollbar-none snap-y snap-mandatory z-10 scroll-smooth"
-      @scroll="onMinutesScroll(); handleScrollEndMinutes()"
+    <div
+      ref="minutesContainer"
+      class="scrollbar-none z-10 h-full flex-1 snap-y snap-mandatory overflow-y-auto scroll-smooth"
+      @scroll="handleMinutesScroll"
     >
-      <div class="h-16" /> <!-- padding top -->
+      <div class="h-16" />
+      <!-- padding top -->
       <button
         v-for="m in 60"
         :key="m"
         type="button"
         :class="[
-          'w-full h-8 flex items-center justify-center text-sm font-semibold transition-colors duration-150 snap-center outline-none',
-          selectedMinute === m - 1 ? 'text-primary scale-110 font-bold' : 'text-ink-subtle hover:text-ink'
+          'flex h-8 w-full snap-center items-center justify-center text-sm font-semibold outline-none transition-colors duration-150',
+          selectedMinute === m - 1
+            ? 'scale-110 font-bold text-primary'
+            : 'text-ink-subtle hover:text-ink',
         ]"
         @click="selectMinute(m - 1)"
       >
-        {{ String(m - 1).padStart(2, "0") }}
+        {{ String(m - 1).padStart(2, '0') }}
       </button>
-      <div class="h-16" /> <!-- padding bottom -->
+      <div class="h-16" />
+      <!-- padding bottom -->
     </div>
   </div>
 </template>

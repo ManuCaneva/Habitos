@@ -1,25 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { setActivePinia, createPinia } from "pinia";
-import { useTasksStore, daysUntilDue, urgencyLevel, deadlineProgress } from "./tasks";
-import * as db from "@/lib/db";
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useTasksStore, daysUntilDue, urgencyLevel, deadlineProgress } from './tasks'
+import * as db from '@/lib/db'
 
-vi.mock("@/lib/db", () => ({
+vi.mock('@/lib/db', () => ({
   listTasks: vi.fn().mockResolvedValue([]),
   createTask: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn().mockResolvedValue(undefined),
   archiveTask: vi.fn().mockResolvedValue(undefined),
   restoreTask: vi.fn().mockResolvedValue(undefined),
-}));
+}))
 
-function makeTask(overrides: Partial<ReturnType<typeof useTasksStore>["tasks"][0]> = {}) {
-  const now = new Date().toISOString();
+function makeTask(overrides: Partial<ReturnType<typeof useTasksStore>['tasks'][0]> = {}) {
+  const now = new Date().toISOString()
   return {
-    id: "11111111-1111-1111-1111-111111111111",
-    title: "Test task",
+    id: '11111111-1111-1111-1111-111111111111',
+    title: 'Test task',
     description: null,
-    color: "#5e6ad2",
-    status: "todo" as const,
+    color: '#5e6ad2',
+    status: 'todo' as const,
     due_date: null,
     steps: [],
     sort_order: 0,
@@ -27,113 +27,112 @@ function makeTask(overrides: Partial<ReturnType<typeof useTasksStore>["tasks"][0
     updated_at: now,
     archived_at: null,
     ...overrides,
-  };
+  }
 }
 
-
 function todayLocalDate(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-describe("tasks store - createTask", () => {
+describe('tasks store - createTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should generate id and timestamps, call db.createTask, and add to state", async () => {
-    const store = useTasksStore();
-    const draft = { title: "Test task", color: "#5e6ad2", status: "todo" as const, steps: [] };
+  it('should generate id and timestamps, call db.createTask, and add to state', async () => {
+    const store = useTasksStore()
+    const draft = { title: 'Test task', color: '#5e6ad2', status: 'todo' as const, steps: [] }
     const mockRow = {
-      id: "11111111-1111-1111-1111-111111111111",
-      title: "Test task",
+      id: '11111111-1111-1111-1111-111111111111',
+      title: 'Test task',
       description: null,
-      color: "#5e6ad2",
-      status: "todo",
+      color: '#5e6ad2',
+      status: 'todo',
       due_date: null,
-      steps: "[]",
+      steps: '[]',
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       archived_at: null,
-    };
+    }
 
-    vi.mocked(db.createTask).mockResolvedValue(mockRow);
+    vi.mocked(db.createTask).mockResolvedValue(mockRow)
 
-    await store.createTask(draft);
+    await store.createTask(draft)
 
-    expect(db.createTask).toHaveBeenCalledTimes(1);
-    const callArgs = vi.mocked(db.createTask).mock.calls[0];
-    expect(callArgs[0]).toEqual(draft);
-    expect(typeof callArgs[1]).toBe("string");
-    expect(typeof callArgs[2]).toBe("string");
-    expect(typeof callArgs[3]).toBe("string");
+    expect(db.createTask).toHaveBeenCalledTimes(1)
+    const callArgs = vi.mocked(db.createTask).mock.calls[0]
+    expect(callArgs[0]).toEqual(draft)
+    expect(typeof callArgs[1]).toBe('string')
+    expect(typeof callArgs[2]).toBe('string')
+    expect(typeof callArgs[3]).toBe('string')
 
-    expect(store.tasks).toHaveLength(1);
-    expect(store.tasks[0].id).toBe("11111111-1111-1111-1111-111111111111");
-    expect(store.tasks[0].title).toBe("Test task");
-  });
+    expect(store.tasks).toHaveLength(1)
+    expect(store.tasks[0].id).toBe('11111111-1111-1111-1111-111111111111')
+    expect(store.tasks[0].title).toBe('Test task')
+  })
 
-  it("should be immutable (replace state array)", async () => {
-    const store = useTasksStore();
+  it('should be immutable (replace state array)', async () => {
+    const store = useTasksStore()
     const mockRow = {
-      id: "11111111-1111-1111-1111-111111111111",
-      title: "Test",
+      id: '11111111-1111-1111-1111-111111111111',
+      title: 'Test',
       description: null,
-      color: "#5e6ad2",
-      status: "todo",
+      color: '#5e6ad2',
+      status: 'todo',
       due_date: null,
-      steps: "[]",
+      steps: '[]',
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       archived_at: null,
-    };
+    }
 
-    vi.mocked(db.createTask).mockResolvedValue(mockRow);
+    vi.mocked(db.createTask).mockResolvedValue(mockRow)
 
-    const initialTasks = store.tasks;
-    await store.createTask({ title: "Test", color: "#5e6ad2", status: "todo" as const, steps: [] });
-    expect(store.tasks).not.toBe(initialTasks);
-  });
-});
+    const initialTasks = store.tasks
+    await store.createTask({ title: 'Test', color: '#5e6ad2', status: 'todo' as const, steps: [] })
+    expect(store.tasks).not.toBe(initialTasks)
+  })
+})
 
-describe("tasks store - loadTasks", () => {
+describe('tasks store - loadTasks', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should load tasks and map rows", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
+  it('should load tasks and map rows', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
     const mockRows = [
       {
-        id: "11111111-1111-1111-1111-111111111111",
-        title: "Task 1",
+        id: '11111111-1111-1111-1111-111111111111',
+        title: 'Task 1',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
-        steps: "[]",
+        steps: '[]',
         sort_order: 0,
         created_at: now,
         updated_at: now,
         archived_at: null,
       },
       {
-        id: "22222222-2222-2222-2222-222222222222",
-        title: "Task 2",
+        id: '22222222-2222-2222-2222-222222222222',
+        title: 'Task 2',
         description: null,
-        color: "#ff0000",
-        status: "doing",
+        color: '#ff0000',
+        status: 'doing',
         due_date: null,
         steps: '[{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","title":"Step 1","done":true}]',
         sort_order: 1,
@@ -141,37 +140,37 @@ describe("tasks store - loadTasks", () => {
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
-    vi.mocked(db.listTasks).mockResolvedValue(mockRows);
+    vi.mocked(db.listTasks).mockResolvedValue(mockRows)
 
-    await store.loadTasks();
+    await store.loadTasks()
 
-    expect(store.tasks).toHaveLength(2);
-    expect(store.tasks[0].title).toBe("Task 1");
-    expect(store.tasks[1].steps).toHaveLength(1);
-    expect(store.tasks[1].steps[0].done).toBe(true);
-  });
-});
+    expect(store.tasks).toHaveLength(2)
+    expect(store.tasks[0].title).toBe('Task 1')
+    expect(store.tasks[1].steps).toHaveLength(1)
+    expect(store.tasks[1].steps[0].done).toBe(true)
+  })
+})
 
-describe("tasks store - updateTask", () => {
+describe('tasks store - updateTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should call db.updateTask with id, patch, and updated_at", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
-    const taskId = "11111111-1111-1111-1111-111111111111";
+  it('should call db.updateTask with id, patch, and updated_at', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
+    const taskId = '11111111-1111-1111-1111-111111111111'
 
     store.tasks = [
       {
         id: taskId,
-        title: "Original",
+        title: 'Original',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -179,55 +178,55 @@ describe("tasks store - updateTask", () => {
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
     const mockRow = {
       id: taskId,
-      title: "Updated",
+      title: 'Updated',
       description: null,
-      color: "#5e6ad2",
-      status: "doing",
+      color: '#5e6ad2',
+      status: 'doing',
       due_date: null,
-      steps: "[]",
+      steps: '[]',
       sort_order: 0,
       created_at: now,
       updated_at: new Date().toISOString(),
       archived_at: null,
-    };
+    }
 
-    vi.mocked(db.updateTask).mockResolvedValue(mockRow);
+    vi.mocked(db.updateTask).mockResolvedValue(mockRow)
 
-    await store.updateTask(taskId, { title: "Updated", status: "doing" });
+    await store.updateTask(taskId, { title: 'Updated', status: 'doing' })
 
-    expect(db.updateTask).toHaveBeenCalledTimes(1);
-    const callArgs = vi.mocked(db.updateTask).mock.calls[0];
-    expect(callArgs[0]).toBe(taskId);
-    expect(callArgs[1]).toEqual({ title: "Updated", status: "doing" });
-    expect(typeof callArgs[2]).toBe("string");
+    expect(db.updateTask).toHaveBeenCalledTimes(1)
+    const callArgs = vi.mocked(db.updateTask).mock.calls[0]
+    expect(callArgs[0]).toBe(taskId)
+    expect(callArgs[1]).toEqual({ title: 'Updated', status: 'doing' })
+    expect(typeof callArgs[2]).toBe('string')
 
-    expect(store.tasks[0].title).toBe("Updated");
-    expect(store.tasks[0].status).toBe("doing");
-  });
-});
+    expect(store.tasks[0].title).toBe('Updated')
+    expect(store.tasks[0].status).toBe('doing')
+  })
+})
 
-describe("tasks store - deleteTask", () => {
+describe('tasks store - deleteTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should call db.deleteTask and remove from state", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
-    const taskId = "11111111-1111-1111-1111-111111111111";
+  it('should call db.deleteTask and remove from state', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
+    const taskId = '11111111-1111-1111-1111-111111111111'
 
     store.tasks = [
       {
         id: taskId,
-        title: "To delete",
+        title: 'To delete',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -235,90 +234,90 @@ describe("tasks store - deleteTask", () => {
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
-    await store.deleteTask(taskId);
+    await store.deleteTask(taskId)
 
-    expect(db.deleteTask).toHaveBeenCalledWith(taskId);
-    expect(store.tasks).toHaveLength(0);
-  });
-});
+    expect(db.deleteTask).toHaveBeenCalledWith(taskId)
+    expect(store.tasks).toHaveLength(0)
+  })
+})
 
-describe("tasks store - toggleStep", () => {
+describe('tasks store - toggleStep', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should toggle step done status and call updateTask", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
-    const taskId = "11111111-1111-1111-1111-111111111111";
-    const stepId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+  it('should toggle step done status and call updateTask', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
+    const taskId = '11111111-1111-1111-1111-111111111111'
+    const stepId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
     store.tasks = [
       {
         id: taskId,
-        title: "Task",
+        title: 'Task',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
-        steps: [{ id: stepId, title: "Step 1", done: false }],
+        steps: [{ id: stepId, title: 'Step 1', done: false }],
         sort_order: 0,
         created_at: now,
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
     const mockRow = {
       id: taskId,
-      title: "Task",
+      title: 'Task',
       description: null,
-      color: "#5e6ad2",
-      status: "todo",
+      color: '#5e6ad2',
+      status: 'todo',
       due_date: null,
       steps: '[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","title":"Step 1","done":true}]',
       sort_order: 0,
       created_at: now,
       updated_at: new Date().toISOString(),
       archived_at: null,
-    };
+    }
 
-    vi.mocked(db.updateTask).mockResolvedValue(mockRow);
+    vi.mocked(db.updateTask).mockResolvedValue(mockRow)
 
-    await store.toggleStep(taskId, stepId);
+    await store.toggleStep(taskId, stepId)
 
-    expect(db.updateTask).toHaveBeenCalledTimes(1);
-    const callArgs = vi.mocked(db.updateTask).mock.calls[0];
-    expect(callArgs[0]).toBe(taskId);
-    expect(callArgs[1]).toHaveProperty("steps");
-    const steps = callArgs[1].steps;
-    expect(steps).toHaveLength(1);
-    expect(steps![0].done).toBe(true);
+    expect(db.updateTask).toHaveBeenCalledTimes(1)
+    const callArgs = vi.mocked(db.updateTask).mock.calls[0]
+    expect(callArgs[0]).toBe(taskId)
+    expect(callArgs[1]).toHaveProperty('steps')
+    const steps = callArgs[1].steps
+    expect(steps).toHaveLength(1)
+    expect(steps![0].done).toBe(true)
 
-    expect(store.tasks[0].steps[0].done).toBe(true);
-  });
-});
+    expect(store.tasks[0].steps[0].done).toBe(true)
+  })
+})
 
-describe("tasks store - pendingTasks", () => {
+describe('tasks store - pendingTasks', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
   it("should filter out tasks with status 'done'", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
+    const store = useTasksStore()
+    const now = new Date().toISOString()
 
     store.tasks = [
       {
-        id: "11111111-1111-1111-1111-111111111111",
-        title: "Pending",
+        id: '11111111-1111-1111-1111-111111111111',
+        title: 'Pending',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -327,11 +326,11 @@ describe("tasks store - pendingTasks", () => {
         archived_at: null,
       },
       {
-        id: "22222222-2222-2222-2222-222222222222",
-        title: "Done",
+        id: '22222222-2222-2222-2222-222222222222',
+        title: 'Done',
         description: null,
-        color: "#ff0000",
-        status: "done",
+        color: '#ff0000',
+        status: 'done',
         due_date: null,
         steps: [],
         sort_order: 1,
@@ -340,11 +339,11 @@ describe("tasks store - pendingTasks", () => {
         archived_at: null,
       },
       {
-        id: "33333333-3333-3333-3333-333333333333",
-        title: "Doing",
+        id: '33333333-3333-3333-3333-333333333333',
+        title: 'Doing',
         description: null,
-        color: "#00ff00",
-        status: "doing",
+        color: '#00ff00',
+        status: 'doing',
         due_date: null,
         steps: [],
         sort_order: 2,
@@ -352,114 +351,114 @@ describe("tasks store - pendingTasks", () => {
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
-    expect(store.pendingTasks).toHaveLength(2);
-    expect(store.pendingTasks[0].status).toBe("todo");
-    expect(store.pendingTasks[1].status).toBe("doing");
-  });
-});
+    expect(store.pendingTasks).toHaveLength(2)
+    expect(store.pendingTasks[0].status).toBe('todo')
+    expect(store.pendingTasks[1].status).toBe('doing')
+  })
+})
 
-describe("daysUntilDue", () => {
-  it("should return positive days for future date", () => {
-    const today = todayLocalDate();
-    const future = addDays(today, 5);
-    expect(daysUntilDue(future)).toBe(5);
-  });
+describe('daysUntilDue', () => {
+  it('should return positive days for future date', () => {
+    const today = todayLocalDate()
+    const future = addDays(today, 5)
+    expect(daysUntilDue(future)).toBe(5)
+  })
 
-  it("should return negative days for past date", () => {
-    const today = todayLocalDate();
-    const past = addDays(today, -3);
-    expect(daysUntilDue(past)).toBe(-3);
-  });
+  it('should return negative days for past date', () => {
+    const today = todayLocalDate()
+    const past = addDays(today, -3)
+    expect(daysUntilDue(past)).toBe(-3)
+  })
 
-  it("should return 0 for today", () => {
-    const today = todayLocalDate();
-    expect(daysUntilDue(today)).toBe(0);
-  });
-});
+  it('should return 0 for today', () => {
+    const today = todayLocalDate()
+    expect(daysUntilDue(today)).toBe(0)
+  })
+})
 
-describe("urgencyLevel", () => {
+describe('urgencyLevel', () => {
   it("should return 'none' for null due_date", () => {
-    expect(urgencyLevel(null)).toBe("none");
-  });
+    expect(urgencyLevel(null)).toBe('none')
+  })
 
   it("should return 'overdue' for past date", () => {
-    const today = todayLocalDate();
-    const past = addDays(today, -1);
-    expect(urgencyLevel(past)).toBe("overdue");
-  });
+    const today = todayLocalDate()
+    const past = addDays(today, -1)
+    expect(urgencyLevel(past)).toBe('overdue')
+  })
 
   it("should return 'warning' for date <= 3 days", () => {
-    const today = todayLocalDate();
-    expect(urgencyLevel(today)).toBe("warning");
-    expect(urgencyLevel(addDays(today, 1))).toBe("warning");
-    expect(urgencyLevel(addDays(today, 2))).toBe("warning");
-    expect(urgencyLevel(addDays(today, 3))).toBe("warning");
-  });
+    const today = todayLocalDate()
+    expect(urgencyLevel(today)).toBe('warning')
+    expect(urgencyLevel(addDays(today, 1))).toBe('warning')
+    expect(urgencyLevel(addDays(today, 2))).toBe('warning')
+    expect(urgencyLevel(addDays(today, 3))).toBe('warning')
+  })
 
   it("should return 'normal' for date > 3 days", () => {
-    const today = todayLocalDate();
-    expect(urgencyLevel(addDays(today, 4))).toBe("normal");
-    expect(urgencyLevel(addDays(today, 10))).toBe("normal");
-  });
-});
+    const today = todayLocalDate()
+    expect(urgencyLevel(addDays(today, 4))).toBe('normal')
+    expect(urgencyLevel(addDays(today, 10))).toBe('normal')
+  })
+})
 
-describe("deadlineProgress", () => {
-  it("should return null for null due_date", () => {
-    const now = new Date().toISOString();
-    expect(deadlineProgress(now, null)).toBeNull();
-  });
+describe('deadlineProgress', () => {
+  it('should return null for null due_date', () => {
+    const now = new Date().toISOString()
+    expect(deadlineProgress(now, null)).toBeNull()
+  })
 
-  it("should return null if due_date <= created_at", () => {
-    const createdDate = "2026-01-01";
-    const dueDate = "2025-12-31";
-    expect(deadlineProgress(createdDate, dueDate)).toBeNull();
-  });
+  it('should return null if due_date <= created_at', () => {
+    const createdDate = '2026-01-01'
+    const dueDate = '2025-12-31'
+    expect(deadlineProgress(createdDate, dueDate)).toBeNull()
+  })
 
-  it("should return 0 if today == created_at", () => {
-    const today = todayLocalDate();
-    const createdDate = today;
-    const dueDate = addDays(today, 10);
-    expect(deadlineProgress(createdDate, dueDate)).toBe(0);
-  });
+  it('should return 0 if today == created_at', () => {
+    const today = todayLocalDate()
+    const createdDate = today
+    const dueDate = addDays(today, 10)
+    expect(deadlineProgress(createdDate, dueDate)).toBe(0)
+  })
 
-  it("should return 1 if today >= due_date", () => {
-    const today = todayLocalDate();
-    const createdDate = addDays(today, -10);
-    const dueDate = addDays(today, -1);
-    expect(deadlineProgress(createdDate, dueDate)).toBe(1);
-  });
+  it('should return 1 if today >= due_date', () => {
+    const today = todayLocalDate()
+    const createdDate = addDays(today, -10)
+    const dueDate = addDays(today, -1)
+    expect(deadlineProgress(createdDate, dueDate)).toBe(1)
+  })
 
-  it("should return progress between 0 and 1", () => {
-    const today = todayLocalDate();
-    const createdDate = addDays(today, -5);
-    const dueDate = addDays(today, 5);
-    const progress = deadlineProgress(createdDate, dueDate);
-    expect(progress).not.toBeNull();
-    expect(progress).toBeGreaterThan(0);
-    expect(progress).toBeLessThan(1);
-  });
-});
+  it('should return progress between 0 and 1', () => {
+    const today = todayLocalDate()
+    const createdDate = addDays(today, -5)
+    const dueDate = addDays(today, 5)
+    const progress = deadlineProgress(createdDate, dueDate)
+    expect(progress).not.toBeNull()
+    expect(progress).toBeGreaterThan(0)
+    expect(progress).toBeLessThan(1)
+  })
+})
 
-describe("tasks store - archiveTask", () => {
+describe('tasks store - archiveTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should call db.archiveTask and set archived_at on the task", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
-    const taskId = "11111111-1111-1111-1111-111111111111";
+  it('should call db.archiveTask and set archived_at on the task', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
+    const taskId = '11111111-1111-1111-1111-111111111111'
 
     store.tasks = [
       {
         id: taskId,
-        title: "To archive",
+        title: 'To archive',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -467,27 +466,27 @@ describe("tasks store - archiveTask", () => {
         updated_at: now,
         archived_at: null,
       },
-    ];
+    ]
 
-    await store.archiveTask(taskId);
+    await store.archiveTask(taskId)
 
-    expect(db.archiveTask).toHaveBeenCalledTimes(1);
-    expect(db.archiveTask).toHaveBeenCalledWith(taskId, expect.any(String));
-    expect(store.tasks[0].archived_at).not.toBeNull();
-    expect(store.tasks[0].archived_at).toBeTruthy();
-  });
+    expect(db.archiveTask).toHaveBeenCalledTimes(1)
+    expect(db.archiveTask).toHaveBeenCalledWith(taskId, expect.any(String))
+    expect(store.tasks[0].archived_at).not.toBeNull()
+    expect(store.tasks[0].archived_at).toBeTruthy()
+  })
 
-  it("should exclude archived tasks from activeTasks", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
+  it('should exclude archived tasks from activeTasks', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
 
     store.tasks = [
       {
-        id: "11111111-1111-1111-1111-111111111111",
-        title: "Active",
+        id: '11111111-1111-1111-1111-111111111111',
+        title: 'Active',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -496,11 +495,11 @@ describe("tasks store - archiveTask", () => {
         archived_at: null,
       },
       {
-        id: "22222222-2222-2222-2222-222222222222",
-        title: "Archived",
+        id: '22222222-2222-2222-2222-222222222222',
+        title: 'Archived',
         description: null,
-        color: "#ff0000",
-        status: "todo",
+        color: '#ff0000',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 1,
@@ -508,33 +507,33 @@ describe("tasks store - archiveTask", () => {
         updated_at: now,
         archived_at: now,
       },
-    ];
+    ]
 
-    expect(store.activeTasks).toHaveLength(1);
-    expect(store.activeTasks[0].title).toBe("Active");
-    expect(store.archivedTasks).toHaveLength(1);
-    expect(store.archivedTasks[0].title).toBe("Archived");
-  });
-});
+    expect(store.activeTasks).toHaveLength(1)
+    expect(store.activeTasks[0].title).toBe('Active')
+    expect(store.archivedTasks).toHaveLength(1)
+    expect(store.archivedTasks[0].title).toBe('Archived')
+  })
+})
 
-describe("tasks store - restoreTask", () => {
+describe('tasks store - restoreTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("should call db.restoreTask and clear archived_at", async () => {
-    const store = useTasksStore();
-    const now = new Date().toISOString();
-    const taskId = "11111111-1111-1111-1111-111111111111";
+  it('should call db.restoreTask and clear archived_at', async () => {
+    const store = useTasksStore()
+    const now = new Date().toISOString()
+    const taskId = '11111111-1111-1111-1111-111111111111'
 
     store.tasks = [
       {
         id: taskId,
-        title: "To restore",
+        title: 'To restore',
         description: null,
-        color: "#5e6ad2",
-        status: "todo",
+        color: '#5e6ad2',
+        status: 'todo',
         due_date: null,
         steps: [],
         sort_order: 0,
@@ -542,149 +541,165 @@ describe("tasks store - restoreTask", () => {
         updated_at: now,
         archived_at: now,
       },
-    ];
+    ]
 
-    await store.restoreTask(taskId);
+    await store.restoreTask(taskId)
 
-    expect(db.restoreTask).toHaveBeenCalledTimes(1);
-    expect(db.restoreTask).toHaveBeenCalledWith(taskId, expect.any(String));
-    expect(store.tasks[0].archived_at).toBeNull();
-  });
-});
+    expect(db.restoreTask).toHaveBeenCalledTimes(1)
+    expect(db.restoreTask).toHaveBeenCalledWith(taskId, expect.any(String))
+    expect(store.tasks[0].archived_at).toBeNull()
+  })
+})
 
-describe("tasks store - completeTask / uncompleteTask", () => {
+describe('tasks store - completeTask / uncompleteTask', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("completeTask sets status to done and archives", async () => {
-    const store = useTasksStore();
-    const taskId = "11111111-1111-1111-1111-111111111111";
-    store.tasks = [makeTask({ id: taskId, status: "todo" as const, archived_at: null })];
+  it('completeTask sets status to done and archives', async () => {
+    const store = useTasksStore()
+    const taskId = '11111111-1111-1111-1111-111111111111'
+    store.tasks = [makeTask({ id: taskId, status: 'todo' as const, archived_at: null })]
 
     vi.mocked(db.updateTask).mockResolvedValue({
-      id: taskId, title: "Test task", description: null, color: "#5e6ad2",
-      status: "done", due_date: null, steps: "[]", sort_order: 0,
-      created_at: new Date().toISOString(), updated_at: new Date().toISOString(), archived_at: null,
-    });
+      id: taskId,
+      title: 'Test task',
+      description: null,
+      color: '#5e6ad2',
+      status: 'done',
+      due_date: null,
+      steps: '[]',
+      sort_order: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      archived_at: null,
+    })
 
-    await store.completeTask(taskId);
+    await store.completeTask(taskId)
 
-    expect(db.updateTask).toHaveBeenCalledWith(taskId, { status: "done" }, expect.any(String));
-    expect(db.archiveTask).toHaveBeenCalledWith(taskId, expect.any(String));
-    expect(store.tasks[0].status).toBe("done");
-    expect(store.tasks[0].archived_at).not.toBeNull();
-  });
+    expect(db.updateTask).toHaveBeenCalledWith(taskId, { status: 'done' }, expect.any(String))
+    expect(db.archiveTask).toHaveBeenCalledWith(taskId, expect.any(String))
+    expect(store.tasks[0].status).toBe('done')
+    expect(store.tasks[0].archived_at).not.toBeNull()
+  })
 
-  it("uncompleteTask sets status to doing and restores", async () => {
-    const store = useTasksStore();
-    const taskId = "11111111-1111-1111-1111-111111111111";
-    const archivedAt = new Date().toISOString();
-    store.tasks = [makeTask({ id: taskId, status: "done" as const, archived_at: archivedAt })];
+  it('uncompleteTask sets status to doing and restores', async () => {
+    const store = useTasksStore()
+    const taskId = '11111111-1111-1111-1111-111111111111'
+    const archivedAt = new Date().toISOString()
+    store.tasks = [makeTask({ id: taskId, status: 'done' as const, archived_at: archivedAt })]
 
     vi.mocked(db.updateTask).mockResolvedValue({
-      id: taskId, title: "Test task", description: null, color: "#5e6ad2",
-      status: "doing", due_date: null, steps: "[]", sort_order: 0,
-      created_at: archivedAt, updated_at: new Date().toISOString(), archived_at: null,
-    });
+      id: taskId,
+      title: 'Test task',
+      description: null,
+      color: '#5e6ad2',
+      status: 'doing',
+      due_date: null,
+      steps: '[]',
+      sort_order: 0,
+      created_at: archivedAt,
+      updated_at: new Date().toISOString(),
+      archived_at: null,
+    })
 
-    await store.uncompleteTask(taskId);
+    await store.uncompleteTask(taskId)
 
-    expect(db.updateTask).toHaveBeenCalledWith(taskId, { status: "doing" }, expect.any(String));
-    expect(db.restoreTask).toHaveBeenCalledWith(taskId, expect.any(String));
-    expect(store.tasks[0].status).toBe("doing");
-    expect(store.tasks[0].archived_at).toBeNull();
-  });
-});
+    expect(db.updateTask).toHaveBeenCalledWith(taskId, { status: 'doing' }, expect.any(String))
+    expect(db.restoreTask).toHaveBeenCalledWith(taskId, expect.any(String))
+    expect(store.tasks[0].status).toBe('doing')
+    expect(store.tasks[0].archived_at).toBeNull()
+  })
+})
 
-describe("tasks store - toggleStep (no auto-complete)", () => {
+describe('tasks store - toggleStep (no auto-complete)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
 
-  it("toggleStep no auto-completa cuando todos los pasos están done", async () => {
-    const store = useTasksStore();
-    const taskId = "11111111-1111-1111-1111-111111111111";
-    const step1 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-    const step2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+  it('toggleStep no auto-completa cuando todos los pasos están done', async () => {
+    const store = useTasksStore()
+    const taskId = '11111111-1111-1111-1111-111111111111'
+    const step1 = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+    const step2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
 
     store.tasks = [
       makeTask({
         id: taskId,
         steps: [
-          { id: step1, title: "Step 1", done: false },
-          { id: step2, title: "Step 2", done: false },
+          { id: step1, title: 'Step 1', done: false },
+          { id: step2, title: 'Step 2', done: false },
         ],
-        status: "todo" as const,
+        status: 'todo' as const,
         archived_at: null,
       }),
-    ];
+    ]
 
     vi.mocked(db.updateTask).mockImplementation(async (id, patch) => ({
       id,
-      title: "Test task",
+      title: 'Test task',
       description: null,
-      color: "#5e6ad2",
-      status: "todo",
+      color: '#5e6ad2',
+      status: 'todo',
       due_date: null,
-      steps: patch.steps ? JSON.stringify(patch.steps) : "[]",
+      steps: patch.steps ? JSON.stringify(patch.steps) : '[]',
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       archived_at: null,
-    }));
+    }))
 
-    await store.toggleStep(taskId, step1);
-    expect(store.tasks[0].steps[0].done).toBe(true);
-    expect(store.tasks[0].status).toBe("todo");
-    expect(store.tasks[0].archived_at).toBeNull();
-    expect(db.archiveTask).not.toHaveBeenCalled();
+    await store.toggleStep(taskId, step1)
+    expect(store.tasks[0].steps[0].done).toBe(true)
+    expect(store.tasks[0].status).toBe('todo')
+    expect(store.tasks[0].archived_at).toBeNull()
+    expect(db.archiveTask).not.toHaveBeenCalled()
 
-    await store.toggleStep(taskId, step2);
-    expect(store.tasks[0].steps[1].done).toBe(true);
-    expect(store.tasks[0].status).toBe("todo");
-    expect(store.tasks[0].archived_at).toBeNull();
-    expect(db.archiveTask).not.toHaveBeenCalled();
-  });
+    await store.toggleStep(taskId, step2)
+    expect(store.tasks[0].steps[1].done).toBe(true)
+    expect(store.tasks[0].status).toBe('todo')
+    expect(store.tasks[0].archived_at).toBeNull()
+    expect(db.archiveTask).not.toHaveBeenCalled()
+  })
 
-  it("toggleStep no revierte estado ni restaura al desmarcar paso", async () => {
-    const store = useTasksStore();
-    const taskId = "11111111-1111-1111-1111-111111111111";
-    const step1 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-    const step2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+  it('toggleStep no revierte estado ni restaura al desmarcar paso', async () => {
+    const store = useTasksStore()
+    const taskId = '11111111-1111-1111-1111-111111111111'
+    const step1 = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+    const step2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
 
     store.tasks = [
       makeTask({
         id: taskId,
         steps: [
-          { id: step1, title: "Step 1", done: true },
-          { id: step2, title: "Step 2", done: true },
+          { id: step1, title: 'Step 1', done: true },
+          { id: step2, title: 'Step 2', done: true },
         ],
-        status: "todo" as const,
+        status: 'todo' as const,
         archived_at: null,
       }),
-    ];
+    ]
 
     vi.mocked(db.updateTask).mockImplementation(async (id, patch) => ({
       id,
-      title: "Test task",
+      title: 'Test task',
       description: null,
-      color: "#5e6ad2",
-      status: "todo",
+      color: '#5e6ad2',
+      status: 'todo',
       due_date: null,
-      steps: patch.steps ? JSON.stringify(patch.steps) : "[]",
+      steps: patch.steps ? JSON.stringify(patch.steps) : '[]',
       sort_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       archived_at: null,
-    }));
+    }))
 
-    await store.toggleStep(taskId, step1);
-    expect(store.tasks[0].steps[0].done).toBe(false);
-    expect(store.tasks[0].status).toBe("todo");
-    expect(store.tasks[0].archived_at).toBeNull();
-    expect(db.restoreTask).not.toHaveBeenCalled();
-  });
-});
+    await store.toggleStep(taskId, step1)
+    expect(store.tasks[0].steps[0].done).toBe(false)
+    expect(store.tasks[0].status).toBe('todo')
+    expect(store.tasks[0].archived_at).toBeNull()
+    expect(db.restoreTask).not.toHaveBeenCalled()
+  })
+})

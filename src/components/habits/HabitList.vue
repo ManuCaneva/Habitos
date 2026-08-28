@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Habit } from "@/schemas/habits";
-import HabitRow from "./HabitRow.vue";
+import type { Habit } from '@/schemas/habits'
+import HabitRow from './HabitRow.vue'
 
 defineProps<{
-  habits: Habit[];
-  showArchiveDate?: boolean;
-}>();
+  habits: Habit[]
+  showArchiveDate?: boolean
+}>()
 </script>
 
 <template>

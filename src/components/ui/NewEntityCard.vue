@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { Plus } from "lucide-vue-next";
-import Text from "@/components/ui/Text.vue";
+import { Plus } from 'lucide-vue-next'
+import Text from '@/components/ui/Text.vue'
 
 defineProps<{
-  label: string;
-  cssClass?: string;
-}>();
+  label: string
+  cssClass?: string
+}>()
 
-const emit = defineEmits<{ create: [] }>();
+const emit = defineEmits<{ create: [] }>()
 
 function onClick() {
-  emit("create");
+  emit('create')
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    emit("create");
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    emit('create')
   }
 }
 </script>
@@ -25,13 +25,7 @@ function onKeydown(e: KeyboardEvent) {
   <div
     role="button"
     tabindex="0"
-    class="border-t border-dashed border-hairline
-           flex flex-col items-center justify-center gap-1.5
-           min-h-[44px] py-2 cursor-pointer
-           text-ink-muted
-           transition-colors duration-150 ease-out
-           hover:bg-surface-3/30 hover:text-ink
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+    class="flex min-h-[44px] cursor-pointer flex-col items-center justify-center gap-1.5 border-t border-dashed border-hairline py-2 text-ink-muted transition-colors duration-150 ease-out hover:bg-surface-3/30 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
     :class="cssClass"
     @click="onClick"
     @keydown="onKeydown"

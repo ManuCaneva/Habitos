@@ -5,7 +5,7 @@
 // vuelve de Rust se valida con Zod antes de llegar a un store.
 // =============================================================
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from '@tauri-apps/api/core'
 import {
   CreateHabitDraftSchema,
   CreateHabitLogDraftSchema,
@@ -17,7 +17,7 @@ import {
   type HabitRow,
   type UpdateHabitDraft,
   UpdateHabitDraftSchema,
-} from "../schemas/habits";
+} from '../schemas/habits'
 import {
   CreateTaskDraftSchema,
   type CreateTaskDraft,
@@ -26,7 +26,7 @@ import {
   TaskRowSchema,
   type TaskRow,
   taskToRow,
-} from "../schemas/tasks";
+} from '../schemas/tasks'
 import {
   CreateGoalDraftSchema,
   type CreateGoalDraft,
@@ -39,7 +39,7 @@ import {
   GoalLogRowSchema,
   type GoalLogRow,
   goalToRow,
-} from "../schemas/goals";
+} from '../schemas/goals'
 import {
   CreateScheduleBlockDraftSchema,
   CreateScheduleSlotDraftSchema,
@@ -54,15 +54,15 @@ import {
   type ScheduleSlotRow,
   type UpdateScheduleBlockDraft,
   type WeeklyScheduleSettings,
-} from "../schemas/weeklySchedule";
+} from '../schemas/weeklySchedule'
 
 interface CreateLogInput {
-  id: string;
-  habit_id: string;
-  log_date: string;
-  completed_at: string;
-  note: string | null;
-  created_at: string;
+  id: string
+  habit_id: string
+  log_date: string
+  completed_at: string
+  note: string | null
+  created_at: string
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -73,10 +73,10 @@ export async function createHabit(
   draft: CreateHabitDraft,
   id: string,
   created_at: string,
-  updated_at: string,
+  updated_at: string
 ): Promise<HabitRow> {
-  const validated = CreateHabitDraftSchema.parse(draft);
-  const raw = await invoke<unknown>("create_habit", {
+  const validated = CreateHabitDraftSchema.parse(draft)
+  const raw = await invoke<unknown>('create_habit', {
     input: {
       id,
       name: validated.name,
@@ -88,22 +88,22 @@ export async function createHabit(
       created_at,
       updated_at,
     },
-  });
-  return HabitRowSchema.parse(raw);
+  })
+  return HabitRowSchema.parse(raw)
 }
 
 export async function listHabits(includeArchived = false): Promise<HabitRow[]> {
-  const raw = await invoke<unknown>("list_habits", { includeArchived });
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => HabitRowSchema.parse(r));
+  const raw = await invoke<unknown>('list_habits', { includeArchived })
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => HabitRowSchema.parse(r))
 }
 
 export async function updateHabit(
   id: string,
   patch: UpdateHabitDraft,
-  updated_at: string,
+  updated_at: string
 ): Promise<HabitRow> {
-  const validated = UpdateHabitDraftSchema.parse(patch);
+  const validated = UpdateHabitDraftSchema.parse(patch)
   const input = {
     id,
     name: validated.name,
@@ -113,17 +113,17 @@ export async function updateHabit(
     frequency: validated.frequency,
     sort_order: validated.sort_order,
     updated_at,
-  };
-  const raw = await invoke<unknown>("update_habit", { input });
-  return HabitRowSchema.parse(raw);
+  }
+  const raw = await invoke<unknown>('update_habit', { input })
+  return HabitRowSchema.parse(raw)
 }
 
 export async function archiveHabit(id: string, archived_at: string): Promise<void> {
-  await invoke("archive_habit", { id, archivedAt: archived_at });
+  await invoke('archive_habit', { id, archivedAt: archived_at })
 }
 
 export async function restoreHabit(id: string, updated_at: string): Promise<void> {
-  await invoke("restore_habit", { id, updatedAt: updated_at });
+  await invoke('restore_habit', { id, updatedAt: updated_at })
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -134,11 +134,11 @@ export async function createLog(
   draft: CreateHabitLogDraft,
   id: string,
   completed_at: string,
-  created_at: string,
+  created_at: string
 ): Promise<HabitLogRow> {
-  const validated = CreateHabitLogDraftSchema.parse(draft);
+  const validated = CreateHabitLogDraftSchema.parse(draft)
   if (!validated.log_date) {
-    throw new Error("createLog: log_date es obligatorio (calcular en el store)");
+    throw new Error('createLog: log_date es obligatorio (calcular en el store)')
   }
   const input: CreateLogInput = {
     id,
@@ -147,27 +147,27 @@ export async function createLog(
     completed_at,
     note: validated.note ?? null,
     created_at,
-  };
-  const raw = await invoke<unknown>("create_log", { input });
-  return HabitLogRowSchema.parse(raw);
+  }
+  const raw = await invoke<unknown>('create_log', { input })
+  return HabitLogRowSchema.parse(raw)
 }
 
 export async function deleteLog(id: string): Promise<void> {
-  await invoke("delete_log", { id });
+  await invoke('delete_log', { id })
 }
 
 export async function listLogsInRange(
   fromDate: string, // YYYY-MM-DD
   toDate: string,
-  habitId?: string,
+  habitId?: string
 ): Promise<HabitLogRow[]> {
-  const raw = await invoke<unknown>("list_logs_in_range", {
+  const raw = await invoke<unknown>('list_logs_in_range', {
     habitId: habitId ?? null,
     fromDate,
     toDate,
-  });
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => HabitLogRowSchema.parse(r));
+  })
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => HabitLogRowSchema.parse(r))
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -178,11 +178,11 @@ export async function createTask(
   draft: CreateTaskDraft,
   id: string,
   created_at: string,
-  updated_at: string,
+  updated_at: string
 ): Promise<TaskRow> {
-  const validated = CreateTaskDraftSchema.parse(draft);
-  const row = taskToRow(validated);
-  const raw = await invoke<unknown>("create_task", {
+  const validated = CreateTaskDraftSchema.parse(draft)
+  const row = taskToRow(validated)
+  const raw = await invoke<unknown>('create_task', {
     input: {
       id,
       title: row.title,
@@ -195,24 +195,24 @@ export async function createTask(
       created_at,
       updated_at,
     },
-  });
-  return TaskRowSchema.parse(raw);
+  })
+  return TaskRowSchema.parse(raw)
 }
 
 export async function listTasks(includeArchived = false): Promise<TaskRow[]> {
-  const raw = await invoke<unknown>("list_tasks", { includeArchived });
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => TaskRowSchema.parse(r));
+  const raw = await invoke<unknown>('list_tasks', { includeArchived })
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => TaskRowSchema.parse(r))
 }
 
 export async function updateTask(
   id: string,
   patch: UpdateTaskDraft,
-  updated_at: string,
+  updated_at: string
 ): Promise<TaskRow> {
-  const validated = UpdateTaskDraftSchema.parse(patch);
-  const row = taskToRow(validated);
-  const raw = await invoke<unknown>("update_task", {
+  const validated = UpdateTaskDraftSchema.parse(patch)
+  const row = taskToRow(validated)
+  const raw = await invoke<unknown>('update_task', {
     input: {
       id,
       title: row.title,
@@ -224,20 +224,20 @@ export async function updateTask(
       sort_order: row.sort_order,
       updated_at,
     },
-  });
-  return TaskRowSchema.parse(raw);
+  })
+  return TaskRowSchema.parse(raw)
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  await invoke("delete_task", { id });
+  await invoke('delete_task', { id })
 }
 
 export async function archiveTask(id: string, archived_at: string): Promise<void> {
-  await invoke("archive_task", { id, archivedAt: archived_at });
+  await invoke('archive_task', { id, archivedAt: archived_at })
 }
 
 export async function restoreTask(id: string, updated_at: string): Promise<void> {
-  await invoke("restore_task", { id, updatedAt: updated_at });
+  await invoke('restore_task', { id, updatedAt: updated_at })
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -248,11 +248,11 @@ export async function createGoal(
   draft: CreateGoalDraft,
   id: string,
   created_at: string,
-  updated_at: string,
+  updated_at: string
 ): Promise<GoalRow> {
-  const validated = CreateGoalDraftSchema.parse(draft);
-  const row = goalToRow(validated);
-  const raw = await invoke<unknown>("create_goal", {
+  const validated = CreateGoalDraftSchema.parse(draft)
+  const row = goalToRow(validated)
+  const raw = await invoke<unknown>('create_goal', {
     input: {
       id,
       title: row.title,
@@ -269,24 +269,24 @@ export async function createGoal(
       created_at,
       updated_at,
     },
-  });
-  return GoalRowSchema.parse(raw);
+  })
+  return GoalRowSchema.parse(raw)
 }
 
 export async function listGoals(includeArchived = false): Promise<GoalRow[]> {
-  const raw = await invoke<unknown>("list_goals", { includeArchived });
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => GoalRowSchema.parse(r));
+  const raw = await invoke<unknown>('list_goals', { includeArchived })
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => GoalRowSchema.parse(r))
 }
 
 export async function updateGoal(
   id: string,
   patch: UpdateGoalDraft,
-  updated_at: string,
+  updated_at: string
 ): Promise<GoalRow> {
-  const validated = UpdateGoalDraftSchema.parse(patch);
-  const row = goalToRow(validated);
-  const raw = await invoke<unknown>("update_goal", {
+  const validated = UpdateGoalDraftSchema.parse(patch)
+  const row = goalToRow(validated)
+  const raw = await invoke<unknown>('update_goal', {
     input: {
       id,
       title: row.title,
@@ -297,27 +297,28 @@ export async function updateGoal(
       frequency: validated.frequency
         ? {
             type: validated.frequency.type,
-            interval_days: validated.frequency.type === "interval" ? validated.frequency.interval_days : null,
+            interval_days:
+              validated.frequency.type === 'interval' ? validated.frequency.interval_days : null,
             days_of_week: null,
           }
         : undefined,
       sort_order: row.sort_order,
       updated_at,
     },
-  });
-  return GoalRowSchema.parse(raw);
+  })
+  return GoalRowSchema.parse(raw)
 }
 
 export async function deleteGoal(id: string): Promise<void> {
-  await invoke("delete_goal", { id });
+  await invoke('delete_goal', { id })
 }
 
 export async function archiveGoal(id: string, archived_at: string): Promise<void> {
-  await invoke("archive_goal", { id, archivedAt: archived_at });
+  await invoke('archive_goal', { id, archivedAt: archived_at })
 }
 
 export async function restoreGoal(id: string, updated_at: string): Promise<void> {
-  await invoke("restore_goal", { id, updatedAt: updated_at });
+  await invoke('restore_goal', { id, updatedAt: updated_at })
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -327,13 +328,13 @@ export async function restoreGoal(id: string, updated_at: string): Promise<void>
 export async function upsertGoalLog(
   draft: CreateGoalLogDraft,
   id: string,
-  created_at: string,
+  created_at: string
 ): Promise<GoalLogRow> {
-  const validated = CreateGoalLogDraftSchema.parse(draft);
+  const validated = CreateGoalLogDraftSchema.parse(draft)
   if (!validated.log_date) {
-    throw new Error("upsertGoalLog: log_date es obligatorio (calcular en el store)");
+    throw new Error('upsertGoalLog: log_date es obligatorio (calcular en el store)')
   }
-  const raw = await invoke<unknown>("upsert_goal_log", {
+  const raw = await invoke<unknown>('upsert_goal_log', {
     input: {
       id,
       goal_id: validated.goal_id,
@@ -342,26 +343,26 @@ export async function upsertGoalLog(
       note: validated.note ?? null,
       created_at,
     },
-  });
-  return GoalLogRowSchema.parse(raw);
+  })
+  return GoalLogRowSchema.parse(raw)
 }
 
 export async function deleteGoalLog(id: string): Promise<void> {
-  await invoke("delete_goal_log", { id });
+  await invoke('delete_goal_log', { id })
 }
 
 export async function listGoalLogsInRange(
   fromDate: string, // YYYY-MM-DD
   toDate: string,
-  goalId?: string,
+  goalId?: string
 ): Promise<GoalLogRow[]> {
-  const raw = await invoke<unknown>("list_goal_logs_in_range", {
+  const raw = await invoke<unknown>('list_goal_logs_in_range', {
     goalId: goalId ?? null,
     fromDate,
     toDate,
-  });
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => GoalLogRowSchema.parse(r));
+  })
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => GoalLogRowSchema.parse(r))
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -369,12 +370,12 @@ export async function listGoalLogsInRange(
 // ───────────────────────────────────────────────────────────────
 
 export async function saveConfig(key: string, value: string): Promise<void> {
-  await invoke("save_config", { key, value });
+  await invoke('save_config', { key, value })
 }
 
 export async function loadConfig(key: string): Promise<string | null> {
-  const raw = await invoke<string | null>("load_config", { key });
-  return raw;
+  const raw = await invoke<string | null>('load_config', { key })
+  return raw
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -382,28 +383,28 @@ export async function loadConfig(key: string): Promise<string | null> {
 // ───────────────────────────────────────────────────────────────
 
 export async function listScheduleBlocks(): Promise<ScheduleBlockRow[]> {
-  const raw = await invoke<unknown>("list_schedule_blocks");
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => ScheduleBlockRowSchema.parse(r));
+  const raw = await invoke<unknown>('list_schedule_blocks')
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => ScheduleBlockRowSchema.parse(r))
 }
 
 export async function listScheduleSlots(): Promise<ScheduleSlotRow[]> {
-  const raw = await invoke<unknown>("list_schedule_slots");
-  const arr = Array.isArray(raw) ? raw : [];
-  return arr.map((r) => ScheduleSlotRowSchema.parse(r));
+  const raw = await invoke<unknown>('list_schedule_slots')
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => ScheduleSlotRowSchema.parse(r))
 }
 
 export async function createScheduleBlock(
   draft: CreateScheduleBlockDraft,
   id: string,
   created_at: string,
-  updated_at: string,
+  updated_at: string
 ): Promise<ScheduleBlockRow> {
-  const v = CreateScheduleBlockDraftSchema.parse(draft);
-  const raw = await invoke<unknown>("create_schedule_block", {
+  const v = CreateScheduleBlockDraftSchema.parse(draft)
+  const raw = await invoke<unknown>('create_schedule_block', {
     input: { id, ...v, created_at, updated_at },
-  });
-  return ScheduleBlockRowSchema.parse(raw);
+  })
+  return ScheduleBlockRowSchema.parse(raw)
 }
 
 export async function createScheduleSlot(
@@ -411,56 +412,54 @@ export async function createScheduleSlot(
   id: string,
   block_id: string,
   created_at: string,
-  updated_at: string,
+  updated_at: string
 ): Promise<ScheduleSlotRow> {
-  const v = CreateScheduleSlotDraftSchema.parse(draft);
-  const raw = await invoke<unknown>("create_schedule_slot", {
+  const v = CreateScheduleSlotDraftSchema.parse(draft)
+  const raw = await invoke<unknown>('create_schedule_slot', {
     input: { id, block_id, ...v, created_at, updated_at },
-  });
-  return ScheduleSlotRowSchema.parse(raw);
+  })
+  return ScheduleSlotRowSchema.parse(raw)
 }
 
 export async function updateScheduleBlock(
   id: string,
   patch: UpdateScheduleBlockDraft,
-  updated_at: string,
+  updated_at: string
 ): Promise<ScheduleBlockRow> {
-  const v = UpdateScheduleBlockDraftSchema.parse(patch);
-  const raw = await invoke<unknown>("update_schedule_block", {
+  const v = UpdateScheduleBlockDraftSchema.parse(patch)
+  const raw = await invoke<unknown>('update_schedule_block', {
     input: { id, ...v, updated_at },
-  });
-  return ScheduleBlockRowSchema.parse(raw);
+  })
+  return ScheduleBlockRowSchema.parse(raw)
 }
 
 export async function updateScheduleSlot(
   id: string,
   patch: { day_of_week?: number; start_minutes?: number; end_minutes?: number },
-  updated_at: string,
+  updated_at: string
 ): Promise<ScheduleSlotRow> {
-  const raw = await invoke<unknown>("update_schedule_slot", {
+  const raw = await invoke<unknown>('update_schedule_slot', {
     input: { id, ...patch, updated_at },
-  });
-  return ScheduleSlotRowSchema.parse(raw);
+  })
+  return ScheduleSlotRowSchema.parse(raw)
 }
 
 export async function deleteScheduleBlock(id: string): Promise<void> {
-  await invoke("delete_schedule_block", { id });
+  await invoke('delete_schedule_block', { id })
 }
 
 export async function deleteScheduleSlot(id: string): Promise<void> {
-  await invoke("delete_schedule_slot", { id });
+  await invoke('delete_schedule_slot', { id })
 }
 
 // Settings persisten en config table (key weekly-schedule-settings)
 export async function loadWeeklyScheduleSettings(): Promise<WeeklyScheduleSettings> {
-  const json = await loadConfig("weekly-schedule-settings");
-  if (!json) return DEFAULT_WEEKLY_SCHEDULE_SETTINGS;
-  return WeeklyScheduleSettingsSchema.parse(JSON.parse(json));
+  const json = await loadConfig('weekly-schedule-settings')
+  if (!json) return DEFAULT_WEEKLY_SCHEDULE_SETTINGS
+  return WeeklyScheduleSettingsSchema.parse(JSON.parse(json))
 }
 
-export async function saveWeeklyScheduleSettings(
-  settings: WeeklyScheduleSettings,
-): Promise<void> {
-  const parsed = WeeklyScheduleSettingsSchema.parse(settings);
-  await saveConfig("weekly-schedule-settings", JSON.stringify(parsed));
+export async function saveWeeklyScheduleSettings(settings: WeeklyScheduleSettings): Promise<void> {
+  const parsed = WeeklyScheduleSettingsSchema.parse(settings)
+  await saveConfig('weekly-schedule-settings', JSON.stringify(parsed))
 }

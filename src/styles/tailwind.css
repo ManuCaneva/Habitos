@@ -4,7 +4,13 @@
 
 @layer base {
   html {
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -12,7 +18,7 @@
 
   body {
     @apply bg-canvas text-ink;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   *:focus-visible {
@@ -30,11 +36,11 @@
 
 @layer components {
   .surface-1 {
-    @apply bg-surface-1 border border-hairline;
+    @apply border border-hairline bg-surface-1;
   }
 
   .surface-2 {
-    @apply bg-surface-2 border border-hairline-strong;
+    @apply border border-hairline-strong bg-surface-2;
   }
 
   .surface-3 {
@@ -46,7 +52,7 @@
   }
 
   .glass {
-    @apply backdrop-blur-sm bg-surface-2/60 border border-hairline rounded-sm;
+    @apply rounded-sm border border-hairline bg-surface-2/60 backdrop-blur-sm;
   }
 
   .display-xl,
@@ -62,7 +68,7 @@
   .button,
   .eyebrow,
   .mono {
-    font-feature-settings: "ss01", "ss02", "cv11";
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
   }
 }
 
@@ -80,7 +86,7 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-surface-4 rounded-full;
+    @apply rounded-full bg-surface-4;
     border: 1.5px solid transparent;
     background-clip: padding-box;
   }

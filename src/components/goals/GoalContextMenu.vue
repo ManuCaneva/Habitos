@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { useUiStore } from "@/stores/ui";
-import { useGoalsStore } from "@/stores/goals";
-import type { Goal } from "@/schemas/goals";
-import EntityContextMenu from "@/components/ui/EntityContextMenu.vue";
+import { useUiStore } from '@/stores/ui'
+import { useGoalsStore } from '@/stores/goals'
+import type { Goal } from '@/schemas/goals'
+import EntityContextMenu from '@/components/ui/EntityContextMenu.vue'
 
-const props = defineProps<{ goal: Goal }>();
+const props = defineProps<{ goal: Goal }>()
 
-const ui = useUiStore();
-const goals = useGoalsStore();
+const ui = useUiStore()
+const goals = useGoalsStore()
 
 function handleEdit() {
-  ui.openEditGoal(props.goal.id);
+  ui.openEditGoal(props.goal.id)
 }
 
 async function handleArchiveToggle() {
   try {
     if (props.goal.archived_at) {
-      await goals.restoreGoal(props.goal.id);
+      await goals.restoreGoal(props.goal.id)
     } else {
-      await goals.archiveGoal(props.goal.id);
+      await goals.archiveGoal(props.goal.id)
     }
   } finally {
-    ui.closeGoalMenu();
+    ui.closeGoalMenu()
   }
 }
 </script>

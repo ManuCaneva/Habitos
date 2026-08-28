@@ -1,143 +1,149 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import HabitCard from "./HabitCard.vue";
-import type { Habit } from "@/schemas/habits";
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import HabitCard from './HabitCard.vue'
+import type { Habit } from '@/schemas/habits'
 
 const habitsMock = {
   completedToday: new Set<string>(),
   checkIn: vi.fn(),
   undoCheckIn: vi.fn(),
-  getTodayDate: () => "2026-07-01",
-};
-const uiMock = { menuOpenForHabitId: null as string | null, toggleMenu: vi.fn(), openEdit: vi.fn() };
-vi.mock("@/stores/habits", () => ({ useHabitsStore: () => habitsMock }));
-vi.mock("@/stores/ui", () => ({ useUiStore: () => uiMock }));
+  getTodayDate: () => '2026-07-01',
+}
+const uiMock = { menuOpenForHabitId: null as string | null, toggleMenu: vi.fn(), openEdit: vi.fn() }
+vi.mock('@/stores/habits', () => ({ useHabitsStore: () => habitsMock }))
+vi.mock('@/stores/ui', () => ({ useUiStore: () => uiMock }))
 
 const base: Habit = {
-  id: "h1",
-  name: "Meditar",
+  id: 'h1',
+  name: 'Meditar',
   description: null,
-  icon: "footprints",
-  color: "#5e6ad2",
-  frequency: { type: "daily", target_per_period: 1 },
+  icon: 'footprints',
+  color: '#5e6ad2',
+  frequency: { type: 'daily', target_per_period: 1 },
   sort_order: 0,
-  created_at: "2026-01-01T00:00:00.000Z",
-  updated_at: "2026-01-01T00:00:00.000Z",
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
   archived_at: null,
-};
+}
 
-describe("HabitCard (binary)", () => {
+describe('HabitCard (binary)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-    habitsMock.completedToday = new Set();
-    vi.clearAllMocks();
-  });
+    setActivePinia(createPinia())
+    habitsMock.completedToday = new Set()
+    vi.clearAllMocks()
+  })
 
-  it("usa Container con estilos de surface", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    const card = w.find("[data-testid='habit-card']");
-    expect(card.classes()).toContain("bg-surface-1");
-    expect(card.classes()).toContain("border");
-  });
+  it('usa Container con estilos de surface', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    const card = w.find("[data-testid='habit-card']")
+    expect(card.classes()).toContain('bg-surface-1')
+    expect(card.classes()).toContain('border')
+  })
 
-  it("rendera el ícono lineal (svg)", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='habit-icon'] svg").exists()).toBe(true);
-  });
+  it('rendera el ícono lineal (svg)', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='habit-icon'] svg").exists()).toBe(true)
+  })
 
-  it("rendera título", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.text()).toContain("Meditar");
-  });
+  it('rendera título', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.text()).toContain('Meditar')
+  })
 
-  it("subtítulo = frecuencia cuando no hay descripción", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='habit-subtitle']").text()).toBe("Diario");
-  });
+  it('subtítulo = frecuencia cuando no hay descripción', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='habit-subtitle']").text()).toBe('Diario')
+  })
 
-  it("subtítulo = descripción cuando existe", () => {
-    const w = mount(HabitCard, { props: { habit: { ...base, description: "10 min al despertar" }, logs: [] } });
-    expect(w.find("[data-testid='habit-subtitle']").text()).toBe("10 min al despertar");
-  });
+  it('subtítulo = descripción cuando existe', () => {
+    const w = mount(HabitCard, {
+      props: { habit: { ...base, description: '10 min al despertar' }, logs: [] },
+    })
+    expect(w.find("[data-testid='habit-subtitle']").text()).toBe('10 min al despertar')
+  })
 
-  it("no muestra contador de racha", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.text()).not.toContain("Racha");
-  });
+  it('no muestra contador de racha', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.text()).not.toContain('Racha')
+  })
 
-  it("click en título abre edición", async () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    await w.find("[data-testid='habit-title']").trigger("click");
-    expect(uiMock.openEdit).toHaveBeenCalledWith("h1");
-  });
+  it('click en título abre edición', async () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    await w.find("[data-testid='habit-title']").trigger('click')
+    expect(uiMock.openEdit).toHaveBeenCalledWith('h1')
+  })
 
-  it("unchecked: botón circular con border habit.color y Plus", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    const b = w.find("[data-testid='checkin-button']");
-    expect(b.classes()).toContain("rounded-full");
-    expect(b.classes()).toContain("border-2");
-    expect(b.attributes("style")).toContain("#5e6ad2");
-    expect(b.find("svg").classes().join(" ")).toMatch(/lucide-plus/);
-  });
+  it('unchecked: botón circular con border habit.color y Plus', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    const b = w.find("[data-testid='checkin-button']")
+    expect(b.classes()).toContain('rounded-full')
+    expect(b.classes()).toContain('border-2')
+    expect(b.attributes('style')).toContain('#5e6ad2')
+    expect(b.find('svg').classes().join(' ')).toMatch(/lucide-plus/)
+  })
 
-  it("checked: botón circular con bg habit.color y Check (sin border-2)", () => {
-    habitsMock.completedToday = new Set(["h1"]);
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    const b = w.find("[data-testid='checkin-button']");
-    expect(b.classes()).toContain("rounded-full");
-    expect(b.classes()).not.toContain("border-2");
-    expect(b.attributes("style")).toContain("#5e6ad2");
-    expect(b.find("svg").classes().join(" ")).toMatch(/lucide-check/);
-  });
+  it('checked: botón circular con bg habit.color y Check (sin border-2)', () => {
+    habitsMock.completedToday = new Set(['h1'])
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    const b = w.find("[data-testid='checkin-button']")
+    expect(b.classes()).toContain('rounded-full')
+    expect(b.classes()).not.toContain('border-2')
+    expect(b.attributes('style')).toContain('#5e6ad2')
+    expect(b.find('svg').classes().join(' ')).toMatch(/lucide-check/)
+  })
 
-  it("toggle unchecked → checkIn(habitId)", async () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    await w.find("[data-testid='checkin-button']").trigger("click");
-    expect(habitsMock.checkIn).toHaveBeenCalledWith("h1");
-  });
+  it('toggle unchecked → checkIn(habitId)', async () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    await w.find("[data-testid='checkin-button']").trigger('click')
+    expect(habitsMock.checkIn).toHaveBeenCalledWith('h1')
+  })
 
-  it("toggle checked → undoCheckIn(habitId, today)", async () => {
-    habitsMock.completedToday = new Set(["h1"]);
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    await w.find("[data-testid='checkin-button']").trigger("click");
-    expect(habitsMock.undoCheckIn).toHaveBeenCalledWith("h1", "2026-07-01");
-  });
+  it('toggle checked → undoCheckIn(habitId, today)', async () => {
+    habitsMock.completedToday = new Set(['h1'])
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    await w.find("[data-testid='checkin-button']").trigger('click')
+    expect(habitsMock.undoCheckIn).toHaveBeenCalledWith('h1', '2026-07-01')
+  })
 
-  it("monta botón de menú", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='menu-button']").exists()).toBe(true);
-  });
+  it('monta botón de menú', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='menu-button']").exists()).toBe(true)
+  })
 
-  it("botón de menú siempre visible (sin opacity-0)", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='menu-button']").classes()).not.toContain("opacity-0");
-  });
+  it('botón de menú siempre visible (sin opacity-0)', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='menu-button']").classes()).not.toContain('opacity-0')
+  })
 
-  it("rendera HeatmapGrid", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.findComponent({ name: "HeatmapGrid" }).exists()).toBe(true);
-  });
+  it('rendera HeatmapGrid', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.findComponent({ name: 'HeatmapGrid' }).exists()).toBe(true)
+  })
 
-  it("botón menú aparece antes que botón checkin", () => {
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    const all = w.findAll("[data-testid='menu-button'], [data-testid='checkin-button']");
-    const menuIndex = all.findIndex((el: ReturnType<typeof w.find>) => el.attributes("data-testid") === "menu-button");
-    const checkIndex = all.findIndex((el: ReturnType<typeof w.find>) => el.attributes("data-testid") === "checkin-button");
-    expect(menuIndex).toBeGreaterThanOrEqual(0);
-    expect(checkIndex).toBeGreaterThanOrEqual(0);
-    expect(menuIndex).toBeLessThan(checkIndex);
-  });
+  it('botón menú aparece antes que botón checkin', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    const all = w.findAll("[data-testid='menu-button'], [data-testid='checkin-button']")
+    const menuIndex = all.findIndex(
+      (el: ReturnType<typeof w.find>) => el.attributes('data-testid') === 'menu-button'
+    )
+    const checkIndex = all.findIndex(
+      (el: ReturnType<typeof w.find>) => el.attributes('data-testid') === 'checkin-button'
+    )
+    expect(menuIndex).toBeGreaterThanOrEqual(0)
+    expect(checkIndex).toBeGreaterThanOrEqual(0)
+    expect(menuIndex).toBeLessThan(checkIndex)
+  })
 
-  it("card tiene z-10 cuando su menú está abierto", () => {
-    uiMock.menuOpenForHabitId = "h1";
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='habit-card']").classes()).toContain("z-10");
-  });
+  it('card tiene z-10 cuando su menú está abierto', () => {
+    uiMock.menuOpenForHabitId = 'h1'
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='habit-card']").classes()).toContain('z-10')
+  })
 
-  it("card NO tiene z-10 cuando otro menú está abierto", () => {
-    uiMock.menuOpenForHabitId = "h2";
-    const w = mount(HabitCard, { props: { habit: base, logs: [] } });
-    expect(w.find("[data-testid='habit-card']").classes()).not.toContain("z-10");
-  });
-});
+  it('card NO tiene z-10 cuando otro menú está abierto', () => {
+    uiMock.menuOpenForHabitId = 'h2'
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(w.find("[data-testid='habit-card']").classes()).not.toContain('z-10')
+  })
+})

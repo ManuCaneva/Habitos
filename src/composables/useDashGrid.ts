@@ -1,26 +1,26 @@
-import { ref, watch, onMounted, onUnmounted, type Ref } from "vue";
-import { useMonitorChange } from "./useMonitorChange";
+import { ref, watch, onMounted, onUnmounted, type Ref } from 'vue'
+import { useMonitorChange } from './useMonitorChange'
 
 export interface GridDimensions {
-  colWidth: number;
-  rowHeight: number;
-  marginX: number;
-  marginY: number;
-  containerWidth: number;
-  containerHeight: number;
-  cols: number;
-  maxRows: number;
+  colWidth: number
+  rowHeight: number
+  marginX: number
+  marginY: number
+  containerWidth: number
+  containerHeight: number
+  cols: number
+  maxRows: number
 }
 
-const MIN_ROW_HEIGHT = 40;
-const MAX_ROW_HEIGHT = 120;
-const MARGIN_X = 12;
-const MARGIN_Y = 12;
-const COLS = 12;
-const DEFAULT_MAX_ROWS = 10;
+const MIN_ROW_HEIGHT = 40
+const MAX_ROW_HEIGHT = 120
+const MARGIN_X = 12
+const MARGIN_Y = 12
+const COLS = 12
+const DEFAULT_MAX_ROWS = 10
 
 function computeRowHeight(containerHeight: number, maxRows: number): number {
-  return Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, containerHeight / maxRows));
+  return Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, containerHeight / maxRows))
 }
 
 export function snapToGrid(
@@ -29,37 +29,37 @@ export function snapToGrid(
   widthPx: number,
   heightPx: number,
   dims: GridDimensions,
-  opts?: { minWPercent?: number; minHPercent?: number },
+  opts?: { minWPercent?: number; minHPercent?: number }
 ) {
-  const { containerWidth, containerHeight, cols, maxRows } = dims;
-  const stepX = 1 / cols;
-  const stepY = 1 / maxRows;
-  const minWPercent = opts?.minWPercent ?? stepX;
-  const minHPercent = opts?.minHPercent ?? stepY;
+  const { containerWidth, containerHeight, cols, maxRows } = dims
+  const stepX = 1 / cols
+  const stepY = 1 / maxRows
+  const minWPercent = opts?.minWPercent ?? stepX
+  const minHPercent = opts?.minHPercent ?? stepY
 
-  let wPercent = Math.max(minWPercent, Math.min(1, widthPx / containerWidth));
-  let hPercent = Math.max(minHPercent, Math.min(1, heightPx / containerHeight));
-  let xPercent = Math.max(0, Math.min(1 - wPercent, leftPx / containerWidth));
-  let yPercent = Math.max(0, Math.min(1 - hPercent, topPx / containerHeight));
+  let wPercent = Math.max(minWPercent, Math.min(1, widthPx / containerWidth))
+  let hPercent = Math.max(minHPercent, Math.min(1, heightPx / containerHeight))
+  let xPercent = Math.max(0, Math.min(1 - wPercent, leftPx / containerWidth))
+  let yPercent = Math.max(0, Math.min(1 - hPercent, topPx / containerHeight))
 
   // Clamp: no sale del contenedor
-  xPercent = Math.min(xPercent, 1 - wPercent);
-  yPercent = Math.min(yPercent, 1 - hPercent);
+  xPercent = Math.min(xPercent, 1 - wPercent)
+  yPercent = Math.min(yPercent, 1 - hPercent)
 
   // Snap a grilla virtual: múltiplos de stepX (1/cols) y stepY (1/maxRows)
-  wPercent = Math.max(minWPercent, Math.round(wPercent / stepX) * stepX);
-  hPercent = Math.max(minHPercent, Math.round(hPercent / stepY) * stepY);
-  xPercent = Math.round(xPercent / stepX) * stepX;
-  yPercent = Math.round(yPercent / stepY) * stepY;
+  wPercent = Math.max(minWPercent, Math.round(wPercent / stepX) * stepX)
+  hPercent = Math.max(minHPercent, Math.round(hPercent / stepY) * stepY)
+  xPercent = Math.round(xPercent / stepX) * stepX
+  yPercent = Math.round(yPercent / stepY) * stepY
 
   // Re-clamp después del snap
-  xPercent = Math.max(0, Math.min(1 - wPercent, xPercent));
-  yPercent = Math.max(0, Math.min(1 - hPercent, yPercent));
+  xPercent = Math.max(0, Math.min(1 - wPercent, xPercent))
+  yPercent = Math.max(0, Math.min(1 - hPercent, yPercent))
 
-  return { xPercent, yPercent, wPercent, hPercent };
+  return { xPercent, yPercent, wPercent, hPercent }
 }
 
-export const WIDGET_GAP = 4;
+export const WIDGET_GAP = 4
 
 export function applyGapToPixel(
   xPercent: number,
@@ -68,19 +68,19 @@ export function applyGapToPixel(
   hPercent: number,
   containerWidth: number,
   containerHeight: number,
-  gap: number = WIDGET_GAP,
+  gap: number = WIDGET_GAP
 ): { left: number; top: number; width: number; height: number } {
-  const halfGap = gap / 2;
+  const halfGap = gap / 2
   return {
     left: xPercent * containerWidth + halfGap,
     top: yPercent * containerHeight + halfGap,
     width: wPercent * containerWidth - gap,
     height: hPercent * containerHeight - gap,
-  };
+  }
 }
 
 export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
-  const { changed, ackChange } = useMonitorChange();
+  const { changed, ackChange } = useMonitorChange()
 
   const dims = ref<GridDimensions>({
     colWidth: 100,
@@ -91,16 +91,16 @@ export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
     containerHeight: 600,
     cols: COLS,
     maxRows: DEFAULT_MAX_ROWS,
-  });
+  })
 
-  let observer: ResizeObserver | null = null;
+  let observer: ResizeObserver | null = null
 
   function recalc() {
-    const el = containerRef.value;
-    if (!el) return;
-    const w = el.clientWidth;
-    const h = el.clientHeight;
-    const colWidth = (w - MARGIN_X * (COLS - 1)) / COLS;
+    const el = containerRef.value
+    if (!el) return
+    const w = el.clientWidth
+    const h = el.clientHeight
+    const colWidth = (w - MARGIN_X * (COLS - 1)) / COLS
     dims.value = {
       colWidth,
       rowHeight: computeRowHeight(h, DEFAULT_MAX_ROWS),
@@ -110,42 +110,37 @@ export function useDashGrid(containerRef: Ref<HTMLElement | null>) {
       containerHeight: h,
       cols: COLS,
       maxRows: DEFAULT_MAX_ROWS,
-    };
+    }
   }
 
   watch(changed, (hasChanged) => {
     if (hasChanged) {
-      recalc();
-      ackChange();
+      recalc()
+      ackChange()
     }
-  });
+  })
 
   onMounted(() => {
-    recalc();
+    recalc()
     if (containerRef.value) {
-      observer = new ResizeObserver(() => recalc());
-      observer.observe(containerRef.value);
+      observer = new ResizeObserver(() => recalc())
+      observer.observe(containerRef.value)
     }
-  });
+  })
 
   onUnmounted(() => {
-    observer?.disconnect();
-  });
+    observer?.disconnect()
+  })
 
-  function gridToPixel(
-    xPercent: number,
-    yPercent: number,
-    wPercent: number,
-    hPercent: number,
-  ) {
-    const { containerWidth, containerHeight } = dims.value;
+  function gridToPixel(xPercent: number, yPercent: number, wPercent: number, hPercent: number) {
+    const { containerWidth, containerHeight } = dims.value
     return {
       left: xPercent * containerWidth,
       top: yPercent * containerHeight,
       width: wPercent * containerWidth,
       height: hPercent * containerHeight,
-    };
+    }
   }
 
-  return { dims, gridToPixel, snapToGrid };
+  return { dims, gridToPixel, snapToGrid }
 }

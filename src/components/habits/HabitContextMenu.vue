@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { useUiStore } from "@/stores/ui";
-import { useHabitsStore } from "@/stores/habits";
-import type { Habit } from "@/schemas/habits";
-import EntityContextMenu from "@/components/ui/EntityContextMenu.vue";
+import { useUiStore } from '@/stores/ui'
+import { useHabitsStore } from '@/stores/habits'
+import type { Habit } from '@/schemas/habits'
+import EntityContextMenu from '@/components/ui/EntityContextMenu.vue'
 
-const props = defineProps<{ habit: Habit }>();
+const props = defineProps<{ habit: Habit }>()
 
-const ui = useUiStore();
-const habits = useHabitsStore();
+const ui = useUiStore()
+const habits = useHabitsStore()
 
 function handleEdit() {
-  ui.openEdit(props.habit.id);
+  ui.openEdit(props.habit.id)
 }
 
 async function handleArchiveToggle() {
   try {
     if (props.habit.archived_at) {
-      await habits.restoreHabit(props.habit.id);
+      await habits.restoreHabit(props.habit.id)
     } else {
-      await habits.archiveHabit(props.habit.id);
+      await habits.archiveHabit(props.habit.id)
     }
   } finally {
-    ui.closeMenu();
+    ui.closeMenu()
   }
 }
 </script>

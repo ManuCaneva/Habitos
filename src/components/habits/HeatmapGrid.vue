@@ -1,48 +1,52 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import type { HabitLog } from "@/schemas/habits";
-import { buildHeatmapGrid, HISTORY_ROWS } from "@/lib/buildHeatmapGrid";
-import { shadeFor } from "@/lib/habitColors";
-import { useHeatmapCols } from "@/composables/useHeatmapCols";
+import { computed, ref } from 'vue'
+import type { HabitLog } from '@/schemas/habits'
+import { buildHeatmapGrid, HISTORY_ROWS } from '@/lib/buildHeatmapGrid'
+import { shadeFor } from '@/lib/habitColors'
+import { useHeatmapCols } from '@/composables/useHeatmapCols'
 
-const props = withDefaults(
-  defineProps<{ logs: HabitLog[]; color: string; days?: number }>(),
-  { days: 364 }
-);
+const props = withDefaults(defineProps<{ logs: HabitLog[]; color: string; days?: number }>(), {
+  days: 364,
+})
 
-const containerRef = ref<HTMLElement | null>(null);
-const dataCols = computed(() => Math.ceil(props.days / HISTORY_ROWS));
-const { cols, actualCellSize } = useHeatmapCols({ containerRef, dataCols: dataCols.value, cellSize: 10, gap: 2 });
+const containerRef = ref<HTMLElement | null>(null)
+const dataCols = computed(() => Math.ceil(props.days / HISTORY_ROWS))
+const { cols, actualCellSize } = useHeatmapCols({
+  containerRef,
+  dataCols: dataCols.value,
+  cellSize: 10,
+  gap: 2,
+})
 
 const cells = computed(() =>
   buildHeatmapGrid({ days: cols.value * HISTORY_ROWS, logs: props.logs, rows: HISTORY_ROWS })
-);
+)
 
 const todayStr = computed(() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-});
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})
 
 function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
   const baseStyle: Record<string, string> = {
     width: `${actualCellSize.value}px`,
     height: `${actualCellSize.value}px`,
-  };
-  
+  }
+
   if (c.isEmpty) {
-    baseStyle.background = "transparent";
+    baseStyle.background = 'transparent'
   } else {
-    const intensity = c.completed ? 1 : 0.15;
-    const base = shadeFor(props.color, intensity);
+    const intensity = c.completed ? 1 : 0.15
+    const base = shadeFor(props.color, intensity)
     if (c.date === todayStr.value && c.completed) {
-      baseStyle.background = base;
-      baseStyle.boxShadow = `0 0 0 1px ${shadeFor(props.color, 1)}`;
+      baseStyle.background = base
+      baseStyle.boxShadow = `0 0 0 1px ${shadeFor(props.color, 1)}`
     } else {
-      baseStyle.background = base;
+      baseStyle.background = base
     }
   }
-  
-  return baseStyle;
+
+  return baseStyle
 }
 </script>
 
@@ -51,11 +55,11 @@ function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
     ref="containerRef"
     data-testid="heat-grid"
     class="grid overflow-hidden"
-    :style="{ 
-      gridTemplateColumns: `repeat(${cols}, ${actualCellSize}px)`, 
+    :style="{
+      gridTemplateColumns: `repeat(${cols}, ${actualCellSize}px)`,
       gridTemplateRows: `repeat(${HISTORY_ROWS}, ${actualCellSize}px)`,
       gridAutoFlow: 'column',
-      gap: '2px'
+      gap: '2px',
     }"
   >
     <div

@@ -92,13 +92,9 @@ pub fn list_goal_logs_in_range(
     let result: DbResult<Vec<GoalLogRow>> = (|| {
         let conn = db.conn.lock().unwrap();
 
-        let mut sql = String::from(
-            "SELECT * FROM goal_logs WHERE log_date >= ?1 AND log_date <= ?2",
-        );
-        let mut args: Vec<Box<dyn rusqlite::ToSql>> = vec![
-            Box::new(from_date),
-            Box::new(to_date),
-        ];
+        let mut sql =
+            String::from("SELECT * FROM goal_logs WHERE log_date >= ?1 AND log_date <= ?2");
+        let mut args: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(from_date), Box::new(to_date)];
 
         if let Some(ref gid) = goal_id {
             sql.push_str(" AND goal_id = ?3");

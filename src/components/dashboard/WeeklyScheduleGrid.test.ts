@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import WeeklyScheduleGrid from "./WeeklyScheduleGrid.vue";
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
 
 const mockStore = {
   blocksWithSlots: [
     {
-      id: "333e8400-e29b-41d4-a716-446655440000",
-      title: "Gimnasio",
-      color: "lavender",
+      id: '333e8400-e29b-41d4-a716-446655440000',
+      title: 'Gimnasio',
+      color: 'lavender',
       sort_order: 0,
-      created_at: "2026-07-12T19:00:00.000Z",
-      updated_at: "2026-07-12T19:00:00.000Z",
+      created_at: '2026-07-12T19:00:00.000Z',
+      updated_at: '2026-07-12T19:00:00.000Z',
       slots: [
         {
-          id: "550e8400-e29b-41d4-a716-446655440001",
-          block_id: "333e8400-e29b-41d4-a716-446655440000",
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          block_id: '333e8400-e29b-41d4-a716-446655440000',
           day_of_week: 1,
           start_minutes: 360,
           end_minutes: 420,
-          created_at: "2026-07-12T19:00:00.000Z",
-          updated_at: "2026-07-12T19:00:00.000Z",
+          created_at: '2026-07-12T19:00:00.000Z',
+          updated_at: '2026-07-12T19:00:00.000Z',
         },
       ],
     },
@@ -31,31 +31,31 @@ const mockStore = {
     day_end_minutes: 1380,
     week_starts_monday: true,
   },
-};
+}
 
-vi.mock("@/stores/weeklySchedule", () => ({
+vi.mock('@/stores/weeklySchedule', () => ({
   useWeeklyScheduleStore: () => mockStore,
   minutesToHHMM: (min: number) => {
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   },
-}));
+}))
 
-vi.mock("@/stores/ui", () => ({
+vi.mock('@/stores/ui', () => ({
   useUiStore: () => ({
     editMode: false,
   }),
-}));
+}))
 
-describe("WeeklyScheduleGrid", () => {
+describe('WeeklyScheduleGrid', () => {
   beforeEach(() => {
-    setActivePinia(createPinia());
-  });
+    setActivePinia(createPinia())
+  })
 
-  it("renderiza las columnas de los días de la semana", () => {
-    const wrapper = mount(WeeklyScheduleGrid);
-    expect(wrapper.text()).toContain("Lun");
-    expect(wrapper.text()).toContain("Dom");
-  });
-});
+  it('renderiza las columnas de los días de la semana', () => {
+    const wrapper = mount(WeeklyScheduleGrid)
+    expect(wrapper.text()).toContain('Lun')
+    expect(wrapper.text()).toContain('Dom')
+  })
+})

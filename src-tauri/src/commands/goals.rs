@@ -112,7 +112,11 @@ pub fn create_goal(db: State<'_, Db>, input: CreateGoalInput) -> Result<GoalRow,
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM goals WHERE id = ?1", params![input.id], row_to_goal)
+            .query_row(
+                "SELECT * FROM goals WHERE id = ?1",
+                params![input.id],
+                row_to_goal,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)
@@ -181,7 +185,11 @@ pub fn update_goal(db: State<'_, Db>, input: UpdateGoalInput) -> Result<GoalRow,
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM goals WHERE id = ?1", params![input.id], row_to_goal)
+            .query_row(
+                "SELECT * FROM goals WHERE id = ?1",
+                params![input.id],
+                row_to_goal,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)

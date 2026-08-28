@@ -58,7 +58,9 @@ impl Db {
         // WAL: mejor concurrencia lectura/escritura. Foreign keys ON para ON DELETE CASCADE.
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
-        let db = Self { conn: Mutex::new(conn) };
+        let db = Self {
+            conn: Mutex::new(conn),
+        };
         db.run_migrations()?;
         Ok(db)
     }
@@ -67,7 +69,9 @@ impl Db {
     pub fn open_in_memory() -> DbResult<Self> {
         let conn = Connection::open_in_memory()?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
-        let db = Self { conn: Mutex::new(conn) };
+        let db = Self {
+            conn: Mutex::new(conn),
+        };
         db.run_migrations()?;
         Ok(db)
     }
@@ -119,9 +123,21 @@ impl Db {
         let migrations: [(i64, &str, &str); 7] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
-            (3, "003_tasks_goals", include_str!("migrations/003_tasks_goals.sql")),
-            (4, "004_tasks_goals_archived", include_str!("migrations/004_tasks_goals_archived.sql")),
-            (5, "005_weekly_schedule", include_str!("migrations/005_weekly_schedule.sql")),
+            (
+                3,
+                "003_tasks_goals",
+                include_str!("migrations/003_tasks_goals.sql"),
+            ),
+            (
+                4,
+                "004_tasks_goals_archived",
+                include_str!("migrations/004_tasks_goals_archived.sql"),
+            ),
+            (
+                5,
+                "005_weekly_schedule",
+                include_str!("migrations/005_weekly_schedule.sql"),
+            ),
             (6, "006_block_slots", ""), // Migración 006 se ejecuta en Rust (run_migration_006)
             (7, "007_aeon_storage_keys", ""), // Migración 007 se ejecuta en Rust (run_migration_007)
         ];
@@ -212,8 +228,9 @@ impl Db {
                 if new_table_exists {
                     // Completar el rename
                     conn.execute_batch(
-                        "ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;"
-                    ).map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
+                        "ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;",
+                    )
+                    .map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
                 } else {
                     // Ni schedule_blocks ni schedule_blocks_new existen, crear desde cero
                     conn.execute_batch(
@@ -224,8 +241,9 @@ impl Db {
                             sort_order    REAL NOT NULL DEFAULT 0,
                             created_at    TEXT NOT NULL,
                             updated_at    TEXT NOT NULL
-                        );"
-                    ).map_err(|e| DbError::Migration(format!("006: crear schedule_blocks: {e}")))?;
+                        );",
+                    )
+                    .map_err(|e| DbError::Migration(format!("006: crear schedule_blocks: {e}")))?;
                 }
                 return Ok(());
             }
@@ -284,8 +302,9 @@ impl Db {
                     // La tabla new existe pero no se completó el rename
                     conn.execute_batch(
                         "DROP TABLE IF EXISTS schedule_blocks;
-                         ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;"
-                    ).map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
+                         ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;",
+                    )
+                    .map_err(|e| DbError::Migration(format!("006: completar rename: {e}")))?;
                 }
             }
 
@@ -299,8 +318,9 @@ impl Db {
                 Ok(())
             }
             Err(e) => {
-                conn.execute_batch("ROLLBACK;")
-                    .map_err(|e2| DbError::Migration(format!("006: rollback failed: {e2}, original error: {e}")))?;
+                conn.execute_batch("ROLLBACK;").map_err(|e2| {
+                    DbError::Migration(format!("006: rollback failed: {e2}, original error: {e}"))
+                })?;
                 Err(e)
             }
         }
@@ -370,8 +390,9 @@ impl Db {
                 Ok(())
             }
             Err(e) => {
-                conn.execute_batch("ROLLBACK;")
-                    .map_err(|e2| DbError::Migration(format!("007: rollback failed: {e2}, original error: {e}")))?;
+                conn.execute_batch("ROLLBACK;").map_err(|e2| {
+                    DbError::Migration(format!("007: rollback failed: {e2}, original error: {e}"))
+                })?;
                 Err(e)
             }
         }

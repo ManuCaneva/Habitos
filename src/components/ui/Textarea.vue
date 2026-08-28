@@ -1,66 +1,62 @@
 <script setup lang="ts">
-import { computed, useId } from "vue";
+import { computed, useId } from 'vue'
 
-type Resize = "none" | "vertical" | "horizontal" | "both";
+type Resize = 'none' | 'vertical' | 'horizontal' | 'both'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string;
-    placeholder?: string;
-    disabled?: boolean;
-    error?: string;
-    rows?: number;
-    resize?: Resize;
-    label?: string;
-    helper?: string;
+    modelValue: string
+    placeholder?: string
+    disabled?: boolean
+    error?: string
+    rows?: number
+    resize?: Resize
+    label?: string
+    helper?: string
   }>(),
   {
     rows: 4,
     disabled: false,
-    resize: "vertical",
-    placeholder: "",
-  },
-);
+    resize: 'vertical',
+    placeholder: '',
+  }
+)
 
 defineEmits<{
-  "update:modelValue": [value: string];
-  blur: [event: FocusEvent];
-  focus: [event: FocusEvent];
-}>();
+  'update:modelValue': [value: string]
+  blur: [event: FocusEvent]
+  focus: [event: FocusEvent]
+}>()
 
-const id = useId();
+const id = useId()
 
 const resizeClass = computed(() => {
   switch (props.resize) {
-    case "none":
-      return "resize-none";
-    case "horizontal":
-      return "resize-x";
-    case "both":
-      return "resize";
+    case 'none':
+      return 'resize-none'
+    case 'horizontal':
+      return 'resize-x'
+    case 'both':
+      return 'resize'
     default:
-      return "resize-y";
+      return 'resize-y'
   }
-});
+})
 
 const stateClass = computed(() => {
   if (props.disabled) {
-    return "bg-surface-1 border-hairline text-ink-tertiary cursor-not-allowed";
+    return 'bg-surface-1 border-hairline text-ink-tertiary cursor-not-allowed'
   }
   if (props.error) {
-    return "bg-surface-1 border-red-500/50 text-ink focus-within:border-red-500";
+    return 'bg-surface-1 border-red-500/50 text-ink focus-within:border-red-500'
   }
-  return "bg-surface-1 border-hairline text-ink focus-within:border-hairline-strong hover:border-hairline-strong";
-});
+  return 'bg-surface-1 border-hairline text-ink focus-within:border-hairline-strong hover:border-hairline-strong'
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-1.5">
-    <label
-      v-if="label"
-      :for="id"
-      class="text-body-sm text-ink-muted select-none"
-    >
+    <label v-if="label" :for="id" class="select-none text-body-sm text-ink-muted">
       {{ label }}
     </label>
     <textarea
@@ -79,10 +75,7 @@ const stateClass = computed(() => {
       @blur="(e) => $emit('blur', e)"
       @focus="(e) => $emit('focus', e)"
     />
-    <p
-      v-if="error || helper"
-      :class="['text-caption', error ? 'text-red-400' : 'text-ink-subtle']"
-    >
+    <p v-if="error || helper" :class="['text-caption', error ? 'text-red-400' : 'text-ink-subtle']">
       {{ error || helper }}
     </p>
   </div>

@@ -1,70 +1,71 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { useTheme } from "@/composables/useTheme";
-import { useCalendarStore } from "@/stores/calendar";
-import Card from "@/components/ui/Card.vue";
-import Text from "@/components/ui/Text.vue";
-import Heading from "@/components/ui/Heading.vue";
-import Button from "@/components/ui/Button.vue";
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useTheme } from '@/composables/useTheme'
+import { useCalendarStore } from '@/stores/calendar'
+import Card from '@/components/ui/Card.vue'
+import Text from '@/components/ui/Text.vue'
+import Heading from '@/components/ui/Heading.vue'
+import Button from '@/components/ui/Button.vue'
 
-const { current, currentId, themes, setTheme } = useTheme();
-const store = useCalendarStore();
-const connecting = ref(false);
+const { current, currentId, themes, setTheme } = useTheme()
+const store = useCalendarStore()
+const connecting = ref(false)
 
-const primaryColor = computed(() => `rgb(${current.value.colors.primary})`);
-const surfaceColor = computed(() => `rgb(${current.value.colors.surface1})`);
-const inkColor = computed(() => `rgb(${current.value.colors.ink})`);
-const hairlineColor = computed(() => `rgb(${current.value.colors.hairline})`);
+const primaryColor = computed(() => `rgb(${current.value.colors.primary})`)
+const surfaceColor = computed(() => `rgb(${current.value.colors.surface1})`)
+const inkColor = computed(() => `rgb(${current.value.colors.ink})`)
+const hairlineColor = computed(() => `rgb(${current.value.colors.hairline})`)
 
-const dropdownOpen = ref(false);
-const dropdownRef = ref<HTMLElement | null>(null);
+const dropdownOpen = ref(false)
+const dropdownRef = ref<HTMLElement | null>(null)
 
 function handleClickOutside(e: MouseEvent) {
   if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
-    dropdownOpen.value = false;
+    dropdownOpen.value = false
   }
 }
 
 function selectTheme(id: string) {
-  setTheme(id);
-  dropdownOpen.value = false;
+  setTheme(id)
+  dropdownOpen.value = false
 }
 
-onMounted(() => document.addEventListener("mousedown", handleClickOutside));
-onBeforeUnmount(() => document.removeEventListener("mousedown", handleClickOutside));
+onMounted(() => document.addEventListener('mousedown', handleClickOutside))
+onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutside))
 
 async function handleConnect() {
-  connecting.value = true;
+  connecting.value = true
   try {
-    await store.connect();
-  } catch (e) {
+    await store.connect()
+  } catch {
     // Error handling is done via store.syncError
   } finally {
-    connecting.value = false;
+    connecting.value = false
   }
 }
 
 async function handleDisconnect() {
-  await store.disconnect();
+  await store.disconnect()
 }
 </script>
 
 <template>
-  <main class="scrollbar-gutter-stable h-full overflow-y-auto px-6 py-section max-w-2xl mx-auto flex flex-col gap-6">
+  <main
+    class="scrollbar-gutter-stable mx-auto flex h-full max-w-2xl flex-col gap-6 overflow-y-auto px-6 py-section"
+  >
     <Heading variant="headline">Settings</Heading>
 
     <Card variant="default" padding="md">
       <div class="flex items-start justify-between gap-4">
         <div>
           <Text variant="card-title" as="h2" class="mb-1">Tema</Text>
-          <Text variant="body-sm" color="muted">
-            Elegí el tema que más te guste.
-          </Text>
+          <Text variant="body-sm" color="muted"> Elegí el tema que más te guste. </Text>
         </div>
         <div ref="dropdownRef" class="relative">
           <button
             type="button"
-            data-testid="theme-dropdown-btn" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md border transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-focus/50"
+            data-testid="theme-dropdown-btn"
+            class="flex cursor-pointer items-center gap-2.5 rounded-md border px-3 py-1.5 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary-focus/50"
             :style="{
               backgroundColor: surfaceColor,
               borderColor: hairlineColor,
@@ -73,15 +74,15 @@ async function handleDisconnect() {
             @click="dropdownOpen = !dropdownOpen"
           >
             <span
-              class="w-3 h-3 rounded-full shrink-0"
+              class="h-3 w-3 shrink-0 rounded-full"
               :style="{ backgroundColor: primaryColor }"
             />
             <span class="text-body-sm">{{ current.name }}</span>
-            <span class="text-ink-subtle text-xs ml-1">{{ dropdownOpen ? '▲' : '▼' }}</span>
+            <span class="ml-1 text-xs text-ink-subtle">{{ dropdownOpen ? '▲' : '▼' }}</span>
           </button>
           <div
             v-if="dropdownOpen"
-            class="absolute right-0 top-full mt-1 w-40 rounded-md border shadow-lg z-50 overflow-hidden"
+            class="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-md border shadow-lg"
             :style="{
               backgroundColor: surfaceColor,
               borderColor: hairlineColor,
@@ -91,15 +92,16 @@ async function handleDisconnect() {
               v-for="t in themes"
               :key="t.id"
               type="button"
-              class="flex items-center gap-2.5 w-full px-3 py-2 text-left text-body-sm transition-colors duration-100"
+              class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm transition-colors duration-100"
               :style="{
                 color: t.id === currentId ? primaryColor : inkColor,
-                backgroundColor: t.id === currentId ? `rgb(${current.colors.surface2})` : 'transparent',
+                backgroundColor:
+                  t.id === currentId ? `rgb(${current.colors.surface2})` : 'transparent',
               }"
               @click="selectTheme(t.id)"
             >
               <span
-                class="w-3 h-3 rounded-full shrink-0"
+                class="h-3 w-3 shrink-0 rounded-full"
                 :style="{ backgroundColor: `rgb(${t.colors.primary})` }"
               />
               {{ t.name }}
@@ -112,8 +114,8 @@ async function handleDisconnect() {
     <Card variant="default" padding="md">
       <Text variant="card-title" as="h2" class="mb-2">Datos</Text>
       <Text variant="body-sm" color="muted" class="mb-3">
-        Tus datos viven localmente en tu computadora. Para resetear la app,
-        cerrala y borrá la carpeta
+        Tus datos viven localmente en tu computadora. Para resetear la app, cerrala y borrá la
+        carpeta
         <Text variant="body-sm" mono>~/.local/share/com.aeon/</Text>.
       </Text>
     </Card>
@@ -136,8 +138,8 @@ async function handleDisconnect() {
             Conectar
           </Button>
           <div v-else class="flex items-center gap-3">
-            <span class="text-green-500 font-medium text-sm flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+            <span class="flex items-center gap-1.5 text-sm font-medium text-green-500">
+              <span class="h-2 w-2 rounded-full bg-green-500"></span>
               Connected
             </span>
             <Button
@@ -150,8 +152,11 @@ async function handleDisconnect() {
             </Button>
           </div>
         </div>
-        <span v-if="!store.connected" class="text-red-500 font-medium text-sm flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <span
+          v-if="!store.connected"
+          class="flex items-center gap-1.5 text-sm font-medium text-red-500"
+        >
+          <span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
           Not connected
         </span>
       </div>
@@ -159,7 +164,7 @@ async function handleDisconnect() {
         v-if="store.syncError"
         variant="caption"
         color="muted"
-        class="mt-2 text-red-500 font-medium font-mono"
+        class="mt-2 font-mono font-medium text-red-500"
       >
         Error: {{ store.syncError }}
       </Text>

@@ -1,5 +1,5 @@
-use std::net::TcpListener;
 use std::io::{Read, Write};
+use std::net::TcpListener;
 use tauri::{AppHandle, Emitter};
 
 #[tauri::command]
@@ -38,7 +38,7 @@ pub fn start_oauth_server(app: AppHandle) -> Result<(), String> {
                                             }
                                         }
                                     }
-                                    
+
                                     let response_body = r#"
                                         <!DOCTYPE html>
                                         <html>

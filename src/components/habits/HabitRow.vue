@@ -1,49 +1,54 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { Check, MoreHorizontal } from "lucide-vue-next";
-import { useHabitsStore } from "@/stores/habits";
-import { useUiStore } from "@/stores/ui";
-import { iconFor } from "@/lib/icons";
-import { shadeFor } from "@/lib/habitColors";
-import type { Habit } from "@/schemas/habits";
-import Text from "@/components/ui/Text.vue";
-import HabitContextMenu from "./HabitContextMenu.vue";
+import { computed } from 'vue'
+import { Check, MoreHorizontal } from 'lucide-vue-next'
+import { useHabitsStore } from '@/stores/habits'
+import { useUiStore } from '@/stores/ui'
+import { iconFor } from '@/lib/icons'
+import { shadeFor } from '@/lib/habitColors'
+import type { Habit } from '@/schemas/habits'
+import Text from '@/components/ui/Text.vue'
+import HabitContextMenu from './HabitContextMenu.vue'
 
-const props = defineProps<{ habit: Habit; showArchiveDate?: boolean }>();
+const props = defineProps<{ habit: Habit; showArchiveDate?: boolean }>()
 
-const habits = useHabitsStore();
-const ui = useUiStore();
+const habits = useHabitsStore()
+const ui = useUiStore()
 
-const checked = computed(() => habits.completedToday.has(props.habit.id));
-const icon = computed(() => iconFor(props.habit.icon));
-const streak = computed(() => habits.currentStreak(props.habit.id));
-const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id);
+const checked = computed(() => habits.completedToday.has(props.habit.id))
+const icon = computed(() => iconFor(props.habit.icon))
+const streak = computed(() => habits.currentStreak(props.habit.id))
+const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id)
 
 async function toggleCheck() {
-  const today = habits.getTodayDate();
+  const today = habits.getTodayDate()
   if (checked.value) {
-    await habits.undoCheckIn(props.habit.id, today);
+    await habits.undoCheckIn(props.habit.id, today)
   } else {
-    await habits.checkIn(props.habit.id);
+    await habits.checkIn(props.habit.id)
   }
 }
 
 const archivedLabel = computed(() => {
-  if (!props.habit.archived_at) return "";
-  return new Date(props.habit.archived_at).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-  });
-});
+  if (!props.habit.archived_at) return ''
+  return new Date(props.habit.archived_at).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  })
+})
 </script>
 
 <template>
   <div
     data-testid="habit-row"
-    :class="['relative group', isMenuOpen && 'z-10']"
-    :style="checked
-      ? { backgroundColor: shadeFor(habit.color, 0.25), boxShadow: `inset 3px 0 0 0 ${habit.color}` }
-      : {}"
+    :class="['group relative', isMenuOpen && 'z-10']"
+    :style="
+      checked
+        ? {
+            backgroundColor: shadeFor(habit.color, 0.25),
+            boxShadow: `inset 3px 0 0 0 ${habit.color}`,
+          }
+        : {}
+    "
   >
     <div
       :class="[
@@ -53,14 +58,10 @@ const archivedLabel = computed(() => {
         isMenuOpen && 'bg-surface-1',
       ]"
     >
-      <span data-testid="habit-icon" class="text-white shrink-0">
+      <span data-testid="habit-icon" class="shrink-0 text-white">
         <component :is="icon.icon" :size="18" :stroke-width="2" />
       </span>
-      <button
-        type="button"
-        class="flex-1 text-left min-w-0"
-        @click="ui.openEdit(habit.id)"
-      >
+      <button type="button" class="min-w-0 flex-1 text-left" @click="ui.openEdit(habit.id)">
         <Text
           variant="body"
           :color="checked ? 'subtle' : 'default'"
@@ -75,8 +76,8 @@ const archivedLabel = computed(() => {
       <button
         type="button"
         :class="[
-          'shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
-          'text-ink-tertiary hover:text-ink hover:bg-surface-2',
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
+          'text-ink-tertiary hover:bg-surface-2 hover:text-ink',
           isMenuOpen ? 'bg-surface-2 text-ink' : '',
         ]"
         data-testid="menu-button"
@@ -91,20 +92,18 @@ const archivedLabel = computed(() => {
         type="button"
         data-testid="check-button"
         :class="[
-          'shrink-0 w-7 h-7 rounded-md border flex items-center justify-center',
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-md border',
           'transition-all duration-150 active:scale-95',
           checked ? 'text-white' : 'border-hairline-strong hover:border-primary',
         ]"
-        :style="checked
-          ? { backgroundColor: habit.color, borderColor: habit.color }
-          : {}"
+        :style="checked ? { backgroundColor: habit.color, borderColor: habit.color } : {}"
         :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
         :title="checked ? 'Desmarcar' : 'Marcar'"
         @click="toggleCheck"
       >
         <Check v-if="checked" :size="16" :stroke-width="3" />
       </button>
-      <div class="w-10 text-right shrink-0">
+      <div class="w-10 shrink-0 text-right">
         <Text variant="body-sm" color="subtle" mono>
           {{ streak }}
         </Text>

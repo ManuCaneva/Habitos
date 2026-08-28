@@ -1,33 +1,44 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import Container from "@/components/ui/Container.vue";
-import IconButton from "@/components/ui/IconButton.vue";
-import Text from "@/components/ui/Text.vue";
-import { Settings, Plus } from "lucide-vue-next";
-import WeeklyScheduleGrid from "./WeeklyScheduleGrid.vue";
-import WeeklyScheduleModal from "./WeeklyScheduleModal.vue";
-import WeeklyScheduleSettingsModal from "./WeeklyScheduleSettingsModal.vue";
-import { useWeeklyScheduleStore } from "@/stores/weeklySchedule";
-import type { ScheduleBlockWithSlots } from "@/schemas/weeklySchedule";
+import { onMounted, ref } from 'vue'
+import Container from '@/components/ui/Container.vue'
+import IconButton from '@/components/ui/IconButton.vue'
+import Text from '@/components/ui/Text.vue'
+import { Settings, Plus } from 'lucide-vue-next'
+import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
+import WeeklyScheduleModal from './WeeklyScheduleModal.vue'
+import WeeklyScheduleSettingsModal from './WeeklyScheduleSettingsModal.vue'
+import { useWeeklyScheduleStore } from '@/stores/weeklySchedule'
+import type { ScheduleBlockWithSlots } from '@/schemas/weeklySchedule'
 
-const store = useWeeklyScheduleStore();
-const editingBlock = ref<ScheduleBlockWithSlots | null>(null);
-const showCreate = ref(false);
-const showSettings = ref(false);
+const store = useWeeklyScheduleStore()
+const editingBlock = ref<ScheduleBlockWithSlots | null>(null)
+const showCreate = ref(false)
+const showSettings = ref(false)
 
-onMounted(() => store.loadAll());
+onMounted(() => store.loadAll())
 
-function openEdit(b: ScheduleBlockWithSlots) { editingBlock.value = b; }
+function openEdit(b: ScheduleBlockWithSlots) {
+  editingBlock.value = b
+}
 </script>
 
 <template>
-    <Container variant="default" padding="none" class="h-full overflow-hidden container-widget"
-               style="container-type: inline-size" data-testid="weekly-schedule-widget">
-    <div class="flex flex-col h-full min-h-0">
-      <header class="schedule-widget-header grid grid-cols-[1fr_auto_1fr] items-center px-2 py-1 border-b border-hairline bg-surface-2 flex-shrink-0">
+  <Container
+    variant="default"
+    padding="none"
+    class="container-widget h-full overflow-hidden"
+    style="container-type: inline-size"
+    data-testid="weekly-schedule-widget"
+  >
+    <div class="flex h-full min-h-0 flex-col">
+      <header
+        class="schedule-widget-header grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-hairline bg-surface-2 px-2 py-1"
+      >
         <div></div>
-        <Text variant="card-title" weight="600" class="text-center truncate min-w-0">Cronograma Semanal</Text>
-        <div class="flex items-center gap-1 justify-end">
+        <Text variant="card-title" weight="600" class="min-w-0 truncate text-center"
+          >Cronograma Semanal</Text
+        >
+        <div class="flex items-center justify-end gap-1">
           <IconButton label="Ajustes" size="sm" @click="showSettings = true">
             <Settings class="h-3.5 w-3.5 text-ink-muted" />
           </IconButton>
@@ -36,14 +47,20 @@ function openEdit(b: ScheduleBlockWithSlots) { editingBlock.value = b; }
           </IconButton>
         </div>
       </header>
-      <div v-if="store.lastError" class="p-3 bg-red-500/10 text-red-500 text-xs border-b border-red-500/20 whitespace-pre-wrap select-text">
+      <div
+        v-if="store.lastError"
+        class="select-text whitespace-pre-wrap border-b border-red-500/20 bg-red-500/10 p-3 text-xs text-red-500"
+      >
         Error al cargar: {{ store.lastError }}
       </div>
-      <WeeklyScheduleGrid class="flex-1 min-h-0 overflow-hidden" @edit="openEdit" />
+      <WeeklyScheduleGrid class="min-h-0 flex-1 overflow-hidden" @edit="openEdit" />
     </div>
     <WeeklyScheduleModal :open="showCreate" :block="null" @close="showCreate = false" />
-    <WeeklyScheduleModal :open="!!editingBlock" :block="editingBlock"
-                         @close="editingBlock = null" />
+    <WeeklyScheduleModal
+      :open="!!editingBlock"
+      :block="editingBlock"
+      @close="editingBlock = null"
+    />
     <WeeklyScheduleSettingsModal :open="showSettings" @close="showSettings = false" />
   </Container>
 </template>

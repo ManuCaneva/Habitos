@@ -96,11 +96,7 @@ pub fn list_logs_in_range(
                 "SELECT * FROM habit_logs
                  WHERE habit_id = ?1 AND log_date BETWEEN ?2 AND ?3
                  ORDER BY log_date DESC",
-                vec![
-                    Box::new(hid),
-                    Box::new(from_date),
-                    Box::new(to_date),
-                ],
+                vec![Box::new(hid), Box::new(from_date), Box::new(to_date)],
             ),
             None => (
                 "SELECT * FROM habit_logs
@@ -111,7 +107,8 @@ pub fn list_logs_in_range(
         };
 
         let mut stmt = conn.prepare(sql)?;
-        let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
+        let params_refs: Vec<&dyn rusqlite::ToSql> =
+            params_vec.iter().map(|b| b.as_ref()).collect();
         let rows = stmt.query_map(params_refs.as_slice(), row_to_log)?;
         let mut out = Vec::new();
         for r in rows {

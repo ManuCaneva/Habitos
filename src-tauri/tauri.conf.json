@@ -26,7 +26,10 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["com.aeon", "com.googleusercontent.apps.1005475795600-e3c45riblid6rkik2lc0mrksn9c0kuqb"]
+        "schemes": [
+          "com.aeon",
+          "com.googleusercontent.apps.1005475795600-e3c45riblid6rkik2lc0mrksn9c0kuqb"
+        ]
       }
     }
   },

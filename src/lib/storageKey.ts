@@ -6,10 +6,10 @@
  */
 export function migrateStorageKey(legacyKey: string, currentKey: string): void {
   try {
-    if (localStorage.getItem(currentKey) != null) return;
-    const legacyValue = localStorage.getItem(legacyKey);
+    if (localStorage.getItem(currentKey) != null) return
+    const legacyValue = localStorage.getItem(legacyKey)
     if (legacyValue != null) {
-      localStorage.setItem(currentKey, legacyValue);
+      localStorage.setItem(currentKey, legacyValue)
     }
   } catch {
     // En entornos sin localStorage (SSR/tests) no hacemos nada.

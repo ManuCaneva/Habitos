@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { computed, useId } from "vue";
-import { Check, Minus } from "lucide-vue-next";
+import { computed, useId } from 'vue'
+import { Check, Minus } from 'lucide-vue-next'
 
 const props = defineProps<{
-  modelValue: boolean;
-  label?: string;
-  disabled?: boolean;
-  indeterminate?: boolean;
-}>();
+  modelValue: boolean
+  label?: string
+  disabled?: boolean
+  indeterminate?: boolean
+}>()
 
 defineEmits<{
-  "update:modelValue": [value: boolean];
-}>();
+  'update:modelValue': [value: boolean]
+}>()
 
-const id = useId();
+const id = useId()
 
-const isChecked = computed(() => props.modelValue);
-const isIndeterminate = computed(() => props.indeterminate && !props.modelValue);
+const isChecked = computed(() => props.modelValue)
+const isIndeterminate = computed(() => props.indeterminate && !props.modelValue)
 </script>
 
 <template>
   <label
     :for="id"
     :class="[
-      'inline-flex items-center gap-2.5 select-none',
+      'inline-flex select-none items-center gap-2.5',
       disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
     ]"
   >
@@ -39,10 +39,10 @@ const isIndeterminate = computed(() => props.indeterminate && !props.modelValue)
       />
       <span
         :class="[
-          'h-4 w-4 rounded border transition-colors duration-150 flex items-center justify-center',
+          'flex h-4 w-4 items-center justify-center rounded border transition-colors duration-150',
           isChecked || isIndeterminate
-            ? 'bg-primary border-primary'
-            : 'bg-surface-1 border-hairline-strong peer-hover:border-primary/50',
+            ? 'border-primary bg-primary'
+            : 'border-hairline-strong bg-surface-1 peer-hover:border-primary/50',
           'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-focus/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
         ]"
       >

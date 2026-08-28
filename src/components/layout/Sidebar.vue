@@ -1,57 +1,57 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { PanelLeftClose, PanelLeftOpen, CheckSquare, Archive, Settings, Pencil } from "lucide-vue-next";
-import { useUiStore, type ViewMode } from "@/stores/ui";
-import Text from "@/components/ui/Text.vue";
+import { computed } from 'vue'
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  CheckSquare,
+  Archive,
+  Settings,
+  Pencil,
+} from 'lucide-vue-next'
+import { useUiStore, type ViewMode } from '@/stores/ui'
+import Text from '@/components/ui/Text.vue'
 
-const ui = useUiStore();
+const ui = useUiStore()
 
 interface NavItem {
-  id: ViewMode;
-  label: string;
-  icon: typeof CheckSquare;
+  id: ViewMode
+  label: string
+  icon: typeof CheckSquare
 }
 
 const navItems: readonly NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: CheckSquare },
-  { id: "archived", label: "Archivados", icon: Archive },
-] as const;
+  { id: 'dashboard', label: 'Dashboard', icon: CheckSquare },
+  { id: 'archived', label: 'Archivados', icon: Archive },
+] as const
 
-const collapseIcon = computed(() =>
-  ui.sidebarCollapsed ? PanelLeftOpen : PanelLeftClose,
-);
+const collapseIcon = computed(() => (ui.sidebarCollapsed ? PanelLeftOpen : PanelLeftClose))
 </script>
 
 <template>
   <aside
     :class="[
-      'flex flex-col h-screen bg-canvas border-r border-hairline transition-all duration-200',
+      'flex h-screen flex-col border-r border-hairline bg-canvas transition-all duration-200',
       ui.sidebarCollapsed ? 'w-[40px]' : 'w-28',
     ]"
   >
-    <div class="flex items-center gap-1 px-2 py-2 border-b border-hairline">
-      <span class="text-headline text-primary shrink-0" aria-hidden="true">◉</span>
-      <Text
-        v-if="!ui.sidebarCollapsed"
-        variant="body-sm"
-        weight="600"
-        class="truncate"
-      >
+    <div class="flex items-center gap-1 border-b border-hairline px-2 py-2">
+      <span class="shrink-0 text-headline text-primary" aria-hidden="true">◉</span>
+      <Text v-if="!ui.sidebarCollapsed" variant="body-sm" weight="600" class="truncate">
         AEON
       </Text>
     </div>
 
-    <nav class="flex-1 px-1 py-1.5 flex flex-col gap-0.5">
+    <nav class="flex flex-1 flex-col gap-0.5 px-1 py-1.5">
       <button
         v-for="item in navItems"
         :key="item.id"
         type="button"
         :class="[
-          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150',
+          'flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150',
           'text-caption font-medium',
           ui.viewMode === item.id
             ? 'bg-surface-2 text-ink'
-            : 'text-ink-muted hover:text-ink hover:bg-surface-1',
+            : 'text-ink-muted hover:bg-surface-1 hover:text-ink',
         ]"
         @click="ui.setViewMode(item.id)"
       >
@@ -60,14 +60,14 @@ const collapseIcon = computed(() =>
       </button>
     </nav>
 
-    <div class="px-1 py-1.5 flex flex-col gap-0.5 border-t border-hairline">
+    <div class="flex flex-col gap-0.5 border-t border-hairline px-1 py-1.5">
       <button
         type="button"
         :class="[
-          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-caption font-medium',
+          'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption font-medium transition-colors duration-150',
           ui.editMode
             ? 'bg-surface-2 text-ink'
-            : 'text-ink-muted hover:text-ink hover:bg-surface-1',
+            : 'text-ink-muted hover:bg-surface-1 hover:text-ink',
         ]"
         aria-label="Modo edición"
         title="Modo edición"
@@ -79,10 +79,10 @@ const collapseIcon = computed(() =>
       <button
         type="button"
         :class="[
-          'flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-caption font-medium',
+          'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption font-medium transition-colors duration-150',
           ui.viewMode === 'settings'
             ? 'bg-surface-2 text-ink'
-            : 'text-ink-muted hover:text-ink hover:bg-surface-1',
+            : 'text-ink-muted hover:bg-surface-1 hover:text-ink',
         ]"
         aria-label="Settings"
         title="Settings"
@@ -93,7 +93,7 @@ const collapseIcon = computed(() =>
       </button>
       <button
         type="button"
-        class="flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-colors duration-150 text-ink-muted hover:text-ink hover:bg-surface-1 text-caption font-medium"
+        class="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption font-medium text-ink-muted transition-colors duration-150 hover:bg-surface-1 hover:text-ink"
         aria-label="Colapsar sidebar"
         title="Colapsar sidebar"
         @click="ui.toggleSidebar()"

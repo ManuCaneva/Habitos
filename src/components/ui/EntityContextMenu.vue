@@ -1,51 +1,49 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, nextTick } from "vue";
-import { Pencil, Archive, ArchiveRestore } from "lucide-vue-next";
+import { onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { Pencil, Archive, ArchiveRestore } from 'lucide-vue-next'
 
 const props = defineProps<{
-  entityId: string;
-  isArchived: boolean;
-  triggerDataAttr: string;
-}>();
+  entityId: string
+  isArchived: boolean
+  triggerDataAttr: string
+}>()
 
 const emit = defineEmits<{
-  edit: [];
-  "archive-toggle": [];
-  close: [];
-}>();
+  edit: []
+  'archive-toggle': []
+  close: []
+}>()
 
-const menuRef = ref<HTMLDivElement | null>(null);
-const position = ref({ top: 0, left: 0 });
+const menuRef = ref<HTMLDivElement | null>(null)
+const position = ref({ top: 0, left: 0 })
 
 function updatePosition() {
-  const trigger = document.querySelector(
-    `[${props.triggerDataAttr}="${props.entityId}"]`,
-  );
+  const trigger = document.querySelector(`[${props.triggerDataAttr}="${props.entityId}"]`)
   if (trigger) {
-    const rect = trigger.getBoundingClientRect();
+    const rect = trigger.getBoundingClientRect()
     position.value = {
       top: rect.bottom + 4,
       left: rect.right - 176,
-    };
+    }
   }
 }
 
 function handleClickOutside(e: MouseEvent) {
   if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
-    const target = e.target as HTMLElement;
+    const target = e.target as HTMLElement
     if (target.closest(`[${props.triggerDataAttr}="${props.entityId}"]`)) {
-      return;
+      return
     }
-    emit("close");
+    emit('close')
   }
 }
 
 onMounted(() => {
-  nextTick(updatePosition);
-  document.addEventListener("mousedown", handleClickOutside);
-});
+  nextTick(updatePosition)
+  document.addEventListener('mousedown', handleClickOutside)
+})
 
-onUnmounted(() => document.removeEventListener("mousedown", handleClickOutside));
+onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
 </script>
 
 <template>
@@ -58,12 +56,12 @@ onUnmounted(() => document.removeEventListener("mousedown", handleClickOutside))
         left: `${position.left}px`,
         zIndex: 50,
       }"
-      class="w-44 bg-surface-2 border border-hairline-strong rounded-md shadow-xl py-1 animate-fade-in"
+      class="w-44 animate-fade-in rounded-md border border-hairline-strong bg-surface-2 py-1 shadow-xl"
       role="menu"
     >
       <button
         type="button"
-        class="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-ink hover:bg-surface-3 transition-colors"
+        class="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-ink transition-colors hover:bg-surface-3"
         role="menuitem"
         @click="emit('edit')"
       >
@@ -73,7 +71,7 @@ onUnmounted(() => document.removeEventListener("mousedown", handleClickOutside))
       <button
         type="button"
         :class="[
-          'w-full flex items-center gap-2 px-3 py-2 text-body-sm transition-colors',
+          'flex w-full items-center gap-2 px-3 py-2 text-body-sm transition-colors',
           'hover:bg-surface-3',
           isArchived ? 'text-ink' : 'text-red-400',
         ]"
@@ -82,7 +80,7 @@ onUnmounted(() => document.removeEventListener("mousedown", handleClickOutside))
       >
         <Archive v-if="!isArchived" :size="14" />
         <ArchiveRestore v-else :size="14" />
-        {{ isArchived ? "Restaurar" : "Archivar" }}
+        {{ isArchived ? 'Restaurar' : 'Archivar' }}
       </button>
     </div>
   </Teleport>

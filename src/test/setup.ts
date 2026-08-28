@@ -1,28 +1,28 @@
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach } from 'vitest'
 
-declare module "@vue/runtime-core" {
+declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
-    $t: (key: string) => string;
+    $t: (key: string) => string
   }
 }
 
 beforeEach(() => {
-  if (typeof localStorage !== "undefined") {
-    localStorage.clear();
+  if (typeof localStorage !== 'undefined') {
+    localStorage.clear()
   }
-});
+})
 
 afterEach(() => {
-  if (typeof localStorage !== "undefined") {
-    localStorage.clear();
+  if (typeof localStorage !== 'undefined') {
+    localStorage.clear()
   }
-});
+})
 
-if (typeof globalThis.ResizeObserver === "undefined") {
+if (typeof globalThis.ResizeObserver === 'undefined') {
   class MockResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}
   }
-  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
 }

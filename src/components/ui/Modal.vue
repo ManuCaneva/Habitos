@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    open: boolean;
-    size?: "sm" | "md" | "lg";
+    open: boolean
+    size?: 'sm' | 'md' | 'lg'
   }>(),
-  { size: "md" },
-);
+  { size: 'md' }
+)
 
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: [] }>()
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape" && props.open) emit("close");
+  if (e.key === 'Escape' && props.open) emit('close')
 }
 
-onMounted(() => document.addEventListener("keydown", onKeydown));
-onUnmounted(() => document.removeEventListener("keydown", onKeydown));
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -31,12 +31,12 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/70 p-4"
         @click.self="emit('close')"
       >
         <div
           :class="[
-            'w-full bg-surface-1 border border-hairline rounded-lg shadow-2xl overflow-hidden',
+            'w-full overflow-hidden rounded-lg border border-hairline bg-surface-1 shadow-2xl',
             size === 'sm' ? 'max-w-sm' : size === 'lg' ? 'max-w-2xl' : 'max-w-md',
           ]"
           role="dialog"

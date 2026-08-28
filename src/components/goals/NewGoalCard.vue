@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useUiStore } from "@/stores/ui";
-import NewEntityCard from "@/components/ui/NewEntityCard.vue";
+import { useUiStore } from '@/stores/ui'
+import NewEntityCard from '@/components/ui/NewEntityCard.vue'
 
-const ui = useUiStore();
+const ui = useUiStore()
 </script>
 
 <template>

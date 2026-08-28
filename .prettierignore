@@ -1,0 +1,13 @@
+dist/
+node_modules/
+src-tauri/target/
+.agents/
+.opencode/
+*.sql
+package-lock.json
+index.html
+docs/ARCHITECTURE.md
+docs/DASHBOARD.md
+docs/DESIGN.md
+docs/IDEAS.md
+docs/superpowers/

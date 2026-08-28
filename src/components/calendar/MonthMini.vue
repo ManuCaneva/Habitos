@@ -1,66 +1,70 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { monthGrid, DAY_LABELS } from "@/lib/calendarDates";
-import type { CalendarEvent } from "@/schemas/calendar";
+import { computed } from 'vue'
+import { monthGrid, DAY_LABELS } from '@/lib/calendarDates'
+import type { CalendarEvent } from '@/schemas/calendar'
 
 const props = withDefaults(
   defineProps<{
-    year: number;
-    month: number;
-    eventsByDate: Map<string, CalendarEvent[]>;
-    monthName?: string;
-    showHeader?: boolean;
+    year: number
+    month: number
+    eventsByDate: Map<string, CalendarEvent[]>
+    monthName?: string
+    showHeader?: boolean
   }>(),
   {
-    monthName: "",
+    monthName: '',
     showHeader: false,
-  },
-);
+  }
+)
 
 const emit = defineEmits<{
-  "select-day": [date: string];
-}>();
+  'select-day': [date: string]
+}>()
 
-const MAX_DOTS = 4;
+const MAX_DOTS = 4
 
-const grid = computed(() => monthGrid(props.year, props.month, 0));
+const grid = computed(() => monthGrid(props.year, props.month, 0))
 
 const MONTHS = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+]
 
 function formatTooltipDate(dateStr: string | null): string {
-  if (!dateStr) return "";
-  const [, monthStr, dayStr] = dateStr.split("-");
-  const day = parseInt(dayStr, 10);
-  const monthIndex = parseInt(monthStr, 10) - 1;
-  return `${day} de ${MONTHS[monthIndex]}`;
+  if (!dateStr) return ''
+  const [, monthStr, dayStr] = dateStr.split('-')
+  const day = parseInt(dayStr, 10)
+  const monthIndex = parseInt(monthStr, 10) - 1
+  return `${day} de ${MONTHS[monthIndex]}`
 }
 
 function getEvents(date: string | null): CalendarEvent[] {
-  if (!date) return [];
-  return props.eventsByDate.get(date) ?? [];
+  if (!date) return []
+  return props.eventsByDate.get(date) ?? []
 }
 
 function visibleDots(date: string | null): CalendarEvent[] {
-  return getEvents(date).slice(0, MAX_DOTS);
+  return getEvents(date).slice(0, MAX_DOTS)
 }
 
 function overflowCount(date: string | null): number {
-  return Math.max(0, getEvents(date).length - MAX_DOTS);
+  return Math.max(0, getEvents(date).length - MAX_DOTS)
 }
 </script>
 
 <template>
-  <div
-    class="month-mini"
-    data-testid="month-mini"
-  >
-    <div
-      v-if="monthName"
-      class="month-mini__name"
-    >
+  <div class="month-mini" data-testid="month-mini">
+    <div v-if="monthName" class="month-mini__name">
       {{ monthName }}
     </div>
     <div v-if="showHeader" class="month-mini__headers">
@@ -69,7 +73,8 @@ function overflowCount(date: string | null): number {
         :key="day"
         class="month-mini__header-label"
         data-testid="day-header"
-      >{{ day }}</span>
+        >{{ day }}</span
+      >
     </div>
 
     <div class="month-mini__grid">
@@ -78,7 +83,14 @@ function overflowCount(date: string | null): number {
           v-for="(cell, di) in week"
           :key="`c-${wi}-${di}`"
           :data-testid="cell.date ? 'day-cell' : undefined"
-          :class="['day-cell', { 'day-cell--empty': !cell.date, 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary/50 transition-all': cell.date }]"
+          :class="[
+            'day-cell',
+            {
+              'day-cell--empty': !cell.date,
+              'cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-primary/50':
+                cell.date,
+            },
+          ]"
           :title="cell.date ? formatTooltipDate(cell.date) : undefined"
           @click="cell.date && emit('select-day', cell.date)"
         >
@@ -90,10 +102,9 @@ function overflowCount(date: string | null): number {
               :style="{ backgroundColor: evt.color }"
               data-testid="event-dot"
             />
-            <span
-              v-if="overflowCount(cell.date) > 0"
-              class="overflow"
-            >+{{ overflowCount(cell.date) }}</span>
+            <span v-if="overflowCount(cell.date) > 0" class="overflow"
+              >+{{ overflowCount(cell.date) }}</span
+            >
           </template>
         </div>
       </template>
@@ -169,8 +180,8 @@ function overflowCount(date: string | null): number {
 }
 
 .event-dot {
-  width: calc(var(--cell-size) * 0.30);
-  height: calc(var(--cell-size) * 0.30);
+  width: calc(var(--cell-size) * 0.3);
+  height: calc(var(--cell-size) * 0.3);
   border-radius: 9999px;
   flex-shrink: 0;
 }

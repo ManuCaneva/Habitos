@@ -126,7 +126,11 @@ pub fn create_habit(db: State<'_, Db>, input: CreateHabitInput) -> Result<HabitR
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM habits WHERE id = ?1", params![input.id], row_to_habit)
+            .query_row(
+                "SELECT * FROM habits WHERE id = ?1",
+                params![input.id],
+                row_to_habit,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)
@@ -195,7 +199,11 @@ pub fn update_habit(db: State<'_, Db>, input: UpdateHabitInput) -> Result<HabitR
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM habits WHERE id = ?1", params![input.id], row_to_habit)
+            .query_row(
+                "SELECT * FROM habits WHERE id = ?1",
+                params![input.id],
+                row_to_habit,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)

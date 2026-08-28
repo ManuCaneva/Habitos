@@ -92,7 +92,11 @@ pub fn create_task(db: State<'_, Db>, input: CreateTaskInput) -> Result<TaskRow,
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM tasks WHERE id = ?1", params![input.id], row_to_task)
+            .query_row(
+                "SELECT * FROM tasks WHERE id = ?1",
+                params![input.id],
+                row_to_task,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)
@@ -152,7 +156,11 @@ pub fn update_task(db: State<'_, Db>, input: UpdateTaskInput) -> Result<TaskRow,
         )?;
 
         let row = conn
-            .query_row("SELECT * FROM tasks WHERE id = ?1", params![input.id], row_to_task)
+            .query_row(
+                "SELECT * FROM tasks WHERE id = ?1",
+                params![input.id],
+                row_to_task,
+            )
             .optional()?
             .ok_or(DbError::NotFound)?;
         Ok(row)

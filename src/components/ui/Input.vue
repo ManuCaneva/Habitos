@@ -1,58 +1,54 @@
 <script setup lang="ts">
-import { computed, useId } from "vue";
+import { computed, useId } from 'vue'
 
-type Size = "sm" | "md";
+type Size = 'sm' | 'md'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string;
-    placeholder?: string;
-    type?: "text" | "email" | "password" | "number" | "url" | "search" | "date";
-    size?: Size;
-    disabled?: boolean;
-    error?: string;
-    label?: string;
-    helper?: string;
+    modelValue: string
+    placeholder?: string
+    type?: 'text' | 'email' | 'password' | 'number' | 'url' | 'search' | 'date'
+    size?: Size
+    disabled?: boolean
+    error?: string
+    label?: string
+    helper?: string
   }>(),
   {
-    type: "text",
-    size: "md",
+    type: 'text',
+    size: 'md',
     disabled: false,
-    placeholder: "",
-  },
-);
+    placeholder: '',
+  }
+)
 
 defineEmits<{
-  "update:modelValue": [value: string];
-  blur: [event: FocusEvent];
-  focus: [event: FocusEvent];
-}>();
+  'update:modelValue': [value: string]
+  blur: [event: FocusEvent]
+  focus: [event: FocusEvent]
+}>()
 
-const id = useId();
+const id = useId()
 
 const sizeClass = computed(() => {
-  if (props.size === "sm") return "h-8 px-3 text-body-sm";
-  return "h-10 px-3 text-body";
-});
+  if (props.size === 'sm') return 'h-8 px-3 text-body-sm'
+  return 'h-10 px-3 text-body'
+})
 
 const stateClass = computed(() => {
   if (props.disabled) {
-    return "bg-surface-1 border-hairline text-ink-tertiary cursor-not-allowed";
+    return 'bg-surface-1 border-hairline text-ink-tertiary cursor-not-allowed'
   }
   if (props.error) {
-    return "bg-surface-1 border-red-500/50 text-ink focus-within:border-red-500";
+    return 'bg-surface-1 border-red-500/50 text-ink focus-within:border-red-500'
   }
-  return "bg-surface-1 border-hairline text-ink focus-within:border-hairline-strong hover:border-hairline-strong";
-});
+  return 'bg-surface-1 border-hairline text-ink focus-within:border-hairline-strong hover:border-hairline-strong'
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-1.5">
-    <label
-      v-if="label"
-      :for="id"
-      class="text-body-sm text-ink-muted select-none"
-    >
+    <label v-if="label" :for="id" class="select-none text-body-sm text-ink-muted">
       {{ label }}
     </label>
     <div

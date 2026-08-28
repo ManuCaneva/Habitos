@@ -38,9 +38,23 @@ jobs:
       - name: Tests
         run: npm run test
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
       - name: Typecheck + Build frontend
         run: npm run build
 
       - name: Cargo check
         run: cargo check
+        working-directory: src-tauri
+
+      - name: Cargo fmt check
+        run: cargo fmt --all -- --check
+        working-directory: src-tauri
+
+      - name: Cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: src-tauri
