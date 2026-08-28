@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import GridItemVue from './GridItemVue.vue'
 import type { LayoutItem } from '@/stores/dashboard'
 
@@ -23,6 +23,16 @@ vi.mock('@/composables/useDashDrag', () => ({
   },
 }))
 
+const mockFlipTransform = vi.fn((..._args: unknown[]) => 'translate(50px, 30px) scale(1, 1)')
+const mockFlipNeedsAnimation = vi.fn((..._args: unknown[]) => true)
+
+vi.mock('@/composables/flip', () => ({
+  flipTransform: (...args: unknown[]) => mockFlipTransform(...args),
+  flipNeedsAnimation: (...args: unknown[]) => mockFlipNeedsAnimation(...args),
+  FLIP_DURATION_MS: 180,
+  FLIP_EASING: 'cubic-bezier(0.16, 1, 0.3, 1)',
+}))
+
 function makeItem(overrides: Partial<LayoutItem> = {}): LayoutItem {
   return { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1, ...overrides }
 }
@@ -32,7 +42,6 @@ describe('GridItemVue', () => {
     vi.clearAllMocks()
     dragCallbacks = {}
   })
-
   it('renderiza con grid-column/grid-row derivados de x/y/w/h', () => {
     const wrapper = mount(GridItemVue, {
       props: { item: makeItem({ x: 2, y: 3, w: 6, h: 4 }), editMode: false },
@@ -128,5 +137,74 @@ describe('GridItemVue', () => {
     expect(el.style.position).toBe('absolute')
     expect(el.style.width).toContain('px')
     dragCallbacks.onResizeEnd?.()
+  })
+
+  it('al soltar un drag aplica FLIP: llama flipTransform/flipNeedsAnimation e inyecta grid-item--flip', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    Object.defineProperty(el, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true })
+    const container = el.parentElement as HTMLElement
+    Object.defineProperty(container, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 100, top: 60, width: 600, height: 240 }),
+    })
+    Object.defineProperty(el.parentElement!, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 1200, height: 600 }),
+    })
+
+    dragCallbacks.onDragStart?.()
+    dragCallbacks.onDragMove?.(50, 30)
+    dragCallbacks.onDragEnd?.()
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+    await new Promise((r) => setTimeout(r, 20))
+
+    expect(mockFlipNeedsAnimation).toHaveBeenCalled()
+    expect(mockFlipTransform).toHaveBeenCalled()
+    expect(wrapper.classes()).toContain('grid-item--flip')
+    expect(wrapper.classes()).not.toContain('grid-item--dragging')
+    // Anima solo transform: nunca left/top/width/height.
+    expect(el.style.left).toBe('')
+    expect(el.style.top).toBe('')
+    expect(el.style.width).toBe('')
+    expect(el.style.height).toBe('')
+  })
+
+  it('al soltar un resize aplica FLIP con escala (transición de transform + clase)', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    Object.defineProperty(el, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true })
+    const container = el.parentElement as HTMLElement
+    Object.defineProperty(container, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 750, height: 300 }),
+    })
+    Object.defineProperty(el.parentElement!, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 1200, height: 600 }),
+    })
+
+    dragCallbacks.onResizeStart?.()
+    dragCallbacks.onResizeMove?.(50, 0)
+    dragCallbacks.onResizeEnd?.()
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+    await new Promise((r) => setTimeout(r, 20))
+
+    expect(mockFlipNeedsAnimation).toHaveBeenCalled()
+    expect(mockFlipTransform).toHaveBeenCalled()
+    expect(wrapper.classes()).toContain('grid-item--flip')
+    expect(el.style.position).toBe('')
   })
 })

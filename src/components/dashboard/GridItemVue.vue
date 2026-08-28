@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import type { LayoutItem } from '@/stores/dashboard'
 import { pxToCells } from '@/composables/gridSnap'
+import {
+  flipTransform,
+  flipNeedsAnimation,
+  FLIP_DURATION_MS,
+  FLIP_EASING,
+  type FlipRect,
+} from '@/composables/flip'
 import { useDashDrag } from '@/composables/useDashDrag'
 import { COLS, ROWS } from '@/lib/grid'
 
@@ -17,6 +24,7 @@ const emit = defineEmits<{
 
 const elRef = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
+const isFlipping = ref(false)
 
 const gridStyle = computed(() => ({
   gridColumn: `${props.item.x + 1} / span ${props.item.w}`,
@@ -31,6 +39,32 @@ function containerSize() {
     containerWidth: container?.clientWidth ?? 0,
     containerHeight: container?.clientHeight ?? 0,
   }
+}
+
+const ZERO_RECT: FlipRect = { left: 0, top: 0, width: 0, height: 0 }
+
+function elementRect(el: HTMLElement): FlipRect {
+  const rect = el.getBoundingClientRect()
+  return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+}
+
+function applyFlip(first: FlipRect) {
+  const el = elRef.value
+  if (!el) return
+  const last = elementRect(el)
+  if (!flipNeedsAnimation(first, last)) return
+  const invert = flipTransform(first, last)
+  el.style.transition = 'none'
+  el.style.transform = invert
+  // Force reflow: el pintado en la posición invertida antes de animar a cero.
+  void el.offsetWidth
+  el.style.transition = `transform ${FLIP_DURATION_MS}ms ${FLIP_EASING}`
+  el.style.transform = ''
+  isFlipping.value = true
+  setTimeout(() => {
+    el.style.transition = ''
+    isFlipping.value = false
+  }, FLIP_DURATION_MS)
 }
 
 let dragAccumX = 0
@@ -67,6 +101,7 @@ useDashDrag(elRef, editModeRef, {
   },
   onDragEnd() {
     const el = elRef.value
+    const first = el ? elementRect(el) : ZERO_RECT
     if (el) {
       el.style.transform = ''
     }
@@ -90,6 +125,9 @@ useDashDrag(elRef, editModeRef, {
     resizeAccumH = 0
     isDragging.value = false
     emit('moved', props.item.i, snapped.x, snapped.y)
+    if (el) {
+      nextTick(() => applyFlip(first))
+    }
   },
   onResizeStart() {
     isDragging.value = true
@@ -106,6 +144,7 @@ useDashDrag(elRef, editModeRef, {
   },
   onResizeEnd() {
     const el = elRef.value
+    const first = el ? elementRect(el) : ZERO_RECT
     if (el) {
       el.style.position = ''
       el.style.left = ''
@@ -131,6 +170,9 @@ useDashDrag(elRef, editModeRef, {
     resizeAccumH = 0
     isDragging.value = false
     emit('resized', props.item.i, snapped.w, snapped.h)
+    if (el) {
+      nextTick(() => applyFlip(first))
+    }
   },
 })
 </script>
@@ -139,7 +181,12 @@ useDashDrag(elRef, editModeRef, {
   <div
     ref="elRef"
     :style="gridStyle"
-    :class="['grid-item', editMode && 'grid-item--editable', isDragging && 'grid-item--dragging']"
+    :class="[
+      'grid-item',
+      editMode && 'grid-item--editable',
+      isDragging && 'grid-item--dragging',
+      isFlipping && 'grid-item--flip',
+    ]"
   >
     <slot />
   </div>
@@ -161,5 +208,9 @@ useDashDrag(elRef, editModeRef, {
 
 .grid-item--dragging {
   transition: none !important;
+}
+
+.grid-item--flip {
+  will-change: transform;
 }
 </style>
