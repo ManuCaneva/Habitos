@@ -26,6 +26,7 @@ pub struct HabitLogRow {
     pub log_date: String,
     pub completed_at: String,
     pub note: Option<String>,
+    pub count: i32,
     pub created_at: String,
 }
 
@@ -36,8 +37,60 @@ fn row_to_log(r: &rusqlite::Row<'_>) -> rusqlite::Result<HabitLogRow> {
         log_date: r.get("log_date")?,
         completed_at: r.get("completed_at")?,
         note: r.get("note")?,
+        count: r.get("count")?,
         created_at: r.get("created_at")?,
     })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpsertHabitLogInput {
+    pub id: String,
+    pub habit_id: String,
+    pub log_date: String,
+    pub completed_at: String,
+    #[serde(default)]
+    pub note: Option<String>,
+    pub count: i32,
+    pub created_at: String,
+}
+
+#[tauri::command]
+pub fn upsert_habit_log(
+    db: State<'_, Db>,
+    input: UpsertHabitLogInput,
+) -> Result<HabitLogRow, String> {
+    let result: DbResult<HabitLogRow> = (|| {
+        let conn = db.conn.lock().unwrap();
+
+        conn.execute(
+            "INSERT INTO habit_logs (id, habit_id, log_date, completed_at, note, count, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(habit_id, log_date) DO UPDATE SET
+                count        = excluded.count,
+                note         = excluded.note,
+                completed_at = excluded.completed_at",
+            params![
+                input.id,
+                input.habit_id,
+                input.log_date,
+                input.completed_at,
+                input.note,
+                input.count,
+                input.created_at,
+            ],
+        )?;
+
+        let row = conn
+            .query_row(
+                "SELECT * FROM habit_logs WHERE habit_id = ?1 AND log_date = ?2",
+                params![input.habit_id, input.log_date],
+                row_to_log,
+            )
+            .optional()?
+            .ok_or(DbError::NotFound)?;
+        Ok(row)
+    })();
+    result.to_str_err()
 }
 
 #[tauri::command]

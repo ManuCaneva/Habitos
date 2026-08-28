@@ -65,6 +65,7 @@ describe('buildHeatmapGrid (column-major)', () => {
         log_date: today,
         completed_at: today,
         note: null,
+        count: 1,
         created_at: today,
       },
     ]

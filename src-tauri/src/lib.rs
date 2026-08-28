@@ -36,6 +36,7 @@ pub fn run() {
             commands::habits::restore_habit,
             commands::logs::create_log,
             commands::logs::delete_log,
+            commands::logs::upsert_habit_log,
             commands::logs::list_logs_in_range,
             commands::tasks::create_task,
             commands::tasks::list_tasks,

@@ -35,6 +35,7 @@ describe('habits store - checkIn', () => {
       log_date: today,
       completed_at: new Date().toISOString(),
       note: null,
+      count: 1,
       created_at: new Date().toISOString(),
     }
 
@@ -63,6 +64,7 @@ describe('habits store - checkIn', () => {
       log_date: today,
       completed_at: new Date().toISOString(),
       note: null,
+      count: 1,
       created_at: new Date().toISOString(),
     }
 
@@ -115,6 +117,7 @@ describe('habits store - checkIn', () => {
         log_date: today,
         completed_at: now,
         note: null,
+        count: 1,
         created_at: now,
       },
       {
@@ -123,6 +126,7 @@ describe('habits store - checkIn', () => {
         log_date: yStr,
         completed_at: y.toISOString(),
         note: null,
+        count: 1,
         created_at: y.toISOString(),
       },
     ])
@@ -192,6 +196,7 @@ describe('habits store - checkIn', () => {
       log_date: today,
       completed_at: new Date().toISOString(),
       note: null,
+      count: 1,
       created_at: new Date().toISOString(),
     }
 
@@ -234,6 +239,7 @@ describe('habits store - checkIn', () => {
         log_date: today,
         completed_at: now,
         note: null,
+        count: 1,
         created_at: now,
       },
       {
@@ -242,6 +248,7 @@ describe('habits store - checkIn', () => {
         log_date: today,
         completed_at: '2026-07-05 15:30:45',
         note: null,
+        count: 1,
         created_at: '2026-07-05 15:30:45',
       },
     ])

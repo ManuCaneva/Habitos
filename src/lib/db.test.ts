@@ -12,6 +12,7 @@ import {
   upsertGoalLog,
   deleteGoalLog,
   listGoalLogsInRange,
+  upsertHabitLog,
 } from './db'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -349,6 +350,77 @@ describe('db.deleteGoalLog', () => {
     expect(invoke).toHaveBeenCalledWith('delete_goal_log', {
       id: '123e4567-e89b-12d3-a456-426614174000',
     })
+  })
+})
+
+describe('db.upsertHabitLog - shape hacia Rust', () => {
+  const mockHabitLogRow = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    habit_id: '223e4567-e89b-12d3-a456-426614174000',
+    log_date: '2026-07-05',
+    completed_at: '2026-07-05T12:00:00.000Z',
+    note: null,
+    count: 4,
+    created_at: '2026-07-05T00:00:00.000Z',
+  }
+
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset()
+    vi.mocked(invoke).mockResolvedValue(mockHabitLogRow)
+  })
+
+  it('envía input con count y log_date', async () => {
+    await upsertHabitLog(
+      { habit_id: '223e4567-e89b-12d3-a456-426614174000', log_date: '2026-07-05', count: 4 },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-07-05T12:00:00.000Z',
+      '2026-07-05T00:00:00.000Z'
+    )
+    expect(invoke).toHaveBeenCalledWith('upsert_habit_log', {
+      input: expect.objectContaining({
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        habit_id: '223e4567-e89b-12d3-a456-426614174000',
+        log_date: '2026-07-05',
+        completed_at: '2026-07-05T12:00:00.000Z',
+        note: null,
+        count: 4,
+        created_at: '2026-07-05T00:00:00.000Z',
+      }),
+    })
+  })
+
+  it('usa count=1 por defecto cuando el draft no lo incluye', async () => {
+    await upsertHabitLog(
+      { habit_id: '223e4567-e89b-12d3-a456-426614174000', log_date: '2026-07-05' },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-07-05T12:00:00.000Z',
+      '2026-07-05T00:00:00.000Z'
+    )
+    const call = vi.mocked(invoke).mock.calls[0]
+    const input = (call[1] as { input: Record<string, unknown> }).input
+    expect(input.count).toBe(1)
+  })
+
+  it('rechaza draft inválido sin invocar', async () => {
+    await expect(
+      upsertHabitLog(
+        { habit_id: '223e4567-e89b-12d3-a456-426614174000', count: 0 } as any,
+        '123e4567-e89b-12d3-a456-426614174000',
+        '2026-07-05T12:00:00.000Z',
+        '2026-07-05T00:00:00.000Z'
+      )
+    ).rejects.toThrow()
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('valida la fila devuelta con HabitLogRowSchema incluyendo count', async () => {
+    const result = await upsertHabitLog(
+      { habit_id: '223e4567-e89b-12d3-a456-426614174000', log_date: '2026-07-05', count: 4 },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-07-05T12:00:00.000Z',
+      '2026-07-05T00:00:00.000Z'
+    )
+    expect(result.count).toBe(4)
   })
 })
 

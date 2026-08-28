@@ -28,6 +28,21 @@ describe('HabitFrequencySchema', () => {
     expect(HabitFrequencySchema.parse(baseDaily)).toEqual(baseDaily)
   })
 
+  it('acepta target_per_period = 20', () => {
+    expect(HabitFrequencySchema.parse({ type: 'daily', target_per_period: 20 })).toEqual({
+      type: 'daily',
+      target_per_period: 20,
+    })
+  })
+
+  it('rechaza target_per_period = 21', () => {
+    expect(() => HabitFrequencySchema.parse({ type: 'daily', target_per_period: 21 })).toThrow()
+  })
+
+  it('rechaza target_per_period = 0', () => {
+    expect(() => HabitFrequencySchema.parse({ type: 'daily', target_per_period: 0 })).toThrow()
+  })
+
   it('acepta una frecuencia semanal', () => {
     expect(HabitFrequencySchema.parse({ type: 'weekly', target_per_period: 3 })).toEqual({
       type: 'weekly',
@@ -146,6 +161,26 @@ describe('HabitLogSchema', () => {
   it('rechaza note de más de 280 caracteres', () => {
     expect(() => HabitLogSchema.parse({ ...validLog, note: 'x'.repeat(281) })).toThrow()
   })
+
+  it('acepta count por defecto = 1 cuando se omite', () => {
+    expect(HabitLogSchema.parse(validLog).count).toBe(1)
+  })
+
+  it('acepta count explícito >= 1', () => {
+    expect(HabitLogSchema.parse({ ...validLog, count: 8 }).count).toBe(8)
+  })
+
+  it('rechaza count = 0', () => {
+    expect(() => HabitLogSchema.parse({ ...validLog, count: 0 })).toThrow()
+  })
+
+  it('rechaza count negativo', () => {
+    expect(() => HabitLogSchema.parse({ ...validLog, count: -3 })).toThrow()
+  })
+
+  it('rechaza count no entero', () => {
+    expect(() => HabitLogSchema.parse({ ...validLog, count: 1.5 })).toThrow()
+  })
 })
 
 describe('CreateHabitDraftSchema', () => {
@@ -229,6 +264,7 @@ describe('rowToHabitLog', () => {
       log_date: validDate,
       completed_at: validIso,
       note: null,
+      count: 1,
       created_at: validIso,
     }
     expect(rowToHabitLog(row).log_date).toBe(validDate)
@@ -262,9 +298,23 @@ describe('HabitRowSchema / HabitLogRowSchema', () => {
       log_date: '2026-06-27',
       completed_at: 'cualquier cosa',
       note: null,
+      count: 1,
       created_at: 'cualquier cosa',
     }
     expect(HabitLogRowSchema.parse(row).log_date).toBe('2026-06-27')
+  })
+
+  it('HabitLogRowSchema acepta count', () => {
+    const row = {
+      id: validUuid,
+      habit_id: validUuid,
+      log_date: '2026-06-27',
+      completed_at: 'cualquier cosa',
+      note: null,
+      created_at: 'cualquier cosa',
+      count: 4,
+    }
+    expect(HabitLogRowSchema.parse(row).count).toBe(4)
   })
 })
 

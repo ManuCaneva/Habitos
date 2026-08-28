@@ -20,7 +20,7 @@ export { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp }
 // ───────────────────────────────────────────────────────────────
 
 const FrequencyBase = z.object({
-  target_per_period: z.number().int().min(1).max(7).default(1),
+  target_per_period: z.number().int().min(1).max(20).default(1),
 })
 
 const DailyFrequency = FrequencyBase.extend({
@@ -73,6 +73,7 @@ export const HabitLogSchema = z.object({
   log_date: localDate,
   completed_at: isoTimestamp,
   note: z.string().trim().max(280).nullable().default(null),
+  count: z.number().int().min(1).default(1),
   created_at: isoTimestamp,
 })
 
@@ -100,6 +101,7 @@ export const CreateHabitLogDraftSchema = z.object({
   habit_id: uuid,
   log_date: localDate.optional(), // si falta, el store calcula "hoy" en local
   note: z.string().trim().max(280).nullable().optional(),
+  count: z.number().int().min(1).optional(),
 })
 
 export type CreateHabitLogDraft = z.infer<typeof CreateHabitLogDraftSchema>
@@ -134,6 +136,7 @@ export const HabitLogRowSchema = z.object({
   log_date: z.string(),
   completed_at: z.string(),
   note: z.string().nullable(),
+  count: z.number().int().min(1),
   created_at: z.string(),
 })
 

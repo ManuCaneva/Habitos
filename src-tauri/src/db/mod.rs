@@ -120,7 +120,7 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 7] = [
+        let migrations: [(i64, &str, &str); 8] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (
@@ -140,6 +140,7 @@ impl Db {
             ),
             (6, "006_block_slots", ""), // Migración 006 se ejecuta en Rust (run_migration_006)
             (7, "007_aeon_storage_keys", ""), // Migración 007 se ejecuta en Rust (run_migration_007)
+            (8, "008_habit_logs_count", ""), // Migración 008 se ejecuta en Rust (run_migration_008)
         ];
 
         for (version, name, sql) in &migrations {
@@ -161,6 +162,12 @@ impl Db {
                     )?;
                 } else if *version == 7 {
                     Self::run_migration_007(&conn)?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                } else if *version == 8 {
+                    Self::run_migration_008(&conn)?;
                     conn.execute(
                         "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
                         params![version, now_iso8601()],
@@ -393,6 +400,93 @@ impl Db {
                 conn.execute_batch("ROLLBACK;").map_err(|e2| {
                     DbError::Migration(format!("007: rollback failed: {e2}, original error: {e}"))
                 })?;
+                Err(e)
+            }
+        }
+    }
+
+    /// Migración 008: multi-check-in progresivo.
+    /// 1) Recrea la tabla `habits` relajando el CHECK `target_per_period <= 7`
+    ///    a `<= 20` (SQLite no permite alterar CHECKs; patrón de recreación
+    ///    de la 006).
+    /// 2) Agrega la columna `count` a `habit_logs` con DEFAULT 1 (los logs
+    ///    existentes quedan backfilleados a 1).
+    ///
+    /// Requiere desactivar la enforcement de foreign keys AROUND la recreación
+    /// (en autocommit) porque `habit_logs` referencia `habits` con ON DELETE
+    /// CASCADE: con `foreign_keys=ON`, `DROP TABLE habits` cascadearía a borrar
+    /// todos los logs. Se sigue el procedimiento oficial de SQLite para
+    /// "ALTER TABLE ... DROP/RECREATE": PRAGMA foreign_keys=OFF → recrear →
+    /// PRAGMA foreign_keys=ON, seguido de un foreign_key_check.
+    fn run_migration_008(conn: &Connection) -> DbResult<()> {
+        // PRAGMA foreign_keys=OFF debe correr en autocommit (no puede
+        // ejecutarse dentro de una transacción). En este punto la conexión
+        // está en autocommit (las migraciones previas ya committearon).
+        conn.pragma_update(None, "foreign_keys", "OFF")
+            .map_err(|e| DbError::Migration(format!("008: foreign_keys=OFF: {e}")))?;
+
+        let result = (|| -> DbResult<()> {
+            conn.execute_batch(
+                "BEGIN TRANSACTION;
+                 CREATE TABLE habits_new (
+                   id                TEXT    PRIMARY KEY,
+                   name              TEXT    NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 100),
+                   description       TEXT             CHECK (description IS NULL OR length(description) <= 500),
+                   icon              TEXT             CHECK (icon       IS NULL OR length(icon)       <= 32),
+                   color             TEXT    NOT NULL CHECK (color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'),
+                   frequency_type    TEXT    NOT NULL CHECK (frequency_type IN ('daily','weekly','interval')),
+                   target_per_period INTEGER NOT NULL DEFAULT 1 CHECK (target_per_period > 0 AND target_per_period <= 20),
+                   interval_days     INTEGER          CHECK (interval_days IS NULL OR interval_days BETWEEN 1 AND 365),
+                   days_of_week      TEXT             CHECK (days_of_week  IS NULL OR json_valid(days_of_week)),
+                   sort_order        INTEGER NOT NULL DEFAULT 0,
+                   created_at        TEXT    NOT NULL,
+                   updated_at        TEXT    NOT NULL,
+                   archived_at       TEXT             CHECK (archived_at IS NULL OR archived_at >= created_at),
+                   CHECK (
+                     (frequency_type = 'daily'    AND interval_days IS NULL AND days_of_week IS NULL) OR
+                     (frequency_type = 'weekly'   AND interval_days IS NULL AND days_of_week IS NOT NULL) OR
+                     (frequency_type = 'interval' AND interval_days IS NOT NULL AND days_of_week IS NULL)
+                   )
+                 );
+                 INSERT INTO habits_new (
+                   id, name, description, icon, color, frequency_type, target_per_period,
+                   interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
+                 )
+                 SELECT
+                   id, name, description, icon, color, frequency_type, target_per_period,
+                   interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
+                 FROM habits;
+                 DROP TABLE habits;
+                 ALTER TABLE habits_new RENAME TO habits;
+                 CREATE INDEX idx_habits_archived ON habits(archived_at);
+                 CREATE INDEX idx_habits_sort     ON habits(sort_order) WHERE archived_at IS NULL;
+                 ALTER TABLE habit_logs ADD COLUMN count INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1);
+                 UPDATE habit_logs SET count = 1 WHERE count IS NULL;
+                 COMMIT;",
+            )
+            .map_err(|e| DbError::Migration(format!("008: recrear habits/habit_logs: {e}")))?;
+            Ok(())
+        })();
+
+        let fk_check: DbResult<()> = (|| {
+            conn.pragma_update(None, "foreign_keys", "ON")?;
+            let violations: i64 =
+                conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
+                    r.get(0)
+                })?;
+            if violations > 0 {
+                return Err(DbError::Migration(format!(
+                    "008: foreign_key_check encontró {violations} violaciones"
+                )));
+            }
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => fk_check,
+            Err(e) => {
+                // Rehabilitar FK incluso si falló la migración.
+                let _ = conn.pragma_update(None, "foreign_keys", "ON");
                 Err(e)
             }
         }

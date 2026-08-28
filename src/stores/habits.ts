@@ -159,6 +159,7 @@ export const useHabitsStore = defineStore('habits', () => {
         log_date: row.log_date,
         completed_at: row.completed_at,
         note: row.note ?? null,
+        count: row.count,
         created_at: row.created_at,
       }
     }

@@ -156,6 +156,30 @@ export async function deleteLog(id: string): Promise<void> {
   await invoke('delete_log', { id })
 }
 
+export async function upsertHabitLog(
+  draft: CreateHabitLogDraft,
+  id: string,
+  completed_at: string,
+  created_at: string
+): Promise<HabitLogRow> {
+  const validated = CreateHabitLogDraftSchema.parse(draft)
+  if (!validated.log_date) {
+    throw new Error('upsertHabitLog: log_date es obligatorio (calcular en el store)')
+  }
+  const raw = await invoke<unknown>('upsert_habit_log', {
+    input: {
+      id,
+      habit_id: validated.habit_id,
+      log_date: validated.log_date,
+      completed_at,
+      note: validated.note ?? null,
+      count: validated.count ?? 1,
+      created_at,
+    },
+  })
+  return HabitLogRowSchema.parse(raw)
+}
+
 export async function listLogsInRange(
   fromDate: string, // YYYY-MM-DD
   toDate: string,

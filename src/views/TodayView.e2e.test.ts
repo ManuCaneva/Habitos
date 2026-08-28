@@ -63,6 +63,7 @@ describe('TodayView E2E - heatmap refleja logs', () => {
         log_date: today,
         completed_at: new Date().toISOString(),
         note: null,
+        count: 1,
         created_at: new Date().toISOString(),
       },
     ])
