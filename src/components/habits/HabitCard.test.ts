@@ -5,9 +5,10 @@ import HabitCard from './HabitCard.vue'
 import type { Habit } from '@/schemas/habits'
 
 const habitsMock = {
-  completedToday: new Set<string>(),
-  checkIn: vi.fn(),
-  undoCheckIn: vi.fn(),
+  completedToday: new Map<string, number>(),
+  isCompletedToday: (id: string) => (habitsMock.completedToday.get(id) ?? 0) >= 1,
+  incrementCheckIn: vi.fn(),
+  decrementCheckIn: vi.fn(),
   getTodayDate: () => '2026-07-01',
 }
 const uiMock = { menuOpenForHabitId: null as string | null, toggleMenu: vi.fn(), openEdit: vi.fn() }
@@ -30,7 +31,7 @@ const base: Habit = {
 describe('HabitCard (binary)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    habitsMock.completedToday = new Set()
+    habitsMock.completedToday = new Map()
     vi.clearAllMocks()
   })
 
@@ -84,7 +85,7 @@ describe('HabitCard (binary)', () => {
   })
 
   it('checked: botón circular con bg habit.color y Check (sin border-2)', () => {
-    habitsMock.completedToday = new Set(['h1'])
+    habitsMock.completedToday = new Map([['h1', 1]])
     const w = mount(HabitCard, { props: { habit: base, logs: [] } })
     const b = w.find("[data-testid='checkin-button']")
     expect(b.classes()).toContain('rounded-full')
@@ -93,17 +94,17 @@ describe('HabitCard (binary)', () => {
     expect(b.find('svg').classes().join(' ')).toMatch(/lucide-check/)
   })
 
-  it('toggle unchecked → checkIn(habitId)', async () => {
+  it('toggle unchecked → incrementCheckIn(habitId)', async () => {
     const w = mount(HabitCard, { props: { habit: base, logs: [] } })
     await w.find("[data-testid='checkin-button']").trigger('click')
-    expect(habitsMock.checkIn).toHaveBeenCalledWith('h1')
+    expect(habitsMock.incrementCheckIn).toHaveBeenCalledWith('h1')
   })
 
-  it('toggle checked → undoCheckIn(habitId, today)', async () => {
-    habitsMock.completedToday = new Set(['h1'])
+  it('toggle checked → decrementCheckIn(habitId)', async () => {
+    habitsMock.completedToday = new Map([['h1', 1]])
     const w = mount(HabitCard, { props: { habit: base, logs: [] } })
     await w.find("[data-testid='checkin-button']").trigger('click')
-    expect(habitsMock.undoCheckIn).toHaveBeenCalledWith('h1', '2026-07-01')
+    expect(habitsMock.decrementCheckIn).toHaveBeenCalledWith('h1')
   })
 
   it('monta botón de menú', () => {

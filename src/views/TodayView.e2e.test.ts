@@ -12,7 +12,7 @@ vi.mock('@/lib/db', () => ({
   updateHabit: vi.fn(),
   archiveHabit: vi.fn(),
   restoreHabit: vi.fn(),
-  createLog: vi.fn(),
+  upsertHabitLog: vi.fn(),
   deleteLog: vi.fn(),
   listLogsInRange: vi.fn(),
 }))
@@ -72,7 +72,7 @@ describe('TodayView E2E - heatmap refleja logs', () => {
     await store.loadInitialData()
     await flushPromises()
 
-    expect(store.completedToday.has(habitId)).toBe(true)
+    expect(store.isCompletedToday(habitId)).toBe(true)
     expect(store.logs.length).toBe(1)
 
     const w = mount(TodayView, { attachTo: document.body })

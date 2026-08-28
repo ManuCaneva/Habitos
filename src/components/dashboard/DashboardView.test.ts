@@ -42,7 +42,10 @@ vi.mock('@/stores/habits', () => ({
   useHabitsStore: () => ({
     activeHabits: [],
     logs: [],
-    completedToday: new Set(),
+    completedToday: new Map(),
+    isCompletedToday: vi.fn(() => false),
+    incrementCheckIn: vi.fn(),
+    decrementCheckIn: vi.fn(),
     loadInitialData: vi.fn(),
   }),
 }))

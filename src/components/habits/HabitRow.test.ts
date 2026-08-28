@@ -6,13 +6,11 @@ import type { Habit } from '@/schemas/habits'
 import { ref } from 'vue'
 import { shadeFor } from '@/lib/habitColors'
 
-const completedToday = ref<Set<string>>(new Set())
+const completedToday = ref<Map<string, number>>(new Map())
 const habitsMock = {
-  get completedToday() {
-    return completedToday.value
-  },
-  checkIn: vi.fn(),
-  undoCheckIn: vi.fn(),
+  isCompletedToday: (id: string) => (completedToday.value.get(id) ?? 0) >= 1,
+  incrementCheckIn: vi.fn(),
+  decrementCheckIn: vi.fn(),
   getTodayDate: () => '2026-07-01',
   currentStreak: () => 0,
 }
@@ -36,7 +34,7 @@ const base: Habit = {
 describe('HabitRow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    completedToday.value = new Set()
+    completedToday.value = new Map()
     vi.clearAllMocks()
   })
 
@@ -89,7 +87,7 @@ describe('HabitRow', () => {
       expect(w.find("[data-testid='habit-row']").attributes('style') ?? '').not.toContain(
         shadeFor(base.color, 0.25)
       )
-      completedToday.value = new Set([base.id])
+      completedToday.value = new Map([[base.id, 1]])
       await w.vm.$nextTick()
       const rowStyle = w.find("[data-testid='habit-row']").attributes('style') ?? ''
       expect(rowStyle).toContain(shadeFor(base.color, 0.25))
@@ -99,7 +97,7 @@ describe('HabitRow', () => {
       const w = mount(HabitRow, { props: { habit: base } })
       const btn = w.find("[data-testid='check-button']")
       expect(btn.classes()).not.toContain('bg-primary')
-      completedToday.value = new Set([base.id])
+      completedToday.value = new Map([[base.id, 1]])
       await w.vm.$nextTick()
       const btnStyle = w.find("[data-testid='check-button']").attributes('style') ?? ''
       expect(btnStyle).toContain(base.color)

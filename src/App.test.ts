@@ -8,7 +8,10 @@ vi.mock('@/stores/habits', () => ({
     loadInitialData: vi.fn(),
     activeHabits: [],
     logs: [],
-    completedToday: new Set(),
+    completedToday: new Map(),
+    isCompletedToday: vi.fn(() => false),
+    incrementCheckIn: vi.fn(),
+    decrementCheckIn: vi.fn(),
   }),
 }))
 

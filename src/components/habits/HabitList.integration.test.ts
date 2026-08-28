@@ -11,7 +11,7 @@ vi.mock('@/lib/db', () => ({
   updateHabit: vi.fn(),
   archiveHabit: vi.fn(),
   restoreHabit: vi.fn(),
-  createLog: vi.fn(),
+  upsertHabitLog: vi.fn(),
   deleteLog: vi.fn(),
   listLogsInRange: vi.fn().mockResolvedValue([]),
 }))
@@ -79,7 +79,7 @@ describe('HabitList - integración edición', () => {
 
   it('la fila se tinta con un color visible al marcar check-in (alpha >= 0.20)', async () => {
     vi.mocked(db.listHabits).mockResolvedValue([initialRow])
-    vi.mocked(db.createLog).mockResolvedValue({
+    vi.mocked(db.upsertHabitLog).mockResolvedValue({
       id: '123e4567-e89b-12d3-a456-426614174999',
       habit_id: habitId,
       log_date: today,
@@ -97,7 +97,7 @@ describe('HabitList - integración edición', () => {
     })
     await flushPromises()
 
-    await habits.checkIn(habitId)
+    await habits.incrementCheckIn(habitId)
     await flushPromises()
     await w.vm.$nextTick()
     await flushPromises()

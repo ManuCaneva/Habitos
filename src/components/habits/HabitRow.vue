@@ -14,17 +14,16 @@ const props = defineProps<{ habit: Habit; showArchiveDate?: boolean }>()
 const habits = useHabitsStore()
 const ui = useUiStore()
 
-const checked = computed(() => habits.completedToday.has(props.habit.id))
+const checked = computed(() => habits.isCompletedToday(props.habit.id))
 const icon = computed(() => iconFor(props.habit.icon))
 const streak = computed(() => habits.currentStreak(props.habit.id))
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id)
 
 async function toggleCheck() {
-  const today = habits.getTodayDate()
   if (checked.value) {
-    await habits.undoCheckIn(props.habit.id, today)
+    await habits.decrementCheckIn(props.habit.id)
   } else {
-    await habits.checkIn(props.habit.id)
+    await habits.incrementCheckIn(props.habit.id)
   }
 }
 

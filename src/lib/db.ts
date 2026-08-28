@@ -56,15 +56,6 @@ import {
   type WeeklyScheduleSettings,
 } from '../schemas/weeklySchedule'
 
-interface CreateLogInput {
-  id: string
-  habit_id: string
-  log_date: string
-  completed_at: string
-  note: string | null
-  created_at: string
-}
-
 // ───────────────────────────────────────────────────────────────
 // Hábitos
 // ───────────────────────────────────────────────────────────────
@@ -129,28 +120,6 @@ export async function restoreHabit(id: string, updated_at: string): Promise<void
 // ───────────────────────────────────────────────────────────────
 // Logs
 // ───────────────────────────────────────────────────────────────
-
-export async function createLog(
-  draft: CreateHabitLogDraft,
-  id: string,
-  completed_at: string,
-  created_at: string
-): Promise<HabitLogRow> {
-  const validated = CreateHabitLogDraftSchema.parse(draft)
-  if (!validated.log_date) {
-    throw new Error('createLog: log_date es obligatorio (calcular en el store)')
-  }
-  const input: CreateLogInput = {
-    id,
-    habit_id: validated.habit_id,
-    log_date: validated.log_date,
-    completed_at,
-    note: validated.note ?? null,
-    created_at,
-  }
-  const raw = await invoke<unknown>('create_log', { input })
-  return HabitLogRowSchema.parse(raw)
-}
 
 export async function deleteLog(id: string): Promise<void> {
   await invoke('delete_log', { id })

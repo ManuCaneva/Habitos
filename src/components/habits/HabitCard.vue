@@ -14,14 +14,14 @@ const props = defineProps<{ habit: Habit; logs: HabitLog[] }>()
 const habits = useHabitsStore()
 const ui = useUiStore()
 
-const checked = computed(() => habits.completedToday.has(props.habit.id))
+const checked = computed(() => habits.isCompletedToday(props.habit.id))
 const icon = computed(() => iconFor(props.habit.icon))
 const subtitle = computed(() => props.habit.description ?? frequencyLabel(props.habit.frequency))
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id)
 
 async function toggleCheck() {
-  if (checked.value) await habits.undoCheckIn(props.habit.id, habits.getTodayDate())
-  else await habits.checkIn(props.habit.id)
+  if (checked.value) await habits.decrementCheckIn(props.habit.id)
+  else await habits.incrementCheckIn(props.habit.id)
 }
 </script>
 

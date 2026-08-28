@@ -8,17 +8,6 @@ use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateLogInput {
-    pub id: String,
-    pub habit_id: String,
-    pub log_date: String,
-    pub completed_at: String,
-    #[serde(default)]
-    pub note: Option<String>,
-    pub created_at: String,
-}
-
 #[derive(Debug, Serialize)]
 pub struct HabitLogRow {
     pub id: String,
@@ -84,35 +73,6 @@ pub fn upsert_habit_log(
             .query_row(
                 "SELECT * FROM habit_logs WHERE habit_id = ?1 AND log_date = ?2",
                 params![input.habit_id, input.log_date],
-                row_to_log,
-            )
-            .optional()?
-            .ok_or(DbError::NotFound)?;
-        Ok(row)
-    })();
-    result.to_str_err()
-}
-
-#[tauri::command]
-pub fn create_log(db: State<'_, Db>, input: CreateLogInput) -> Result<HabitLogRow, String> {
-    let result: DbResult<HabitLogRow> = (|| {
-        let conn = db.conn.lock().unwrap();
-        conn.execute(
-            "INSERT INTO habit_logs (id, habit_id, log_date, completed_at, note, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                input.id,
-                input.habit_id,
-                input.log_date,
-                input.completed_at,
-                input.note,
-                input.created_at,
-            ],
-        )?;
-        let row = conn
-            .query_row(
-                "SELECT * FROM habit_logs WHERE id = ?1",
-                params![input.id],
                 row_to_log,
             )
             .optional()?

@@ -72,9 +72,18 @@ export const useHabitsStore = defineStore('habits', () => {
 
   const completedToday = computed(() => {
     const today = todayLocalDate()
-    const set = new Set(logs.value.filter((l) => l.log_date === today).map((l) => l.habit_id))
-    return set
+    const map = new Map<string, number>()
+    for (const l of logs.value) {
+      if (l.log_date === today) {
+        map.set(l.habit_id, l.count)
+      }
+    }
+    return map
   })
+
+  function isCompletedToday(habitId: string): boolean {
+    return (completedToday.value.get(habitId) ?? 0) >= 1
+  }
 
   // ── acciones: hábitos ──────────────────────────────────────
   async function loadHabits(includeArchived = false): Promise<void> {
@@ -139,42 +148,51 @@ export const useHabitsStore = defineStore('habits', () => {
     }
   }
 
-  async function checkIn(habitId: string, draft?: Partial<CreateHabitLogDraft>): Promise<HabitLog> {
-    const log_date = draft?.log_date ?? todayLocalDate()
-    const fullDraft: CreateHabitLogDraft = {
+  async function incrementCheckIn(habitId: string): Promise<HabitLog> {
+    const habit = habits.value.find((h) => h.id === habitId)
+    if (!habit) throw new Error(`incrementCheckIn: hábito no encontrado (${habitId})`)
+    const log_date = todayLocalDate()
+    const existing = logs.value.find((l) => l.habit_id === habitId && l.log_date === log_date)
+    const target = habit.frequency.target_per_period
+    const newCount = Math.min((existing?.count ?? 0) + 1, target)
+
+    const draft: CreateHabitLogDraft = {
       habit_id: habitId,
       log_date,
-      note: draft?.note ?? null,
+      count: newCount,
+      note: existing?.note ?? null,
     }
-    const now = nowIsoUtc()
-    const id = uuidv4()
-    const row = await db.createLog(fullDraft, id, now, now)
-    let log: HabitLog
-    try {
-      log = rowToHabitLog(row)
-    } catch {
-      log = {
-        id: row.id,
-        habit_id: row.habit_id,
-        log_date: row.log_date,
-        completed_at: row.completed_at,
-        note: row.note ?? null,
-        count: row.count,
-        created_at: row.created_at,
-      }
-    }
-    logs.value = [
-      log,
-      ...logs.value.filter((l) => !(l.habit_id === habitId && l.log_date === log_date)),
-    ]
+    const id = existing?.id ?? uuidv4()
+    const now = existing?.created_at ?? nowIsoUtc()
+    const row = await db.upsertHabitLog(draft, id, now, now)
+    const log = rowToHabitLog(row)
+    logs.value = [...logs.value.filter((l) => l.id !== log.id), log]
     return log
   }
 
-  async function undoCheckIn(habitId: string, log_date: string): Promise<void> {
+  async function decrementCheckIn(habitId: string): Promise<void> {
+    const log_date = todayLocalDate()
     const existing = logs.value.find((l) => l.habit_id === habitId && l.log_date === log_date)
     if (!existing) return
-    await db.deleteLog(existing.id)
-    logs.value = logs.value.filter((l) => l.id !== existing.id)
+    if (existing.count <= 1) {
+      await db.deleteLog(existing.id)
+      logs.value = logs.value.filter((l) => l.id !== existing.id)
+      return
+    }
+    const draft: CreateHabitLogDraft = {
+      habit_id: habitId,
+      log_date,
+      count: existing.count - 1,
+      note: existing.note,
+    }
+    const row = await db.upsertHabitLog(
+      draft,
+      existing.id,
+      existing.created_at,
+      existing.created_at
+    )
+    const log = rowToHabitLog(row)
+    logs.value = logs.value.map((l) => (l.id === log.id ? log : l))
   }
 
   // ── lógica de dominio: ¿le toca hoy? ───────────────────────
@@ -275,6 +293,7 @@ export const useHabitsStore = defineStore('habits', () => {
     archivedHabits,
     logsByHabit,
     completedToday,
+    isCompletedToday,
     // hábitos
     loadHabits,
     createHabit,
@@ -283,8 +302,8 @@ export const useHabitsStore = defineStore('habits', () => {
     restoreHabit,
     // logs
     loadLogsForRange,
-    checkIn,
-    undoCheckIn,
+    incrementCheckIn,
+    decrementCheckIn,
     // boot
     loadInitialData,
     // lógica de dominio
