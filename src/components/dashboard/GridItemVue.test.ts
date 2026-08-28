@@ -1,0 +1,132 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import GridItemVue from './GridItemVue.vue'
+import type { LayoutItem } from '@/stores/dashboard'
+
+let dragCallbacks: Record<string, (...args: number[]) => void> = {}
+
+vi.mock('@/composables/useDashDrag', () => ({
+  useDashDrag: (
+    _elRef: { value: HTMLElement | null },
+    _editMode: unknown,
+    callbacks: {
+      onDragStart: () => void
+      onDragMove: (dx: number, dy: number) => void
+      onDragEnd: () => void
+      onResizeStart: () => void
+      onResizeMove: (dw: number, dh: number) => void
+      onResizeEnd: () => void
+    }
+  ) => {
+    dragCallbacks = callbacks as never
+    return vi.fn()
+  },
+}))
+
+function makeItem(overrides: Partial<LayoutItem> = {}): LayoutItem {
+  return { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1, ...overrides }
+}
+
+describe('GridItemVue', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    dragCallbacks = {}
+  })
+
+  it('renderiza con grid-column/grid-row derivados de x/y/w/h', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 2, y: 3, w: 6, h: 4 }), editMode: false },
+    })
+    const el = wrapper.element as HTMLElement
+    const style = el.getAttribute('style') ?? ''
+    expect(style).toContain('grid-column: 3 / span 6')
+    expect(style).toContain('grid-row: 4 / span 4')
+  })
+
+  it('no aplica position: absolute en reposo (lo posiciona la grilla)', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: false },
+    })
+    const style = wrapper.element.getAttribute('style') ?? ''
+    expect(style).not.toContain('position: absolute')
+  })
+
+  it('emite moved en enteros tras un drag con snap', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    Object.defineProperty(el, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true })
+    const container = el.parentElement as HTMLElement
+    Object.defineProperty(container, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true })
+
+    dragCallbacks.onDragStart?.()
+    dragCallbacks.onDragMove?.(50, 30)
+    dragCallbacks.onDragEnd?.()
+    await wrapper.vm.$nextTick()
+
+    const emitted = wrapper.emitted('moved') as unknown[][]
+    expect(emitted).toHaveLength(1)
+    // 50px / 100px-per-col = 0.5 → 1 celda; 30px / 60px-per-row = 0.5 → 1 celda
+    expect(emitted[0]).toEqual(['habits', 1, 1])
+  })
+
+  it('emite resized en enteros tras un resize con snap', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    Object.defineProperty(el, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true })
+    const container = el.parentElement as HTMLElement
+    Object.defineProperty(container, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true })
+
+    dragCallbacks.onResizeStart?.()
+    dragCallbacks.onResizeMove?.(150, 60)
+    dragCallbacks.onResizeEnd?.()
+    await wrapper.vm.$nextTick()
+
+    const emitted = wrapper.emitted('resized') as unknown[][]
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0]).toEqual(['habits', 8, 5])
+  })
+
+  it('agrega clase grid-item--dragging durante el gesto', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: true },
+    })
+    dragCallbacks.onDragStart?.()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).toContain('grid-item--dragging')
+    dragCallbacks.onDragEnd?.()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).not.toContain('grid-item--dragging')
+  })
+
+  it('escribe transform translate durante el drag (no left/top)', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    dragCallbacks.onDragStart?.()
+    dragCallbacks.onDragMove?.(25, 10)
+    expect(el.style.transform).toContain('translate')
+    expect(el.style.left).toBe('')
+    dragCallbacks.onDragEnd?.()
+  })
+
+  it('posiciona absolute con px durante el resize', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    dragCallbacks.onResizeStart?.()
+    dragCallbacks.onResizeMove?.(50, 20)
+    expect(el.style.position).toBe('absolute')
+    expect(el.style.width).toContain('px')
+    dragCallbacks.onResizeEnd?.()
+  })
+})

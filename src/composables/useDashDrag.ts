@@ -1,6 +1,5 @@
 import { watch, type Ref } from 'vue'
 import interact from 'interactjs'
-import type { GridDimensions } from './useDashGrid'
 
 export interface DragCallbacks {
   onDragStart: () => void
@@ -14,7 +13,6 @@ export interface DragCallbacks {
 export function useDashDrag(
   elRef: Ref<HTMLElement | null>,
   editMode: Ref<boolean>,
-  _dims: Ref<GridDimensions>,
   callbacks: DragCallbacks
 ) {
   let interactable: ReturnType<typeof interact> | null = null

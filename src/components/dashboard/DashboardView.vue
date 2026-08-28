@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useUiStore } from '@/stores/ui'
-import { useDashGrid } from '@/composables/useDashGrid'
 import { getWidgetById } from '@/lib/dashboardWidgets'
 import GridItemVue from './GridItemVue.vue'
 import WidgetPicker from './WidgetPicker.vue'
@@ -10,8 +8,6 @@ import WidgetRemoveButton from './WidgetRemoveButton.vue'
 
 const dashboard = useDashboardStore()
 const ui = useUiStore()
-const containerRef = ref<HTMLElement | null>(null)
-const { dims } = useDashGrid(containerRef)
 
 function onMoved(id: string, x: number, y: number) {
   dashboard.moveTo(id, x, y)
@@ -27,13 +23,20 @@ function onRemoveWidget(id: string) {
 </script>
 
 <template>
-  <div ref="containerRef" data-testid="dashboard-view" class="h-full overflow-hidden">
-    <div class="relative h-full">
+  <div data-testid="dashboard-view" class="h-full overflow-hidden">
+    <div
+      class="dashboard-grid relative h-full"
+      style="
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-template-rows: repeat(10, 1fr);
+        gap: 4px;
+      "
+    >
       <GridItemVue
         v-for="item in dashboard.layout"
         :key="item.i"
         :item="item"
-        :dims="dims"
         :edit-mode="ui.editMode"
         @moved="onMoved"
         @resized="onResized"

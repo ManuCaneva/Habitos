@@ -16,29 +16,29 @@ describe('dashboardWidgets', () => {
     expect(widget?.title).toBe('Cronograma Semanal')
   })
 
-  it('cada widget tiene dimensiones por defecto válidas (porcentajes)', () => {
+  it('cada widget tiene dimensiones por defecto válidas (celdas enteras)', () => {
     widgets.forEach((w) => {
-      expect(w.minWidthPercent).toBeGreaterThan(0)
-      expect(w.minHeightPercent).toBeGreaterThan(0)
-      expect(w.defaultWPercent).toBeGreaterThan(0)
-      expect(w.defaultHPercent).toBeGreaterThan(0)
-      expect(w.defaultWPercent).toBeLessThanOrEqual(1)
-      expect(w.defaultHPercent).toBeLessThanOrEqual(1)
-      expect(w.defaultWPercent).toBeGreaterThanOrEqual(w.minWidthPercent)
-      expect(w.defaultHPercent).toBeGreaterThanOrEqual(w.minHeightPercent)
+      expect(w.minW).toBeGreaterThan(0)
+      expect(w.minH).toBeGreaterThan(0)
+      expect(w.defaultW).toBeGreaterThan(0)
+      expect(w.defaultH).toBeGreaterThan(0)
+      expect(w.defaultW).toBeLessThanOrEqual(12)
+      expect(w.defaultH).toBeLessThanOrEqual(10)
+      expect(w.defaultW).toBeGreaterThanOrEqual(w.minW)
+      expect(w.defaultH).toBeGreaterThanOrEqual(w.minH)
     })
   })
 
-  it('widget de hábitos tiene default 50% ancho × 40% alto', () => {
+  it('widget de hábitos tiene default 6 celdas de ancho × 4 de alto', () => {
     const widget = getWidgetById('habits')!
-    expect(widget.defaultWPercent).toBeCloseTo(0.5)
-    expect(widget.defaultHPercent).toBeCloseTo(0.4)
+    expect(widget.defaultW).toBe(6)
+    expect(widget.defaultH).toBe(4)
   })
 
-  it('widget de hábitos permite resize pequeño (mínimo 1/12 ancho, 1/10 alto)', () => {
+  it('widget de hábitos permite resize pequeño (mínimo 1 celda de ancho y alto)', () => {
     const widget = getWidgetById('habits')!
-    expect(widget.minWidthPercent).toBeCloseTo(1 / 12)
-    expect(widget.minHeightPercent).toBeCloseTo(1 / 10)
+    expect(widget.minW).toBe(1)
+    expect(widget.minH).toBe(1)
   })
 
   it('devuelve undefined para un id desconocido', () => {

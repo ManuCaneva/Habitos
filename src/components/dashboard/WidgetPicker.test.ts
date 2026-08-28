@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import WidgetPicker from './WidgetPicker.vue'
 
 const mockAddWidget = vi.fn()
-const layoutRef = ref([{ i: 'habits', xPercent: 0, yPercent: 0, wPercent: 0.5, hPercent: 0.4 }])
+const layoutRef = ref([{ i: 'habits', x: 0, y: 0, w: 6, h: 4 }])
 
 vi.mock('@/stores/dashboard', () => ({
   useDashboardStore: () => ({

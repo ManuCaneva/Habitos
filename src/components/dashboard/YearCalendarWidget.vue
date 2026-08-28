@@ -46,7 +46,7 @@ let resizeObserver: ResizeObserver | null = null
 
 const targetCols = computed(() => {
   if (!props.item) return undefined
-  return Math.round(props.item.wPercent * 12)
+  return props.item.w
 })
 
 function recompute() {

@@ -2,51 +2,43 @@ import { defineStore } from 'pinia'
 import { shallowRef, markRaw } from 'vue'
 import { widgets, getWidgetById } from '@/lib/dashboardWidgets'
 import { saveConfig, loadConfig } from '@/lib/db'
+import { COLS, ROWS } from '@/lib/grid'
 
-const COLS = 12
-const DEFAULT_MAX_ROWS = 10
-const GRID_STEP_X = 1 / COLS
-const GRID_STEP_Y = 1 / DEFAULT_MAX_ROWS
+export { COLS, ROWS }
 
 export interface LayoutItem {
   i: string
-  xPercent: number
-  yPercent: number
-  wPercent: number
-  hPercent: number
-  minWPercent?: number
-  minHPercent?: number
-  maxWPercent?: number
-  maxHPercent?: number
+  x: number
+  y: number
+  w: number
+  h: number
+  minW?: number
+  minH?: number
+  maxW?: number
+  maxH?: number
   static?: boolean
 }
 
 export type Layout = LayoutItem[]
 
 /**
- * Detecta si un item (xPercent, yPercent, wPercent, hPercent) colisiona
- * con cualquier otro item del layout. Retorna true si hay colisión.
+ * Detecta si un item (x, y, w, h) en enteros colisiona con cualquier otro
+ * item del layout. Retorna true si hay colisión.
  * `ignoreId` permite excluir un item del check (útil al mover/redimensionar).
  */
-const COLLISION_EPSILON = 1e-6
-
 export function wouldCollide(
-  xPercent: number,
-  yPercent: number,
-  wPercent: number,
-  hPercent: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
   layout: Layout,
   ignoreId?: string
 ): boolean {
   for (const item of layout) {
     if (ignoreId && item.i === ignoreId) continue
-    const overlapX =
-      Math.min(xPercent + wPercent, item.xPercent + item.wPercent) -
-      Math.max(xPercent, item.xPercent)
-    const overlapY =
-      Math.min(yPercent + hPercent, item.yPercent + item.hPercent) -
-      Math.max(yPercent, item.yPercent)
-    if (overlapX > COLLISION_EPSILON && overlapY > COLLISION_EPSILON) {
+    const overlapX = Math.min(x + w, item.x + item.w) - Math.max(x, item.x)
+    const overlapY = Math.min(y + h, item.y + item.h) - Math.max(y, item.y)
+    if (overlapX > 0 && overlapY > 0) {
       return true
     }
   }
@@ -55,24 +47,20 @@ export function wouldCollide(
 
 /**
  * Busca la primera posición libre (x, y) para un item de tamaño (w, h)
- * en una grilla de paso GRID_STEP_X × GRID_STEP_Y.
+ * en una grilla de COLS × ROWS.
  * Retorna null si no hay espacio.
  */
 export function findFreePosition(
-  wPercent: number,
-  hPercent: number,
+  w: number,
+  h: number,
   layout: Layout
-): { xPercent: number; yPercent: number } | null {
-  const cols = Math.floor(1 / GRID_STEP_X)
-  const rows = Math.floor(1 / GRID_STEP_Y)
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const x = col * GRID_STEP_X
-      const y = row * GRID_STEP_Y
-      if (x + wPercent > 1.0001) continue
-      if (y + hPercent > 1.0001) continue
-      if (!wouldCollide(x, y, wPercent, hPercent, layout)) {
-        return { xPercent: x, yPercent: y }
+): { x: number; y: number } | null {
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      if (col + w > COLS) continue
+      if (row + h > ROWS) continue
+      if (!wouldCollide(col, row, w, h, layout)) {
+        return { x: col, y: row }
       }
     }
   }
@@ -86,17 +74,36 @@ function getDefaultLayout(): Layout {
   return widgets.map((widget) =>
     markRaw({
       i: widget.id,
-      xPercent: widget.defaultX,
-      yPercent: widget.defaultY,
-      wPercent: widget.defaultWPercent,
-      hPercent: widget.defaultHPercent,
-      minWPercent: widget.minWidthPercent,
-      minHPercent: widget.minHeightPercent,
+      x: widget.defaultX,
+      y: widget.defaultY,
+      w: widget.defaultW,
+      h: widget.defaultH,
+      minW: widget.minW,
+      minH: widget.minH,
     })
   )
 }
 
-function isPercentItem(item: unknown): item is LayoutItem {
+function isIntegerItem(item: unknown): item is LayoutItem {
+  if (typeof item !== 'object' || item === null) return false
+  const obj = item as Record<string, unknown>
+  return (
+    typeof obj.i === 'string' &&
+    obj.i.length > 0 &&
+    typeof obj.x === 'number' &&
+    typeof obj.y === 'number' &&
+    typeof obj.w === 'number' &&
+    typeof obj.h === 'number'
+  )
+}
+
+function isPercentItem(item: unknown): item is {
+  i: string
+  xPercent: number
+  yPercent: number
+  wPercent: number
+  hPercent: number
+} {
   if (typeof item !== 'object' || item === null) return false
   const obj = item as Record<string, unknown>
   return (
@@ -120,56 +127,83 @@ function isLegacyItem(
     typeof obj.x === 'number' &&
     typeof obj.y === 'number' &&
     typeof obj.w === 'number' &&
-    typeof obj.h === 'number' &&
-    obj.xPercent === undefined
+    typeof obj.h === 'number'
   )
 }
 
-function migrateLegacyToPercent(legacy: {
+function clamp(x: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, x))
+}
+
+function migratePercentToInteger(item: {
   i: string
-  x: number
-  y: number
-  w: number
-  h: number
+  xPercent: number
+  yPercent: number
+  wPercent: number
+  hPercent: number
 }): LayoutItem {
+  const w = clamp(Math.round(item.wPercent * COLS), 1, COLS)
+  const h = clamp(Math.round(item.hPercent * ROWS), 1, ROWS)
+  const x = clamp(Math.round(item.xPercent * COLS), 0, COLS - w)
+  const y = clamp(Math.round(item.yPercent * ROWS), 0, ROWS - h)
+  const widget = getWidgetById(item.i)
   return {
-    i: legacy.i,
-    xPercent: legacy.x / COLS,
-    yPercent: legacy.y / DEFAULT_MAX_ROWS,
-    wPercent: legacy.w / COLS,
-    hPercent: legacy.h / DEFAULT_MAX_ROWS,
+    i: item.i,
+    x,
+    y,
+    w,
+    h,
+    minW: widget?.minW,
+    minH: widget?.minH,
   }
 }
 
+/**
+ * Valida y normaliza un layout persistido. Acepta:
+ *  - enteros 12×10 (nuevo formato y legacy pre-branding)
+ *  - porcentajes flotantes (formato intermedio) → se migran a enteros
+ * Tras el redondeo, si dos items colisionan, se reubica el segundo con
+ * findFreePosition manteniendo su tamaño.
+ */
 function validateLayout(raw: unknown): Layout | null {
   if (!Array.isArray(raw)) return null
   const valid: LayoutItem[] = []
   for (const item of raw) {
-    if (isPercentItem(item)) {
-      valid.push(
-        markRaw({
-          i: item.i,
-          xPercent: item.xPercent,
-          yPercent: item.yPercent,
-          wPercent: item.wPercent,
-          hPercent: item.hPercent,
-          minWPercent: item.minWPercent,
-          minHPercent: item.minHPercent,
-          maxWPercent: item.maxWPercent,
-          maxHPercent: item.maxHPercent,
-        })
-      )
+    let migrated: LayoutItem | null = null
+    if (isIntegerItem(item)) {
+      migrated = {
+        i: item.i,
+        x: clamp(item.x, 0, COLS - 1),
+        y: clamp(item.y, 0, ROWS - 1),
+        w: clamp(item.w, 1, COLS),
+        h: clamp(item.h, 1, ROWS),
+        minW: item.minW,
+        minH: item.minH,
+        maxW: item.maxW,
+        maxH: item.maxH,
+      }
+    } else if (isPercentItem(item)) {
+      migrated = migratePercentToInteger(item)
     } else if (isLegacyItem(item)) {
-      const migrated = migrateLegacyToPercent(item)
-      valid.push(
-        markRaw({
-          i: migrated.i,
-          xPercent: migrated.xPercent,
-          yPercent: migrated.yPercent,
-          wPercent: migrated.wPercent,
-          hPercent: migrated.hPercent,
-        })
-      )
+      migrated = {
+        i: item.i,
+        x: clamp(item.x, 0, COLS - 1),
+        y: clamp(item.y, 0, ROWS - 1),
+        w: clamp(item.w, 1, COLS),
+        h: clamp(item.h, 1, ROWS),
+      }
+    }
+    if (migrated) {
+      migrated.x = clamp(migrated.x, 0, COLS - migrated.w)
+      migrated.y = clamp(migrated.y, 0, ROWS - migrated.h)
+      if (wouldCollide(migrated.x, migrated.y, migrated.w, migrated.h, valid)) {
+        const pos = findFreePosition(migrated.w, migrated.h, valid)
+        if (pos) {
+          migrated.x = pos.x
+          migrated.y = pos.y
+        }
+      }
+      valid.push(markRaw(migrated))
     }
   }
   return valid.length > 0 ? valid : null
@@ -212,32 +246,32 @@ export const useDashboardStore = defineStore('dashboard', () => {
     persist()
   }
 
-  function moveTo(id: string, xPercent: number, yPercent: number) {
+  function moveTo(id: string, x: number, y: number) {
     const item = layout.value.find((i) => i.i === id)
     if (!item) return
-    const clampedX = Math.max(0, Math.min(1 - item.wPercent, xPercent))
-    const clampedY = Math.max(0, Math.min(1 - item.hPercent, yPercent))
-    if (wouldCollide(clampedX, clampedY, item.wPercent, item.hPercent, layout.value, id)) {
+    const clampedX = clamp(x, 0, COLS - item.w)
+    const clampedY = clamp(y, 0, ROWS - item.h)
+    if (wouldCollide(clampedX, clampedY, item.w, item.h, layout.value, id)) {
       return
     }
     layout.value = layout.value.map((i) =>
-      i.i === id ? markRaw({ ...i, xPercent: clampedX, yPercent: clampedY }) : i
+      i.i === id ? markRaw({ ...i, x: clampedX, y: clampedY }) : i
     )
     persist()
   }
 
-  function resizeTo(id: string, wPercent: number, hPercent: number) {
+  function resizeTo(id: string, w: number, h: number) {
     const item = layout.value.find((i) => i.i === id)
     if (!item) return
-    const minW = item.minWPercent ?? GRID_STEP_X
-    const minH = item.minHPercent ?? GRID_STEP_Y
-    const clampedW = Math.max(minW, Math.min(1 - item.xPercent, wPercent))
-    const clampedH = Math.max(minH, Math.min(1 - item.yPercent, hPercent))
-    if (wouldCollide(item.xPercent, item.yPercent, clampedW, clampedH, layout.value, id)) {
+    const minW = item.minW ?? 1
+    const minH = item.minH ?? 1
+    const clampedW = clamp(w, minW, COLS - item.x)
+    const clampedH = clamp(h, minH, ROWS - item.y)
+    if (wouldCollide(item.x, item.y, clampedW, clampedH, layout.value, id)) {
       return
     }
     layout.value = layout.value.map((i) =>
-      i.i === id ? markRaw({ ...i, wPercent: clampedW, hPercent: clampedH }) : i
+      i.i === id ? markRaw({ ...i, w: clampedW, h: clampedH }) : i
     )
     persist()
   }
@@ -249,15 +283,15 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
     const defaultX = widget.defaultX
     const defaultY = widget.defaultY
-    const defaultW = widget.defaultWPercent
-    const defaultH = widget.defaultHPercent
+    const defaultW = widget.defaultW
+    const defaultH = widget.defaultH
 
-    let wPercent = defaultW
-    let hPercent = defaultH
-    let position: { xPercent: number; yPercent: number } | null = null
+    let w = defaultW
+    let h = defaultH
+    let position: { x: number; y: number } | null = null
 
     if (!wouldCollide(defaultX, defaultY, defaultW, defaultH, layout.value)) {
-      position = { xPercent: defaultX, yPercent: defaultY }
+      position = { x: defaultX, y: defaultY }
     }
 
     if (!position) {
@@ -265,12 +299,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
 
     if (!position) {
-      const minW = widget.minWidthPercent
-      const minH = widget.minHeightPercent
+      const minW = widget.minW
+      const minH = widget.minH
       position = findFreePosition(minW, minH, layout.value)
       if (position) {
-        wPercent = minW
-        hPercent = minH
+        w = minW
+        h = minH
         console.warn(`Widget "${widget.title}" colocado a tamaño mínimo (grilla congestionada)`)
       }
     }
@@ -284,12 +318,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
       ...layout.value,
       markRaw({
         i: widget.id,
-        xPercent: position.xPercent,
-        yPercent: position.yPercent,
-        wPercent,
-        hPercent,
-        minWPercent: widget.minWidthPercent,
-        minHPercent: widget.minHeightPercent,
+        x: position.x,
+        y: position.y,
+        w,
+        h,
+        minW: widget.minW,
+        minH: widget.minH,
       }),
     ]
     persist()

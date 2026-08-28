@@ -10,12 +10,12 @@ export interface DashboardWidget {
   title: string
   icon?: string
   component: Component
-  minWidthPercent: number
-  minHeightPercent: number
+  minW: number
+  minH: number
   defaultX: number
   defaultY: number
-  defaultWPercent: number
-  defaultHPercent: number
+  defaultW: number
+  defaultH: number
 }
 
 export const widgets: DashboardWidget[] = [
@@ -24,60 +24,60 @@ export const widgets: DashboardWidget[] = [
     title: 'Hábitos',
     icon: 'check-circle',
     component: HabitsWidget,
-    minWidthPercent: 1 / 12,
-    minHeightPercent: 1 / 10,
+    minW: 1,
+    minH: 1,
     defaultX: 0,
     defaultY: 0,
-    defaultWPercent: 0.5,
-    defaultHPercent: 0.4,
+    defaultW: 6,
+    defaultH: 4,
   },
   {
     id: 'tasks',
     title: 'Tareas',
     icon: 'list-todo',
     component: TasksWidget,
-    minWidthPercent: 1 / 12,
-    minHeightPercent: 1 / 10,
-    defaultX: 0.5,
+    minW: 1,
+    minH: 1,
+    defaultX: 6,
     defaultY: 0,
-    defaultWPercent: 0.5,
-    defaultHPercent: 0.4,
+    defaultW: 6,
+    defaultH: 4,
   },
   {
     id: 'goals',
     title: 'Objetivos',
     icon: 'target',
     component: GoalsWidget,
-    minWidthPercent: 1 / 12,
-    minHeightPercent: 1 / 10,
+    minW: 1,
+    minH: 1,
     defaultX: 0,
-    defaultY: 0.4,
-    defaultWPercent: 1,
-    defaultHPercent: 0.3,
+    defaultY: 4,
+    defaultW: 12,
+    defaultH: 3,
   },
   {
     id: 'year-calendar',
     title: 'Calendario Anual',
     icon: 'calendar',
     component: YearCalendarWidget,
-    minWidthPercent: 1 / 12,
-    minHeightPercent: 0.3,
+    minW: 1,
+    minH: 3,
     defaultX: 0,
-    defaultY: 0.7,
-    defaultWPercent: 1,
-    defaultHPercent: 0.5,
+    defaultY: 7,
+    defaultW: 12,
+    defaultH: 5,
   },
   {
     id: 'weekly-schedule',
     title: 'Cronograma Semanal',
     icon: 'calendar-week',
     component: WeeklyScheduleWidget,
-    minWidthPercent: 0.4,
-    minHeightPercent: 0.4,
+    minW: 5,
+    minH: 4,
     defaultX: 0,
-    defaultY: 0.7,
-    defaultWPercent: 1,
-    defaultHPercent: 0.5,
+    defaultY: 7,
+    defaultW: 12,
+    defaultH: 5,
   },
 ]
 

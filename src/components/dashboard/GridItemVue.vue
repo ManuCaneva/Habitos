@@ -1,80 +1,55 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { LayoutItem } from '@/stores/dashboard'
-import type { GridDimensions } from '@/composables/useDashGrid'
-import { snapToGrid, applyGapToPixel } from '@/composables/useDashGrid'
+import { pxToCells } from '@/composables/gridSnap'
 import { useDashDrag } from '@/composables/useDashDrag'
+import { COLS, ROWS } from '@/lib/grid'
 
 const props = defineProps<{
   item: LayoutItem
-  dims: GridDimensions
   editMode: boolean
 }>()
 
 const emit = defineEmits<{
-  moved: [id: string, xPercent: number, yPercent: number]
-  resized: [id: string, wPercent: number, hPercent: number]
+  moved: [id: string, x: number, y: number]
+  resized: [id: string, w: number, h: number]
 }>()
 
 const elRef = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 
-function gridToPixel() {
-  const { containerWidth, containerHeight } = props.dims
-  return {
-    left: props.item.xPercent * containerWidth,
-    top: props.item.yPercent * containerHeight,
-    width: props.item.wPercent * containerWidth,
-    height: props.item.hPercent * containerHeight,
-  }
-}
-
-const baseStyle = computed(() => {
-  const { containerWidth, containerHeight } = props.dims
-  const px = applyGapToPixel(
-    props.item.xPercent,
-    props.item.yPercent,
-    props.item.wPercent,
-    props.item.hPercent,
-    containerWidth,
-    containerHeight
-  )
-  return {
-    position: 'absolute' as const,
-    left: `${px.left}px`,
-    top: `${px.top}px`,
-    width: `${px.width}px`,
-    height: `${px.height}px`,
-  }
-})
+const gridStyle = computed(() => ({
+  gridColumn: `${props.item.x + 1} / span ${props.item.w}`,
+  gridRow: `${props.item.y + 1} / span ${props.item.h}`,
+}))
 
 const editModeRef = computed(() => props.editMode)
-const dimsRef = computed(() => props.dims)
+
+function containerSize() {
+  const container = elRef.value?.parentElement
+  return {
+    containerWidth: container?.clientWidth ?? 0,
+    containerHeight: container?.clientHeight ?? 0,
+  }
+}
 
 let dragAccumX = 0
 let dragAccumY = 0
 let resizeAccumW = 0
 let resizeAccumH = 0
 
-function applyPixelOffset() {
+function applyResizeOffset() {
   const el = elRef.value
   if (!el) return
-  const { containerWidth, containerHeight } = props.dims
-  const px = applyGapToPixel(
-    props.item.xPercent,
-    props.item.yPercent,
-    props.item.wPercent,
-    props.item.hPercent,
-    containerWidth,
-    containerHeight
-  )
-  el.style.left = `${px.left + dragAccumX}px`
-  el.style.top = `${px.top + dragAccumY}px`
-  el.style.width = `${px.width + resizeAccumW}px`
-  el.style.height = `${px.height + resizeAccumH}px`
+  const { containerWidth, containerHeight } = containerSize()
+  el.style.position = 'absolute'
+  el.style.left = `${(props.item.x / COLS) * containerWidth}px`
+  el.style.top = `${(props.item.y / ROWS) * containerHeight}px`
+  el.style.width = `${(props.item.w / COLS) * containerWidth + resizeAccumW}px`
+  el.style.height = `${(props.item.h / ROWS) * containerHeight + resizeAccumH}px`
 }
 
-useDashDrag(elRef, editModeRef, dimsRef, {
+useDashDrag(elRef, editModeRef, {
   onDragStart() {
     isDragging.value = true
     dragAccumX = 0
@@ -85,24 +60,36 @@ useDashDrag(elRef, editModeRef, dimsRef, {
   onDragMove(dx, dy) {
     dragAccumX += dx
     dragAccumY += dy
-    applyPixelOffset()
+    const el = elRef.value
+    if (el) {
+      el.style.transform = `translate(${dragAccumX}px, ${dragAccumY}px)`
+    }
   },
   onDragEnd() {
-    const px = gridToPixel()
-    const snapped = snapToGrid(
-      px.left + dragAccumX,
-      px.top + dragAccumY,
-      px.width,
-      px.height,
-      props.dims,
-      { minWPercent: props.item.minWPercent, minHPercent: props.item.minHPercent }
+    const el = elRef.value
+    if (el) {
+      el.style.transform = ''
+    }
+    const { containerWidth, containerHeight } = containerSize()
+    const colWidth = containerWidth / COLS
+    const rowHeight = containerHeight / ROWS
+    const startLeft = props.item.x * colWidth
+    const startTop = props.item.y * rowHeight
+    const snapped = pxToCells(
+      startLeft + dragAccumX,
+      startTop + dragAccumY,
+      props.item.w * colWidth,
+      props.item.h * rowHeight,
+      containerWidth,
+      containerHeight,
+      { minW: props.item.minW, minH: props.item.minH }
     )
     dragAccumX = 0
     dragAccumY = 0
     resizeAccumW = 0
     resizeAccumH = 0
     isDragging.value = false
-    emit('moved', props.item.i, snapped.xPercent, snapped.yPercent)
+    emit('moved', props.item.i, snapped.x, snapped.y)
   },
   onResizeStart() {
     isDragging.value = true
@@ -110,28 +97,40 @@ useDashDrag(elRef, editModeRef, dimsRef, {
     dragAccumY = 0
     resizeAccumW = 0
     resizeAccumH = 0
+    applyResizeOffset()
   },
   onResizeMove(dw, dh) {
     resizeAccumW += dw
     resizeAccumH += dh
-    applyPixelOffset()
+    applyResizeOffset()
   },
   onResizeEnd() {
-    const px = gridToPixel()
-    const snapped = snapToGrid(
-      px.left,
-      px.top,
-      px.width + resizeAccumW,
-      px.height + resizeAccumH,
-      props.dims,
-      { minWPercent: props.item.minWPercent, minHPercent: props.item.minHPercent }
+    const el = elRef.value
+    if (el) {
+      el.style.position = ''
+      el.style.left = ''
+      el.style.top = ''
+      el.style.width = ''
+      el.style.height = ''
+    }
+    const { containerWidth, containerHeight } = containerSize()
+    const colWidth = containerWidth / COLS
+    const rowHeight = containerHeight / ROWS
+    const snapped = pxToCells(
+      props.item.x * colWidth,
+      props.item.y * rowHeight,
+      props.item.w * colWidth + resizeAccumW,
+      props.item.h * rowHeight + resizeAccumH,
+      containerWidth,
+      containerHeight,
+      { minW: props.item.minW, minH: props.item.minH }
     )
     dragAccumX = 0
     dragAccumY = 0
     resizeAccumW = 0
     resizeAccumH = 0
     isDragging.value = false
-    emit('resized', props.item.i, snapped.wPercent, snapped.hPercent)
+    emit('resized', props.item.i, snapped.w, snapped.h)
   },
 })
 </script>
@@ -139,7 +138,7 @@ useDashDrag(elRef, editModeRef, dimsRef, {
 <template>
   <div
     ref="elRef"
-    :style="baseStyle"
+    :style="gridStyle"
     :class="['grid-item', editMode && 'grid-item--editable', isDragging && 'grid-item--dragging']"
   >
     <slot />
@@ -148,13 +147,8 @@ useDashDrag(elRef, editModeRef, dimsRef, {
 
 <style scoped>
 .grid-item {
-  transition:
-    left 0.2s ease,
-    top 0.2s ease,
-    width 0.2s ease,
-    height 0.2s ease;
   border-radius: 2px;
-  will-change: left, top, width, height;
+  contain: layout paint;
 }
 
 .grid-item--editable {

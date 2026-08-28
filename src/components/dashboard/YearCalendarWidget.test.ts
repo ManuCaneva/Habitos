@@ -207,10 +207,10 @@ describe('YearCalendarWidget', () => {
 
     const item = {
       i: 'year-calendar',
-      xPercent: 0,
-      yPercent: 0.7,
-      wPercent: 2 / 12, // 2 columns
-      hPercent: 0.5,
+      x: 0,
+      y: 7,
+      w: 2, // 2 columns
+      h: 5,
     }
 
     const wrapper = mount(YearCalendarWidget, {
