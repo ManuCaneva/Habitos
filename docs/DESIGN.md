@@ -105,6 +105,7 @@ Linear's custom typeface isn't publicly distributed; the documented fallback `SF
 - Card grids are 3-up at desktop, 2-up at tablet, 1-up at mobile.
 - Pricing tier grid is 3-up; comparison strip below shows checkmarks per tier.
 - Product screenshot panels span full content width — they're the protagonist.
+- Dashboard grid: 12 columns × 10 rows, `gap` 4px (base unit). Widgets position by integer cell with CSS Grid (see `docs/DASHBOARD.md`).
 
 ### Whitespace Philosophy
 
@@ -127,6 +128,14 @@ Linear's depth is carried by surface ladder + hairline borders. The brand resist
 - **Product UI screenshots** dominate as decorative depth.
 - **No atmospheric gradients, no spotlight cards.**
 - **Subtle white edge highlight** on the top edge of lifted panels — gives the dark surface a faint "pixel rendered" feel.
+
+## Motion
+
+The dashboard animates layout changes with transform-only transitions to stay off the layout loop (see `docs/adr/0004-dashboard-css-grid-nativo-presupuesto-ci.md`):
+
+- **FLIP snap** (`flip.ts`): ~180ms, easing `cubic-bezier(0.16, 1, 0.3, 1)` — used when a widget snaps to its cell after a drag/resize.
+- **Year calendar scroll**: 400ms, same easing, transform-only.
+- Rules: never animate `width`/`height`/`top`/`left` for layout motion; animate `transform`/`opacity` only. Cheap, composable easing `cubic-bezier(0.16, 1, 0.3, 1)` is the default for panel/position motion.
 
 ## Shapes
 

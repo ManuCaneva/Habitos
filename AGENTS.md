@@ -42,6 +42,7 @@ Para esos cambios, una verificación manual con `npm run dev` o `npm run tauri d
 
 - `npm run test` — corre toda la suite una vez (modo CI).
 - `npm run test:watch` — corre en modo watch para el ciclo TDD.
+- `npm run test:perf` — corre el presupuesto de rendimiento del dashboard (Playwright, Chromium). Aislado y determinista; ver abajo.
 - `npm run build` — corre typecheck y build. **Pasar esto antes de considerar terminado un cambio**.
 
 ### Ubicación
@@ -49,6 +50,10 @@ Para esos cambios, una verificación manual con `npm run dev` o `npm run tauri d
 - Tests unitarios van **al lado** del código que prueban: `foo.ts` se testea con `foo.test.ts` en el mismo directorio.
 - Configuración de Vitest en `vitest.config.ts`.
 - Setup global en `src/test/setup.ts` (limpia `localStorage` entre tests).
+
+### Presupuesto de rendimiento del dashboard (`test:perf`)
+
+`npm run test:perf` levanta la app en Chromium con el IPC de Tauri stubeado y anima el viewport de 800×600 a 1920×1080, midiendo long tasks, gaps de frame y settle. Los umbrales viven en `tests/perf/perf-constants.mjs` (calibrados sobre la línea base del dashboard completo con fixture sin overlaps). Aislado y determinista: no abre la app real, corre en paralelo `1` worker.
 
 ### Qué testear (por capa)
 
@@ -120,6 +125,7 @@ Antes de considerar una tarea completa:
 4. **Código limpio**: Sin TODOs, código comentado, o lógica muerta.
 5. **Documentación actualizada**: Si cambiaste arquitectura o convenciones, actualizá AGENTS.md o docs relevantes.
 6. **No rompas nada existente**: Si agregaste funcionalidad, verificá que no rompa tests o comportamiento previo.
+7. **Presupuesto de rendimiento**: Si el cambio toca el dashboard o la grilla, `npm run test:perf` debe seguir verde (no aplica a PRs ajenos al dashboard).
 
 **Regla de oro del scope**: Si el usuario pidió X, entregá X. No agregues Y "porque está bueno" o Z "para el futuro". Si creés que falta algo, preguntá antes de hacerlo.
 

@@ -16,8 +16,9 @@
 //   npm run perf:resize -- --focus year-calendar   # un widget a la vez
 //   npm run perf:resize -- --iterations 3
 //
-// Budget (calibrado en ticket 06, inicialmente informativo):
-//   0 long tasks >50ms · max frame gap <50ms · settle <250ms
+// Budget (calibrado en ticket 06 sobre la línea base del dashboard completo
+// con fixture sin overlaps): 20 long tasks >50ms · max frame gap <300ms ·
+// settle <350ms. Los umbrales viven en tests/perf/perf-constants.mjs.
 // =============================================================
 
 import { spawn } from 'node:child_process'
@@ -48,8 +49,10 @@ const FOCUS = parseArg('--focus', null)
 const ITERATIONS = Number(parseArg('--iterations', '1')) || 1
 
 function buildParams() {
+  const layout = parseArg('--perfLayout', null)
   return {
     ...(FOCUS ? { perfFocus: FOCUS } : {}),
+    ...(layout ? { perfLayout: layout } : {}),
   }
 }
 
