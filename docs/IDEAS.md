@@ -39,7 +39,7 @@ Idea general para la primera vez que se inicia la app:
 - Reset a layout por defecto
 
 ### Widget: Hábitos
-**Estado: (En progreso)**
+**Estado: (Terminado)**
 - Lista de hábitos del día con check-in
 - Heatmap de historial
 - Rachas (streaks) por hábito
