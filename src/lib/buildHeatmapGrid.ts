@@ -4,6 +4,8 @@ export interface GridCell {
   date: string
   completed: boolean
   isEmpty: boolean
+  count: number
+  target: number
 }
 
 export const HISTORY_ROWS = 7
@@ -12,6 +14,7 @@ export interface BuildGridOptions {
   days: number
   logs: HabitLog[]
   rows?: number
+  target?: number
 }
 
 function toLocalDateStr(d: Date): string {
@@ -21,11 +24,12 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-export function buildHeatmapGrid({ days, logs, rows }: BuildGridOptions): GridCell[] {
+export function buildHeatmapGrid({ days, logs, rows, target }: BuildGridOptions): GridCell[] {
   if (days === 0) return []
 
   const r = rows ?? HISTORY_ROWS
-  const completed = new Set(logs.map((l) => l.log_date))
+  const t = target ?? 1
+  const countByDate = new Map(logs.map((l) => [l.log_date, l.count]))
   const cols = Math.ceil(days / r)
 
   const today = new Date()
@@ -36,10 +40,11 @@ export function buildHeatmapGrid({ days, logs, rows }: BuildGridOptions): GridCe
     const d = new Date(today)
     d.setDate(today.getDate() - i)
     const dateStr = toLocalDateStr(d)
-    realCells.push({ date: dateStr, completed: completed.has(dateStr), isEmpty: false })
+    const count = countByDate.get(dateStr) ?? 0
+    realCells.push({ date: dateStr, completed: count > 0, isEmpty: false, count, target: t })
   }
 
-  const emptyCell: GridCell = { date: '', completed: false, isEmpty: true }
+  const emptyCell: GridCell = { date: '', completed: false, isEmpty: true, count: 0, target: t }
   const totalCells = cols * r
   const padCount = totalCells - days
 

@@ -75,6 +75,53 @@ describe('buildHeatmapGrid (column-major)', () => {
     expect(cells[lastColStart + 6].date).toBe(today)
   })
 
+  it('celda con log conoce count y target', () => {
+    vi.setSystemTime(new Date('2026-07-01T12:00:00Z'))
+    const today = todayLocalStr()
+    const logs: HabitLog[] = [
+      {
+        id: '1',
+        habit_id: 'h1',
+        log_date: today,
+        completed_at: today,
+        note: null,
+        count: 4,
+        created_at: today,
+      },
+    ]
+    const cells = buildHeatmapGrid({ days: 7, logs, rows: 7, target: 8 })
+    const todayCell = cells[6]
+    expect(todayCell.count).toBe(4)
+    expect(todayCell.target).toBe(8)
+    expect(todayCell.completed).toBe(true)
+  })
+
+  it('celda sin log tiene count 0, target y completed false', () => {
+    vi.setSystemTime(new Date('2026-07-01T12:00:00Z'))
+    const cells = buildHeatmapGrid({ days: 7, logs: [], rows: 7, target: 8 })
+    expect(cells[0].count).toBe(0)
+    expect(cells[0].target).toBe(8)
+    expect(cells[0].completed).toBe(false)
+  })
+
+  it('target por defecto es 1 cuando no se pasa', () => {
+    vi.setSystemTime(new Date('2026-07-01T12:00:00Z'))
+    const today = todayLocalStr()
+    const logs: HabitLog[] = [
+      {
+        id: '1',
+        habit_id: 'h1',
+        log_date: today,
+        completed_at: today,
+        note: null,
+        count: 1,
+        created_at: today,
+      },
+    ]
+    const cells = buildHeatmapGrid({ days: 7, logs, rows: 7 })
+    expect(cells[6].target).toBe(1)
+  })
+
   it('días viejos no completados aparecen como completed=false', () => {
     const cells = buildHeatmapGrid({ days: 84, logs: [], rows: 7 })
     expect(cells[0].completed).toBe(false)

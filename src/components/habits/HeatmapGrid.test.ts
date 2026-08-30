@@ -86,6 +86,57 @@ describe('HeatmapGrid (column-major)', () => {
     expect(off).toBeTruthy()
   })
 
+  it('celda con progreso parcial usa shadeFor proporcional (4/8 → 50%)', () => {
+    const today = todayLocalStr()
+    const w = mount(HeatmapGrid, {
+      props: {
+        logs: [
+          {
+            id: '1',
+            habit_id: 'h',
+            log_date: today,
+            completed_at: today,
+            note: null,
+            count: 4,
+            created_at: today,
+          },
+        ],
+        color: '#5e6ad2',
+        days: 364,
+        target: 8,
+      },
+    })
+    const partial = w
+      .findAll("[data-testid='heat-cell']")
+      .find((el) => (el.element as HTMLElement).style.background === 'rgba(94, 106, 210, 0.5)')
+    expect(partial).toBeTruthy()
+  })
+
+  it('con target=1 la intensidad colapsa al comportamiento binario (count 1 → 100%)', () => {
+    const today = todayLocalStr()
+    const w = mount(HeatmapGrid, {
+      props: {
+        logs: [
+          {
+            id: '1',
+            habit_id: 'h',
+            log_date: today,
+            completed_at: today,
+            note: null,
+            count: 1,
+            created_at: today,
+          },
+        ],
+        color: '#5e6ad2',
+        days: 364,
+      },
+    })
+    const filled = w
+      .findAll("[data-testid='heat-cell']")
+      .find((el) => (el.element as HTMLElement).style.background === 'rgba(94, 106, 210, 1)')
+    expect(filled).toBeTruthy()
+  })
+
   it('hoy completado tiene ring (box-shadow)', () => {
     const today = todayLocalStr()
     const w = mount(HeatmapGrid, {
@@ -109,6 +160,32 @@ describe('HeatmapGrid (column-major)', () => {
       .findAll("[data-testid='heat-cell']")
       .find((el) => (el.element as HTMLElement).style.boxShadow !== '')
     expect(ringed).toBeTruthy()
+  })
+
+  it('hoy con progreso parcial no tiene ring (4/8 → sin box-shadow)', () => {
+    const today = todayLocalStr()
+    const w = mount(HeatmapGrid, {
+      props: {
+        logs: [
+          {
+            id: '1',
+            habit_id: 'h',
+            log_date: today,
+            completed_at: today,
+            note: null,
+            count: 4,
+            created_at: today,
+          },
+        ],
+        color: '#5e6ad2',
+        days: 364,
+        target: 8,
+      },
+    })
+    const ringed = w
+      .findAll("[data-testid='heat-cell']")
+      .find((el) => (el.element as HTMLElement).style.boxShadow !== '')
+    expect(ringed).toBeUndefined()
   })
 
   it('usa grid-auto-flow: column para renderizado column-major', () => {

@@ -74,6 +74,12 @@ async function toggleCheck() {
       </div>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
-    <HeatmapGrid :logs="logs" :color="habit.color" :days="364" class="habit-card-heatmap" />
+    <HeatmapGrid
+      :logs="logs"
+      :color="habit.color"
+      :days="364"
+      :target="habit.frequency.target_per_period"
+      class="habit-card-heatmap"
+    />
   </Container>
 </template>

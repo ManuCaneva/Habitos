@@ -5,9 +5,13 @@ import { buildHeatmapGrid, HISTORY_ROWS } from '@/lib/buildHeatmapGrid'
 import { shadeFor } from '@/lib/habitColors'
 import { useHeatmapCols } from '@/composables/useHeatmapCols'
 
-const props = withDefaults(defineProps<{ logs: HabitLog[]; color: string; days?: number }>(), {
-  days: 364,
-})
+const props = withDefaults(
+  defineProps<{ logs: HabitLog[]; color: string; days?: number; target?: number }>(),
+  {
+    days: 364,
+    target: 1,
+  }
+)
 
 const containerRef = ref<HTMLElement | null>(null)
 const dataCols = computed(() => Math.ceil(props.days / HISTORY_ROWS))
@@ -19,7 +23,12 @@ const { cols, actualCellSize } = useHeatmapCols({
 })
 
 const cells = computed(() =>
-  buildHeatmapGrid({ days: cols.value * HISTORY_ROWS, logs: props.logs, rows: HISTORY_ROWS })
+  buildHeatmapGrid({
+    days: cols.value * HISTORY_ROWS,
+    logs: props.logs,
+    rows: HISTORY_ROWS,
+    target: props.target,
+  })
 )
 
 const todayStr = computed(() => {
@@ -27,7 +36,13 @@ const todayStr = computed(() => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 })
 
-function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
+function cellStyle(c: {
+  completed: boolean
+  isEmpty: boolean
+  date: string
+  count: number
+  target: number
+}) {
   const baseStyle: Record<string, string> = {
     width: `${actualCellSize.value}px`,
     height: `${actualCellSize.value}px`,
@@ -36,9 +51,10 @@ function cellStyle(c: { completed: boolean; isEmpty: boolean; date: string }) {
   if (c.isEmpty) {
     baseStyle.background = 'transparent'
   } else {
-    const intensity = c.completed ? 1 : 0.15
+    const intensity = c.count > 0 ? Math.min(1, c.count / Math.max(1, c.target)) : 0.15
     const base = shadeFor(props.color, intensity)
-    if (c.date === todayStr.value && c.completed) {
+    const full = c.count > 0 && c.count >= c.target
+    if (c.date === todayStr.value && full) {
       baseStyle.background = base
       baseStyle.boxShadow = `0 0 0 1px ${shadeFor(props.color, 1)}`
     } else {
