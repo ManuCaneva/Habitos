@@ -16,11 +16,18 @@ import { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp } 
 export { uuid, isoTimestamp, localDate, hexColor, trimmed, normalizeTimestamp }
 
 // ───────────────────────────────────────────────────────────────
+// Límites del target progresivo (repeticiones por período)
+// ───────────────────────────────────────────────────────────────
+
+export const HABIT_TARGET_MIN = 1
+export const HABIT_TARGET_MAX = 20
+
+// ───────────────────────────────────────────────────────────────
 // Frecuencia (discriminated union)
 // ───────────────────────────────────────────────────────────────
 
 const FrequencyBase = z.object({
-  target_per_period: z.number().int().min(1).max(20).default(1),
+  target_per_period: z.number().int().min(HABIT_TARGET_MIN).max(HABIT_TARGET_MAX).default(1),
 })
 
 const DailyFrequency = FrequencyBase.extend({

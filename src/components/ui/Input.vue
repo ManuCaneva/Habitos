@@ -13,6 +13,8 @@ const props = withDefaults(
     error?: string
     label?: string
     helper?: string
+    min?: string | number
+    max?: string | number
   }>(),
   {
     type: 'text',
@@ -65,6 +67,8 @@ const stateClass = computed(() => {
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        :min="min"
+        :max="max"
         :aria-invalid="!!error"
         :aria-describedby="error || helper ? `${id}-msg` : undefined"
         class="flex-1 bg-transparent outline-none placeholder:text-ink-tertiary disabled:cursor-not-allowed"

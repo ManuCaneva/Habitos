@@ -4,6 +4,8 @@ import { useUiStore } from '@/stores/ui'
 import { useHabitsStore } from '@/stores/habits'
 import { HABIT_COLORS, DEFAULT_HABIT_COLOR } from '@/lib/habitColors'
 import { HABIT_ICONS, DEFAULT_HABIT_ICON } from '@/lib/icons'
+import { HABIT_TARGET_MAX, HABIT_TARGET_MIN } from '@/schemas/habits'
+import type { HabitFrequency } from '@/schemas/habits'
 import Modal from '@/components/ui/Modal.vue'
 import Input from '@/components/ui/Input.vue'
 import Textarea from '@/components/ui/Textarea.vue'
@@ -24,6 +26,8 @@ const name = ref('')
 const description = ref('')
 const color = ref<string>(DEFAULT_HABIT_COLOR)
 const icon = ref<string>(DEFAULT_HABIT_ICON)
+const frequency = ref<HabitFrequency>({ type: 'daily', target_per_period: 1 })
+const targetPerDay = ref<string>('1')
 const error = ref<string | null>(null)
 const saving = ref(false)
 
@@ -36,16 +40,29 @@ watch(
         description.value = editing.value.description ?? ''
         color.value = editing.value.color
         icon.value = editing.value.icon ?? DEFAULT_HABIT_ICON
+        frequency.value = editing.value.frequency
+        targetPerDay.value =
+          editing.value.frequency.type === 'daily'
+            ? String(editing.value.frequency.target_per_period)
+            : '1'
       } else {
         name.value = ''
         description.value = ''
         color.value = DEFAULT_HABIT_COLOR
         icon.value = DEFAULT_HABIT_ICON
+        frequency.value = { type: 'daily', target_per_period: 1 }
+        targetPerDay.value = '1'
       }
       error.value = null
     }
   }
 )
+
+function parseTarget(raw: string): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < HABIT_TARGET_MIN) return HABIT_TARGET_MIN
+  return Math.min(HABIT_TARGET_MAX, Math.round(n))
+}
 
 async function handleSubmit(e: Event) {
   e.preventDefault()
@@ -57,6 +74,10 @@ async function handleSubmit(e: Event) {
   saving.value = true
   error.value = null
   const desc = description.value.trim() || null
+  const nextFrequency: HabitFrequency =
+    frequency.value.type === 'daily'
+      ? { type: 'daily', target_per_period: parseTarget(targetPerDay.value) }
+      : frequency.value
   try {
     if (editing.value) {
       await habits.updateHabit(editing.value.id, {
@@ -64,6 +85,7 @@ async function handleSubmit(e: Event) {
         description: desc,
         color: color.value,
         icon: icon.value,
+        frequency: nextFrequency,
       })
     } else {
       await habits.createHabit({
@@ -71,7 +93,7 @@ async function handleSubmit(e: Event) {
         description: desc,
         color: color.value,
         icon: icon.value,
-        frequency: { type: 'daily', target_per_period: 1 },
+        frequency: nextFrequency,
       })
     }
     ui.closeModal()
@@ -108,6 +130,16 @@ async function handleSubmit(e: Event) {
           placeholder="Ej: Leer al menos 20 páginas de un libro"
           maxlength="500"
           :rows="2"
+        />
+
+        <Input
+          v-if="frequency.type === 'daily'"
+          v-model="targetPerDay"
+          type="number"
+          label="Repeticiones por día"
+          :min="HABIT_TARGET_MIN"
+          :max="HABIT_TARGET_MAX"
+          helper="Cuántas veces por día querés cumplir este hábito (1–20)."
         />
 
         <div class="flex flex-col gap-2">
