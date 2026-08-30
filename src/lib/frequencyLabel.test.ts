@@ -7,6 +7,10 @@ describe('frequencyLabel', () => {
     const f: HabitFrequency = { type: 'daily', target_per_period: 1 }
     expect(frequencyLabel(f)).toBe('Diario')
   })
+  it('daily con target > 1 → "Diario · N/día"', () => {
+    const f: HabitFrequency = { type: 'daily', target_per_period: 8 }
+    expect(frequencyLabel(f)).toBe('Diario · 8/día')
+  })
   it('weekly → Semanal', () => {
     const f: HabitFrequency = { type: 'weekly', target_per_period: 3 }
     expect(frequencyLabel(f)).toBe('Semanal')

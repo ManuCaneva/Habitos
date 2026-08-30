@@ -170,6 +170,14 @@ export const useHabitsStore = defineStore('habits', () => {
     return log
   }
 
+  async function resetCheckIn(habitId: string): Promise<void> {
+    const log_date = todayLocalDate()
+    const existing = logs.value.find((l) => l.habit_id === habitId && l.log_date === log_date)
+    if (!existing) return
+    await db.deleteLog(existing.id)
+    logs.value = logs.value.filter((l) => l.id !== existing.id)
+  }
+
   async function decrementCheckIn(habitId: string): Promise<void> {
     const log_date = todayLocalDate()
     const existing = logs.value.find((l) => l.habit_id === habitId && l.log_date === log_date)
@@ -304,6 +312,7 @@ export const useHabitsStore = defineStore('habits', () => {
     loadLogsForRange,
     incrementCheckIn,
     decrementCheckIn,
+    resetCheckIn,
     // boot
     loadInitialData,
     // lógica de dominio

@@ -347,6 +347,36 @@ describe('habits store - checkIn', () => {
     expect(db.deleteLog).not.toHaveBeenCalled()
   })
 
+  it('resetCheckIn borra el log del día (reset a 0)', async () => {
+    const store = useHabitsStore()
+    const habitId = '123e4567-e89b-12d3-a456-426614174000'
+    const today = todayLocalDate()
+    store.habits = [makeHabit(habitId, 3)]
+    const logId = '11111111-2222-4333-8444-555555555555'
+    store.logs = [makeLog(logId, habitId, today, 3)]
+
+    vi.mocked(db.deleteLog).mockResolvedValue()
+
+    await store.resetCheckIn(habitId)
+
+    expect(db.deleteLog).toHaveBeenCalledWith(logId)
+    expect(db.upsertHabitLog).not.toHaveBeenCalled()
+    expect(store.logs).toHaveLength(0)
+    expect(store.completedToday.get(habitId)).toBeUndefined()
+    expect(store.isCompletedToday(habitId)).toBe(false)
+  })
+
+  it('resetCheckIn no hace nada sin log hoy', async () => {
+    const store = useHabitsStore()
+    const habitId = '123e4567-e89b-12d3-a456-426614174000'
+    store.habits = [makeHabit(habitId, 3)]
+
+    await store.resetCheckIn(habitId)
+
+    expect(db.deleteLog).not.toHaveBeenCalled()
+    expect(db.upsertHabitLog).not.toHaveBeenCalled()
+  })
+
   it('loadInitialData normaliza timestamps y carga todos los logs', async () => {
     const habitId = '11111111-1111-1111-1111-111111111111'
     const now = new Date().toISOString()

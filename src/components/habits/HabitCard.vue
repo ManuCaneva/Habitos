@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Check, Plus, MoreHorizontal } from 'lucide-vue-next'
+import { MoreHorizontal } from 'lucide-vue-next'
 import type { Habit, HabitLog } from '@/schemas/habits'
 import { useHabitsStore } from '@/stores/habits'
 import { useUiStore } from '@/stores/ui'
@@ -8,20 +8,29 @@ import { iconFor } from '@/lib/icons'
 import { frequencyLabel } from '@/lib/frequencyLabel'
 import HabitContextMenu from './HabitContextMenu.vue'
 import HeatmapGrid from './HeatmapGrid.vue'
+import SegmentedCheckCircle from '@/components/ui/SegmentedCheckCircle.vue'
 import Container from '@/components/ui/Container.vue'
 
 const props = defineProps<{ habit: Habit; logs: HabitLog[] }>()
 const habits = useHabitsStore()
 const ui = useUiStore()
 
-const checked = computed(() => habits.isCompletedToday(props.habit.id))
+const target = computed(() => props.habit.frequency.target_per_period)
+const count = computed(() => habits.completedToday.get(props.habit.id) ?? 0)
 const icon = computed(() => iconFor(props.habit.icon))
 const subtitle = computed(() => props.habit.description ?? frequencyLabel(props.habit.frequency))
 const isMenuOpen = computed(() => ui.menuOpenForHabitId === props.habit.id)
 
-async function toggleCheck() {
-  if (checked.value) await habits.decrementCheckIn(props.habit.id)
-  else await habits.incrementCheckIn(props.habit.id)
+async function onIncrement() {
+  await habits.incrementCheckIn(props.habit.id)
+}
+
+async function onDecrement() {
+  await habits.decrementCheckIn(props.habit.id)
+}
+
+async function onReset() {
+  await habits.resetCheckIn(props.habit.id)
 }
 </script>
 
@@ -58,19 +67,14 @@ async function toggleCheck() {
         >
           <MoreHorizontal :size="16" />
         </button>
-        <button
-          data-testid="checkin-button"
-          :class="[
-            'habit-card-checkin flex h-7 w-7 items-center justify-center rounded-full transition-all active:scale-95',
-            !checked && 'border-2 bg-surface-3/30',
-          ]"
-          :style="checked ? { backgroundColor: habit.color } : { borderColor: habit.color }"
-          :aria-label="checked ? 'Desmarcar hábito' : 'Marcar hábito'"
-          @click="toggleCheck"
-        >
-          <Check v-if="checked" :size="16" :stroke-width="3" class="text-white" />
-          <Plus v-else :size="16" :stroke-width="2" class="text-white" />
-        </button>
+        <SegmentedCheckCircle
+          :target="target"
+          :count="count"
+          :color="habit.color"
+          @increment="onIncrement"
+          @decrement="onDecrement"
+          @reset="onReset"
+        />
       </div>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />

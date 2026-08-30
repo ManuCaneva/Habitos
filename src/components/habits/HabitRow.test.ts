@@ -8,9 +8,13 @@ import { shadeFor } from '@/lib/habitColors'
 
 const completedToday = ref<Map<string, number>>(new Map())
 const habitsMock = {
+  get completedToday() {
+    return completedToday.value
+  },
   isCompletedToday: (id: string) => (completedToday.value.get(id) ?? 0) >= 1,
   incrementCheckIn: vi.fn(),
   decrementCheckIn: vi.fn(),
+  resetCheckIn: vi.fn(),
   getTodayDate: () => '2026-07-01',
   currentStreak: () => 0,
 }
@@ -57,9 +61,9 @@ describe('HabitRow', () => {
 
   it('botón menú aparece antes que botón check', () => {
     const w = mount(HabitRow, { props: { habit: base } })
-    const all = w.findAll("[data-testid='check-button'], [data-testid='menu-button']")
+    const all = w.findAll("[data-testid='checkin-button'], [data-testid='menu-button']")
     const checkIndex = all.findIndex(
-      (el: ReturnType<typeof w.find>) => el.attributes('data-testid') === 'check-button'
+      (el: ReturnType<typeof w.find>) => el.attributes('data-testid') === 'checkin-button'
     )
     const menuIndex = all.findIndex(
       (el: ReturnType<typeof w.find>) => el.attributes('data-testid') === 'menu-button'
@@ -95,11 +99,11 @@ describe('HabitRow', () => {
 
     it('botón check usa el color del hábito cuando está checked (no bg-primary)', async () => {
       const w = mount(HabitRow, { props: { habit: base } })
-      const btn = w.find("[data-testid='check-button']")
+      const btn = w.find("[data-testid='checkin-button']")
       expect(btn.classes()).not.toContain('bg-primary')
       completedToday.value = new Map([[base.id, 1]])
       await w.vm.$nextTick()
-      const btnStyle = w.find("[data-testid='check-button']").attributes('style') ?? ''
+      const btnStyle = w.find("[data-testid='checkin-button']").attributes('style') ?? ''
       expect(btnStyle).toContain(base.color)
     })
   })
@@ -114,6 +118,50 @@ describe('HabitRow', () => {
       expect(w.text()).toContain('Correr')
       const titleButton = w.find('button.flex-1')
       expect(titleButton.attributes('style') ?? '').not.toContain('#eb5757')
+    })
+  })
+
+  describe('progresivo (target > 1)', () => {
+    const progressive: Habit = {
+      ...base,
+      frequency: { type: 'daily', target_per_period: 8 },
+    }
+
+    it('rendera el círculo segmentado con target y count', () => {
+      completedToday.value = new Map([['h1', 3]])
+      const w = mount(HabitRow, { props: { habit: progressive } })
+      const circle = w.findComponent({ name: 'SegmentedCheckCircle' })
+      expect(circle.exists()).toBe(true)
+      expect(circle.props('target')).toBe(8)
+      expect(circle.props('count')).toBe(3)
+    })
+
+    it('increment desde el círculo llama incrementCheckIn', async () => {
+      completedToday.value = new Map([['h1', 3]])
+      const w = mount(HabitRow, { props: { habit: progressive } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('increment')
+      expect(habitsMock.incrementCheckIn).toHaveBeenCalledWith('h1')
+    })
+
+    it('reset desde el círculo lleno llama resetCheckIn', async () => {
+      completedToday.value = new Map([['h1', 8]])
+      const w = mount(HabitRow, { props: { habit: progressive } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('reset')
+      expect(habitsMock.resetCheckIn).toHaveBeenCalledWith('h1')
+    })
+
+    it('decrement desde el círculo llama decrementCheckIn', async () => {
+      completedToday.value = new Map([['h1', 3]])
+      const w = mount(HabitRow, { props: { habit: progressive } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('decrement')
+      expect(habitsMock.decrementCheckIn).toHaveBeenCalledWith('h1')
+    })
+
+    it('la fila conserva racha y estilos (streak visible)', () => {
+      const w = mount(HabitRow, { props: { habit: progressive } })
+      expect(w.find("[data-testid='habit-row']").exists()).toBe(true)
+      expect(w.find("[data-testid='check-button']").exists()).toBe(false)
+      expect(w.findComponent({ name: 'SegmentedCheckCircle' }).exists()).toBe(true)
     })
   })
 })

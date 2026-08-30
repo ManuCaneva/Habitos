@@ -9,6 +9,7 @@ const habitsMock = {
   isCompletedToday: (id: string) => (habitsMock.completedToday.get(id) ?? 0) >= 1,
   incrementCheckIn: vi.fn(),
   decrementCheckIn: vi.fn(),
+  resetCheckIn: vi.fn(),
   getTodayDate: () => '2026-07-01',
 }
 const uiMock = { menuOpenForHabitId: null as string | null, toggleMenu: vi.fn(), openEdit: vi.fn() }
@@ -146,5 +147,49 @@ describe('HabitCard (binary)', () => {
     uiMock.menuOpenForHabitId = 'h2'
     const w = mount(HabitCard, { props: { habit: base, logs: [] } })
     expect(w.find("[data-testid='habit-card']").classes()).not.toContain('z-10')
+  })
+
+  it('subtítulo muestra target para daily target > 1', () => {
+    const w = mount(HabitCard, {
+      props: { habit: { ...base, frequency: { type: 'daily', target_per_period: 8 } }, logs: [] },
+    })
+    expect(w.find("[data-testid='habit-subtitle']").text()).toBe('Diario · 8/día')
+  })
+
+  describe('progresivo (target > 1)', () => {
+    const progressive: Habit = {
+      ...base,
+      frequency: { type: 'daily', target_per_period: 8 },
+    }
+
+    it('rendera el círculo segmentado con target segmentos', () => {
+      habitsMock.completedToday = new Map([['h1', 3]])
+      const w = mount(HabitCard, { props: { habit: progressive, logs: [] } })
+      const circle = w.findComponent({ name: 'SegmentedCheckCircle' })
+      expect(circle.exists()).toBe(true)
+      expect(circle.props('target')).toBe(8)
+      expect(circle.props('count')).toBe(3)
+    })
+
+    it('click en círculo parcial llama incrementCheckIn', async () => {
+      habitsMock.completedToday = new Map([['h1', 3]])
+      const w = mount(HabitCard, { props: { habit: progressive, logs: [] } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('increment')
+      expect(habitsMock.incrementCheckIn).toHaveBeenCalledWith('h1')
+    })
+
+    it('click en círculo lleno llama resetCheckIn', async () => {
+      habitsMock.completedToday = new Map([['h1', 8]])
+      const w = mount(HabitCard, { props: { habit: progressive, logs: [] } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('reset')
+      expect(habitsMock.resetCheckIn).toHaveBeenCalledWith('h1')
+    })
+
+    it('decrement desde el círculo llama decrementCheckIn', async () => {
+      habitsMock.completedToday = new Map([['h1', 3]])
+      const w = mount(HabitCard, { props: { habit: progressive, logs: [] } })
+      await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('decrement')
+      expect(habitsMock.decrementCheckIn).toHaveBeenCalledWith('h1')
+    })
   })
 })
