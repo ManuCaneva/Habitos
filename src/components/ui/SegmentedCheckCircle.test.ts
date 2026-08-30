@@ -4,27 +4,55 @@ import SegmentedCheckCircle from './SegmentedCheckCircle.vue'
 
 describe('SegmentedCheckCircle', () => {
   describe('target > 1 (segmentado)', () => {
-    it('renderiza target segmentos y enciende count de ellos', () => {
+    it('renderiza target segmentos de anillo y enciende count de ellos', () => {
       const w = mount(SegmentedCheckCircle, { props: { target: 8, count: 3, color: '#5e6ad2' } })
       const segments = w.findAll("[data-testid='segment']")
       expect(segments).toHaveLength(8)
-      const lit = segments.filter((s) => s.classes().includes('segment-lit'))
+      const lit = segments.filter((s) => s.attributes('stroke') === '#5e6ad2')
       expect(lit).toHaveLength(3)
+      expect(w.find('[data-testid="progress-ring"]').exists()).toBe(true)
+    })
+
+    it('mantiene todos los segmentos apagados y muestra Plus sin progreso', () => {
+      const w = mount(SegmentedCheckCircle, { props: { target: 4, count: 0, color: '#5e6ad2' } })
+      const segments = w.findAll("[data-testid='segment']")
+      expect(segments).toHaveLength(4)
+      expect(w.find("[data-testid='circle-plus']").exists()).toBe(true)
+      expect(segments.filter((s) => s.attributes('stroke') === '#5e6ad2')).toHaveLength(0)
     })
 
     it('los segmentos encendidos usan el color del hábito', () => {
       const w = mount(SegmentedCheckCircle, { props: { target: 4, count: 2, color: '#eb5757' } })
-      const lit = w.findAll('.segment-lit')
+      const lit = w
+        .findAll("[data-testid='segment']")
+        .filter((s) => s.attributes('stroke') === '#eb5757')
       expect(lit).toHaveLength(2)
       for (const s of lit) {
-        expect(s.attributes('style')).toContain('#eb5757')
+        expect(s.attributes('stroke')).toBe('#eb5757')
       }
     })
 
-    it('no renderiza el check binario (Plus) cuando está parcial', () => {
+    it('muestra los segmentos apagados con el color del hábito atenuado', () => {
+      const w = mount(SegmentedCheckCircle, { props: { target: 4, count: 2, color: '#eb5757' } })
+      const segments = w.findAll("[data-testid='segment']")
+
+      expect(segments).toHaveLength(4)
+      expect(segments[0].attributes('stroke')).toBe('#eb5757')
+      expect(segments[1].attributes('stroke')).toBe('#eb5757')
+      expect(segments[2].attributes('stroke')).toBe('rgba(235, 87, 87, 0.2)')
+      expect(segments[3].attributes('stroke')).toBe('rgba(235, 87, 87, 0.2)')
+    })
+
+    it('muestra Plus en el centro mientras está parcial', () => {
       const w = mount(SegmentedCheckCircle, { props: { target: 8, count: 3, color: '#5e6ad2' } })
       expect(w.find("[data-testid='circle-check']").exists()).toBe(false)
-      expect(w.find("[data-testid='circle-plus']").exists()).toBe(false)
+      expect(w.find("[data-testid='circle-plus']").exists()).toBe(true)
+    })
+
+    it('mantiene el anillo decorativo y el botón como única superficie de acción', () => {
+      const w = mount(SegmentedCheckCircle, { props: { target: 4, count: 2, color: '#5e6ad2' } })
+      expect(w.find('[data-testid="progress-ring"]').attributes('aria-hidden')).toBe('true')
+      expect(w.findAll('button')).toHaveLength(2)
     })
 
     it('al llenarse se funde en un círculo sólido con Check (idéntico al binario)', () => {
@@ -33,6 +61,21 @@ describe('SegmentedCheckCircle', () => {
       expect(w.find("[data-testid='segment']").exists()).toBe(false)
       const btn = w.find("[data-testid='checkin-button']")
       expect(btn.attributes('style')).toContain('#5e6ad2')
+    })
+
+    it('trata un count por encima del target como completado', () => {
+      const w = mount(SegmentedCheckCircle, { props: { target: 4, count: 6, color: '#5e6ad2' } })
+      expect(w.find("[data-testid='circle-check']").exists()).toBe(true)
+      expect(w.find("[data-testid='progress-ring']").exists()).toBe(false)
+    })
+
+    it('conserva un segmento por repetición hasta el target máximo', () => {
+      const w = mount(SegmentedCheckCircle, { props: { target: 20, count: 19, color: '#5e6ad2' } })
+      expect(w.findAll("[data-testid='segment']")).toHaveLength(20)
+      expect(
+        w.findAll("[data-testid='segment']").filter((s) => s.attributes('stroke') === '#5e6ad2')
+      ).toHaveLength(19)
+      expect(w.find("[data-testid='circle-plus']").exists()).toBe(true)
     })
 
     it('click en el círculo emite increment cuando no está lleno', async () => {

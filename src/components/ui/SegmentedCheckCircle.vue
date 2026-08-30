@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Check, Minus, Plus } from 'lucide-vue-next'
+import { shadeFor } from '@/lib/habitColors'
 
 const props = defineProps<{
   target: number
@@ -18,7 +19,18 @@ const full = computed(() => props.count >= props.target)
 
 const litSegments = computed(() => Math.min(props.count, props.target))
 
-const gridCols = computed(() => Math.max(2, Math.ceil(Math.sqrt(props.target))))
+const ringSegments = computed(() => {
+  const circumference = 2 * Math.PI * 12
+  const segmentAngle = 360 / props.target
+  const gapAngle = segmentAngle * 0.16
+  const arcLength = circumference * ((segmentAngle - gapAngle) / 360)
+
+  return Array.from({ length: props.target }, (_, index) => ({
+    index,
+    rotation: -90 + index * segmentAngle + gapAngle / 2,
+    dasharray: `${arcLength} ${circumference - arcLength}`,
+  }))
+})
 
 function onMainClick() {
   if (props.target <= 1) {
@@ -54,13 +66,43 @@ function onMainClick() {
       type="button"
       data-testid="checkin-button"
       :class="[
-        'flex h-7 w-7 items-center justify-center rounded-full transition-all active:scale-95',
-        !full && 'border-2 bg-surface-3/30',
+        'relative flex h-7 w-7 items-center justify-center rounded-full transition-all active:scale-95',
+        !full && target === 1 && 'border-2 bg-surface-3/30',
+        !full && target > 1 && 'bg-surface-3/30',
       ]"
-      :style="full ? { backgroundColor: color, borderColor: color } : { borderColor: color }"
+      :style="
+        full
+          ? { backgroundColor: color, borderColor: color }
+          : target === 1
+            ? { borderColor: color }
+            : {}
+      "
       :aria-label="full ? 'Resetear hábito' : 'Marcar hábito'"
       @click.stop="onMainClick"
     >
+      <svg
+        v-if="target > 1 && !full"
+        data-testid="progress-ring"
+        class="pointer-events-none absolute inset-0 h-7 w-7"
+        viewBox="0 0 28 28"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle
+          v-for="segment in ringSegments"
+          :key="segment.index"
+          data-testid="segment"
+          class="segment pointer-events-none transition-colors duration-150"
+          cx="14"
+          cy="14"
+          r="12"
+          :stroke="segment.index < litSegments ? color : shadeFor(color, 0.2)"
+          :stroke-dasharray="segment.dasharray"
+          :transform="`rotate(${segment.rotation} 14 14)`"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+      </svg>
       <Check
         v-if="full"
         data-testid="circle-check"
@@ -69,25 +111,12 @@ function onMainClick() {
         class="text-white"
       />
       <Plus
-        v-else-if="target === 1"
+        v-else-if="!full"
         data-testid="circle-plus"
         :size="16"
         :stroke-width="2"
         class="text-white"
       />
-      <span
-        v-else
-        class="grid w-full place-items-center px-1"
-        :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
-      >
-        <span
-          v-for="i in target"
-          :key="i"
-          data-testid="segment"
-          :class="['segment block h-1 w-1 rounded-full', i <= litSegments && 'segment-lit']"
-          :style="i <= litSegments ? { backgroundColor: color } : {}"
-        />
-      </span>
     </button>
   </div>
 </template>
