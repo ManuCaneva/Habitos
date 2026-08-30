@@ -45,7 +45,7 @@ Idea general para la primera vez que se inicia la app:
 - Rachas (streaks) por hábito
 - Archivado de hábitos
 - Context menu por hábito
-- **Pendiente**: multi-check-in progresivo (hábitos con N repeticiones por día, ej: "Tomar 8 vasos de agua")
+- Multi-check-in progresivo (hábitos con N repeticiones por día, ej: "Tomar 8 vasos de agua")
 
 ### Widget: Tareas
 **Estado: (En progreso)**

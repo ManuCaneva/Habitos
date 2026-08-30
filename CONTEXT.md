@@ -5,15 +5,15 @@ Productivity dashboard local-first para escritorio. El usuario organiza su tiemp
 ## Language
 
 **Hábito**:
-Una acción recurrente que el usuario se compromete a realizar con una frecuencia determinada. Se registra con check-ins diarios y acumula rachas.
+Una acción recurrente que el usuario se compromete a realizar con una frecuencia determinada. Un hábito diario puede tener un target de repeticiones por día (ej. "Tomar 8 vasos de agua"); los semanales y por intervalo son binarios. Se registra con check-ins diarios y acumula rachas.
 _Avoid_: rutina, costumbre, meta
 
 **Racha**:
-Cantidad de días consecutivos en los que un hábito cumplió su check-in según su frecuencia. Se interrumpe al fallar un período.
+Cantidad de días consecutivos en los que un hábito registró al menos un check-in según su frecuencia. Se interrumpe al fallar un período.
 _Avoid_: streak, seguidilla
 
 **Check-in**:
-El registro de cumplimiento de un hábito en un día concreto. Un hábito puede tener múltiples check-ins por día (multi-check-in).
+El registro de cumplimiento de un hábito en un día concreto. En un hábito progresivo, cada check-in acumula una repetición de progreso, de 1 hasta el target. Un día con al menos un check-in cuenta como cumplido para la racha.
 _Avoid_: marca, tildado, registro
 
 **Frecuencia**:
@@ -21,7 +21,7 @@ La cadencia con la que se espera cumplir un hábito u objetivo: diaria, semanal,
 _Avoid_: periodicidad, repetición
 
 **Objetivo**:
-Una meta cuantificable con un target numérico y progreso acumulado por período. A diferencia de un hábito, no es un check binario.
+Una meta cuantificable que mide una cantidad continua arbitraria (páginas, minutos) con un target numérico y progreso acumulado por período. A diferencia de un hábito — que acumula repeticiones discretas por día — no tiene un límite superior de anotación por período.
 _Avoid_: meta, target, goal
 
 **Tarea**:
