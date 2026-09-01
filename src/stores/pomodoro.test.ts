@@ -1,0 +1,141 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { defaultPomodoroSettings, type ActivePomodoroSession } from '@/schemas/pomodoro'
+import * as db from '@/lib/db'
+import { usePomodoroStore } from './pomodoro'
+
+vi.mock('@/lib/db', () => ({
+  loadConfig: vi.fn().mockResolvedValue(null),
+  saveConfig: vi.fn().mockResolvedValue(undefined),
+}))
+
+const start = '2026-09-01T12:00:00.000Z'
+
+function session(overrides: Partial<ActivePomodoroSession> = {}): ActivePomodoroSession {
+  return {
+    phase: 'focus',
+    isRunning: false,
+    endsAt: null,
+    remainingMs: defaultPomodoroSettings.focusMinutes * 60_000,
+    completedFocusSessions: 0,
+    ...overrides,
+  }
+}
+
+describe('pomodoro store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(db.loadConfig).mockResolvedValue(null)
+    vi.mocked(db.saveConfig).mockResolvedValue(undefined)
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(start))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('starts, pauses, and resumes using timestamp-based remaining time', async () => {
+    const store = usePomodoroStore()
+    await store.load()
+
+    await store.start()
+    expect(store.session.isRunning).toBe(true)
+    expect(store.session.endsAt).toBe('2026-09-01T12:25:00.000Z')
+
+    vi.setSystemTime(new Date('2026-09-01T12:03:12.000Z'))
+    await store.pause()
+    expect(store.session).toMatchObject({
+      isRunning: false,
+      endsAt: null,
+      remainingMs: 21 * 60_000 + 48_000,
+    })
+
+    vi.setSystemTime(new Date('2026-09-01T13:00:00.000Z'))
+    await store.resume()
+    expect(store.session.endsAt).toBe('2026-09-01T13:21:48.000Z')
+  })
+
+  it('skips without counting focus, reset returns to initial focus, and natural completion counts', async () => {
+    const store = usePomodoroStore()
+    await store.load()
+    await store.saveSettings({ autoStartBreak: false })
+    await store.start()
+    await store.skip()
+    expect(store.session).toMatchObject({
+      phase: 'shortBreak',
+      completedFocusSessions: 0,
+      isRunning: false,
+    })
+
+    await store.reset()
+    expect(store.session).toEqual(session())
+
+    await store.start()
+    vi.setSystemTime(new Date('2026-09-01T12:25:00.000Z'))
+    await store.advanceIfExpired()
+    expect(store.session).toMatchObject({ phase: 'shortBreak', completedFocusSessions: 1 })
+  })
+
+  it('uses a long break at the configured interval and honors auto-start toggles', async () => {
+    const store = usePomodoroStore()
+    await store.load()
+    await store.saveSettings({ longBreakInterval: 1, autoStartBreak: true, autoStartFocus: true })
+    await store.start()
+    vi.setSystemTime(new Date('2026-09-01T12:25:00.000Z'))
+    await store.advanceIfExpired()
+    expect(store.session).toMatchObject({
+      phase: 'longBreak',
+      isRunning: true,
+      completedFocusSessions: 1,
+    })
+    expect(store.session.endsAt).toBe('2026-09-01T12:40:00.000Z')
+
+    vi.setSystemTime(new Date('2026-09-01T12:40:00.000Z'))
+    await store.advanceIfExpired()
+    expect(store.session).toMatchObject({ phase: 'focus', isRunning: true })
+  })
+
+  it('round-trips settings and an active session, resolving expired sessions on load', async () => {
+    const saved = new Map<string, string>()
+    vi.mocked(db.saveConfig).mockImplementation(async (key, value) => void saved.set(key, value))
+    vi.mocked(db.loadConfig).mockImplementation(async (key) => saved.get(key) ?? null)
+    const first = usePomodoroStore()
+    await first.load()
+    await first.saveSettings({ focusMinutes: 30, muted: true })
+    await first.start()
+    expect(saved.has('pomodoro-settings')).toBe(true)
+    expect(saved.has('pomodoro-session')).toBe(true)
+
+    vi.setSystemTime(new Date('2026-09-01T12:31:00.000Z'))
+    setActivePinia(createPinia())
+    const second = usePomodoroStore()
+    await second.load()
+    expect(second.settings.focusMinutes).toBe(30)
+    expect(second.settings.muted).toBe(true)
+    expect(second.session.phase).toBe('shortBreak')
+    expect(second.session.completedFocusSessions).toBe(1)
+  })
+
+  it('loads a still-running session and computes its current remaining time', async () => {
+    vi.mocked(db.loadConfig).mockImplementation(async (key) =>
+      key === 'pomodoro-session'
+        ? JSON.stringify({
+            ...session(),
+            isRunning: true,
+            endsAt: '2026-09-01T12:25:00.000Z',
+            remainingMs: null,
+          })
+        : null
+    )
+    vi.setSystemTime(new Date('2026-09-01T12:03:12.000Z'))
+
+    const store = usePomodoroStore()
+    await store.load()
+
+    expect(store.session.isRunning).toBe(true)
+    expect(store.session.endsAt).toBe('2026-09-01T12:25:00.000Z')
+    expect(store.remainingMs).toBe(21 * 60_000 + 48_000)
+  })
+})
