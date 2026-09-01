@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PomodoroSettingsPanel from './PomodoroSettingsPanel.vue'
 
@@ -15,8 +15,7 @@ const settings = {
 
 describe('PomodoroSettingsPanel', () => {
   it('emits a patch when each duration and interval changes', async () => {
-    const saveSettings = vi.fn()
-    const wrapper = mount(PomodoroSettingsPanel, { props: { settings, saveSettings } })
+    const wrapper = mount(PomodoroSettingsPanel, { props: { settings } })
     const inputs = wrapper.findAll('input[type="number"]')
 
     await inputs[0].setValue('30')
@@ -24,7 +23,7 @@ describe('PomodoroSettingsPanel', () => {
     await inputs[2].setValue('20')
     await inputs[3].setValue('6')
 
-    expect(saveSettings.mock.calls).toEqual([
+    expect(wrapper.emitted('update:settings')).toEqual([
       [{ focusMinutes: 30 }],
       [{ shortBreakMinutes: 10 }],
       [{ longBreakMinutes: 20 }],
@@ -33,19 +32,28 @@ describe('PomodoroSettingsPanel', () => {
   })
 
   it('emits both auto-start toggles and volume settings', async () => {
-    const saveSettings = vi.fn()
-    const wrapper = mount(PomodoroSettingsPanel, { props: { settings, saveSettings } })
+    const wrapper = mount(PomodoroSettingsPanel, { props: { settings } })
 
     await wrapper.get('[data-testid="setting-auto-start-break"] input').setValue(false)
     await wrapper.get('[data-testid="setting-auto-start-focus"] input').setValue(true)
     await wrapper.get('[data-testid="setting-volume"]').setValue('0.4')
     await wrapper.get('[data-testid="setting-mute"] input').setValue(true)
 
-    expect(saveSettings.mock.calls).toEqual([
+    expect(wrapper.emitted('update:settings')).toEqual([
       [{ autoStartBreak: false }],
       [{ autoStartFocus: true }],
       [{ volume: 0.4 }],
       [{ muted: true }],
     ])
+  })
+
+  it('does not emit invalid numeric settings', async () => {
+    const wrapper = mount(PomodoroSettingsPanel, { props: { settings } })
+    const inputs = wrapper.findAll('input[type="number"]')
+
+    await inputs[0].setValue('0')
+    await inputs[1].setValue('1.5')
+
+    expect(wrapper.emitted('update:settings')).toBeUndefined()
   })
 })

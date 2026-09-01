@@ -5,9 +5,12 @@ import Switch from '@/components/ui/Switch.vue'
 import Text from '@/components/ui/Text.vue'
 import type { PomodoroSettings } from '@/schemas/pomodoro'
 
-const props = defineProps<{
+defineProps<{
   settings: PomodoroSettings
-  saveSettings: (patch: Partial<PomodoroSettings>) => Promise<void> | void
+}>()
+
+const emit = defineEmits<{
+  'update:settings': [patch: Partial<PomodoroSettings>]
 }>()
 
 function saveNumber(
@@ -15,13 +18,13 @@ function saveNumber(
   value: string
 ) {
   const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed > 0) void props.saveSettings({ [key]: parsed })
+  if (Number.isInteger(parsed) && parsed > 0) emit('update:settings', { [key]: parsed })
 }
 
 function saveVolume(value: string) {
   const parsed = Number(value)
   if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 1)
-    void props.saveSettings({ volume: parsed })
+    emit('update:settings', { volume: parsed })
 }
 </script>
 
@@ -72,13 +75,13 @@ function saveVolume(value: string) {
         :model-value="settings.autoStartBreak"
         label="Iniciar descansos automáticamente"
         data-testid="setting-auto-start-break"
-        @update:model-value="props.saveSettings({ autoStartBreak: $event })"
+        @update:model-value="emit('update:settings', { autoStartBreak: $event })"
       />
       <Switch
         :model-value="settings.autoStartFocus"
         label="Iniciar enfoque automáticamente"
         data-testid="setting-auto-start-focus"
-        @update:model-value="props.saveSettings({ autoStartFocus: $event })"
+        @update:model-value="emit('update:settings', { autoStartFocus: $event })"
       />
     </div>
 
@@ -103,7 +106,7 @@ function saveVolume(value: string) {
         :model-value="settings.muted"
         label="Silenciar"
         data-testid="setting-mute"
-        @update:model-value="props.saveSettings({ muted: $event })"
+        @update:model-value="emit('update:settings', { muted: $event })"
       />
     </div>
   </Card>

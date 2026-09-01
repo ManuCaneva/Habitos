@@ -126,7 +126,10 @@ onBeforeUnmount(() => {
           </Button>
         </div>
       </Card>
-      <PomodoroSettingsPanel :settings="pomodoro.settings" :save-settings="pomodoro.saveSettings" />
+      <PomodoroSettingsPanel
+        :settings="pomodoro.settings"
+        @update:settings="pomodoro.saveSettings"
+      />
     </div>
   </main>
 </template>
