@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Heading from '@/components/ui/Heading.vue'
 import Text from '@/components/ui/Text.vue'
+import PomodoroSettingsPanel from '@/components/pomodoro/PomodoroSettingsPanel.vue'
 import { usePomodoroStore } from '@/stores/pomodoro'
 import { formatRemainingTime, getPhaseDurationMs, getProgressFraction } from '@/lib/pomodoro'
 
@@ -125,6 +126,7 @@ onBeforeUnmount(() => {
           </Button>
         </div>
       </Card>
+      <PomodoroSettingsPanel :settings="pomodoro.settings" :save-settings="pomodoro.saveSettings" />
     </div>
   </main>
 </template>
