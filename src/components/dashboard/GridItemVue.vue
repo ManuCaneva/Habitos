@@ -71,16 +71,14 @@ let dragAccumX = 0
 let dragAccumY = 0
 let resizeAccumW = 0
 let resizeAccumH = 0
+let resizeBaseW = 0
+let resizeBaseH = 0
 
 function applyResizeOffset() {
   const el = elRef.value
   if (!el) return
-  const { containerWidth, containerHeight } = containerSize()
-  el.style.position = 'absolute'
-  el.style.left = `${(props.item.x / COLS) * containerWidth}px`
-  el.style.top = `${(props.item.y / ROWS) * containerHeight}px`
-  el.style.width = `${(props.item.w / COLS) * containerWidth + resizeAccumW}px`
-  el.style.height = `${(props.item.h / ROWS) * containerHeight + resizeAccumH}px`
+  el.style.width = `${resizeBaseW + resizeAccumW}px`
+  el.style.height = `${resizeBaseH + resizeAccumH}px`
 }
 
 useDashDrag(elRef, editModeRef, {
@@ -135,6 +133,19 @@ useDashDrag(elRef, editModeRef, {
     dragAccumY = 0
     resizeAccumW = 0
     resizeAccumH = 0
+    const el = elRef.value
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      // getBoundingClientRect puede devolver 0 en happy-dom; fallback a la geometría de grilla
+      if (rect.width > 0 && rect.height > 0) {
+        resizeBaseW = rect.width
+        resizeBaseH = rect.height
+      } else {
+        const { containerWidth, containerHeight } = containerSize()
+        resizeBaseW = (props.item.w / COLS) * containerWidth
+        resizeBaseH = (props.item.h / ROWS) * containerHeight
+      }
+    }
     applyResizeOffset()
   },
   onResizeMove(dw, dh) {
@@ -146,9 +157,6 @@ useDashDrag(elRef, editModeRef, {
     const el = elRef.value
     const first = el ? elementRect(el) : ZERO_RECT
     if (el) {
-      el.style.position = ''
-      el.style.left = ''
-      el.style.top = ''
       el.style.width = ''
       el.style.height = ''
     }

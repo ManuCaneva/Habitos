@@ -127,17 +127,41 @@ describe('GridItemVue', () => {
     dragCallbacks.onDragEnd?.()
   })
 
-  it('posiciona absolute con px durante el resize', async () => {
+  it('el preview de resize permanece anclado: no altera position/left/top (solo width/height)', async () => {
     const wrapper = mount(GridItemVue, {
-      props: { item: makeItem(), editMode: true },
+      props: { item: makeItem({ x: 6, y: 7, w: 4, h: 3 }), editMode: true },
     })
     const el = wrapper.element as HTMLElement
+    const container = el.parentElement as HTMLElement
+    Object.defineProperty(container, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(container, 'clientHeight', { value: 800, configurable: true })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 600, top: 560, width: 400, height: 240, right: 1000, bottom: 800, x: 600, y: 560, toJSON() { return {} } }),
+    })
     dragCallbacks.onResizeStart?.()
-    dragCallbacks.onResizeMove?.(50, 20)
-    expect(el.style.position).toBe('absolute')
+    // Anclaje: no debe desplazarse (sin position/left/top)
+    expect(el.style.position).toBe('')
+    expect(el.style.left).toBe('')
+    expect(el.style.top).toBe('')
     expect(el.style.width).toContain('px')
+    expect(el.style.height).toContain('px')
+    // Al mover, sigue anclado y solo crece width/height
+    dragCallbacks.onResizeMove?.(50, 20)
+    expect(el.style.position).toBe('')
+    expect(el.style.left).toBe('')
+    expect(el.style.top).toBe('')
+    expect(el.style.width).toContain('px')
+    expect(el.style.height).toContain('px')
+    // El ancho refleja el delta acumulado sobre el rect medido (sin salto inicial)
+    expect(el.style.width).toBe('450px')
+    expect(el.style.height).toBe('260px')
     dragCallbacks.onResizeEnd?.()
+    expect(el.style.width).toBe('')
+    expect(el.style.height).toBe('')
   })
+
+
 
   it('al soltar un drag aplica FLIP: llama flipTransform/flipNeedsAnimation e inyecta grid-item--flip', async () => {
     const wrapper = mount(GridItemVue, {
