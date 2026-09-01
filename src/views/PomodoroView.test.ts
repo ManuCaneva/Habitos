@@ -1,0 +1,64 @@
+import { describe, expect, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import PomodoroView from './PomodoroView.vue'
+
+function createStore(overrides: Record<string, unknown> = {}) {
+  return {
+    settings: {
+      focusMinutes: 25,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      longBreakInterval: 4,
+    },
+    session: { phase: 'focus', isRunning: false, completedFocusSessions: 2 },
+    loaded: true,
+    remainingMs: 25 * 60_000,
+    start: vi.fn(),
+    pause: vi.fn(),
+    skip: vi.fn(),
+    reset: vi.fn(),
+    prepareAudio: vi.fn(),
+    ...overrides,
+  }
+}
+
+let store = createStore()
+
+vi.mock('@/stores/pomodoro', () => ({
+  usePomodoroStore: () => store,
+}))
+
+describe('PomodoroView', () => {
+  it('renders the countdown, phase, cycle dots, and idle controls', () => {
+    store = createStore()
+    const wrapper = mount(PomodoroView)
+
+    expect(wrapper.get('[data-testid="pomodoro-countdown"]').text()).toBe('25:00')
+    expect(wrapper.get('[data-testid="pomodoro-phase"]').text()).toContain('Enfoque')
+    expect(wrapper.findAll('[data-testid="cycle-dot"]')).toHaveLength(4)
+    expect(wrapper.get('[data-testid="pomodoro-start"]').element).toBeTruthy()
+    expect(wrapper.get('[data-testid="pomodoro-skip"]').element).toBeTruthy()
+    expect(wrapper.get('[data-testid="pomodoro-reset"]').element).toBeTruthy()
+    expect(wrapper.findAll('[data-testid="pomodoro-pause"]')).toHaveLength(0)
+    expect(wrapper.get('[data-testid="pomodoro-progress"]').attributes('aria-valuenow')).toBe('0')
+    wrapper.unmount()
+  })
+
+  it('exposes pause instead of start while running and delegates controls', async () => {
+    store = createStore({
+      session: { phase: 'focus', isRunning: true, completedFocusSessions: 2 },
+      remainingMs: 10 * 60_000,
+    })
+    const wrapper = mount(PomodoroView)
+
+    expect(wrapper.get('[data-testid="pomodoro-pause"]').element).toBeTruthy()
+    expect(wrapper.findAll('[data-testid="pomodoro-start"]')).toHaveLength(0)
+    await wrapper.get('[data-testid="pomodoro-pause"]').trigger('click')
+    await wrapper.get('[data-testid="pomodoro-skip"]').trigger('click')
+    await wrapper.get('[data-testid="pomodoro-reset"]').trigger('click')
+    expect(store.pause).toHaveBeenCalled()
+    expect(store.skip).toHaveBeenCalled()
+    expect(store.reset).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})

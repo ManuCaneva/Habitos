@@ -7,6 +7,7 @@ import {
   Archive,
   Settings,
   Pencil,
+  Timer,
 } from 'lucide-vue-next'
 import { useUiStore, type ViewMode } from '@/stores/ui'
 import Text from '@/components/ui/Text.vue'
@@ -22,6 +23,7 @@ interface NavItem {
 const navItems: readonly NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: CheckSquare },
   { id: 'archived', label: 'Archivados', icon: Archive },
+  { id: 'pomodoro', label: 'Pomodoro', icon: Timer },
 ] as const
 
 const collapseIcon = computed(() => (ui.sidebarCollapsed ? PanelLeftOpen : PanelLeftClose))
@@ -53,6 +55,7 @@ const collapseIcon = computed(() => (ui.sidebarCollapsed ? PanelLeftOpen : Panel
             ? 'bg-surface-2 text-ink'
             : 'text-ink-muted hover:bg-surface-1 hover:text-ink',
         ]"
+        :data-testid="`nav-${item.id}`"
         @click="ui.setViewMode(item.id)"
       >
         <component :is="item.icon" :size="18" class="shrink-0" />

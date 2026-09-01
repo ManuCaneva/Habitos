@@ -40,6 +40,10 @@ vi.mock('@/stores/ui', () => ({
   }),
 }))
 
+vi.mock('@/stores/pomodoro', () => ({
+  usePomodoroStore: () => ({ load: vi.fn(), advanceIfExpired: vi.fn() }),
+}))
+
 vi.mock('@/components/dashboard/DashboardView.vue', () => ({
   default: { template: '<div data-testid="mock-dashboard" />' },
 }))
@@ -50,6 +54,10 @@ vi.mock('@/views/ArchivedView.vue', () => ({
 
 vi.mock('@/views/SettingsView.vue', () => ({
   default: { template: '<div data-testid="mock-settings" />' },
+}))
+
+vi.mock('@/views/PomodoroView.vue', () => ({
+  default: { template: '<div data-testid="mock-pomodoro" />' },
 }))
 
 vi.mock('@/components/layout/Sidebar.vue', () => ({

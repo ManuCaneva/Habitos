@@ -3,9 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { migrateStorageKey } from '@/lib/storageKey'
 
-export type ViewMode = 'dashboard' | 'archived' | 'settings'
+export type ViewMode = 'dashboard' | 'archived' | 'pomodoro' | 'settings'
 
-const VALID_MODES: readonly ViewMode[] = ['dashboard', 'archived', 'settings']
+const VALID_MODES: readonly ViewMode[] = ['dashboard', 'archived', 'pomodoro', 'settings']
 
 function isViewMode(v: unknown): v is ViewMode {
   return typeof v === 'string' && (VALID_MODES as readonly string[]).includes(v)
