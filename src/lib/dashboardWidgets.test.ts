@@ -16,6 +16,15 @@ describe('dashboardWidgets', () => {
     expect(widget?.title).toBe('Cronograma Semanal')
   })
 
+  it('expone el widget de Pomodoro con dimensiones compactas', () => {
+    const widget = getWidgetById('pomodoro')
+    expect(widget).toBeDefined()
+    expect(widget?.title).toBe('Pomodoro')
+    expect(widget?.defaultW).toBe(4)
+    expect(widget?.defaultH).toBe(3)
+    expect(widget?.defaultEnabled).toBe(false)
+  })
+
   it('cada widget tiene dimensiones por defecto válidas (celdas enteras)', () => {
     widgets.forEach((w) => {
       expect(w.minW).toBeGreaterThan(0)

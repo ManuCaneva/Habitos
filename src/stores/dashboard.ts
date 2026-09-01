@@ -71,17 +71,19 @@ const STORAGE_KEY = 'aeon-dashboard-layout'
 const LEGACY_STORAGE_KEY = 'habitos-dashboard-layout'
 
 function getDefaultLayout(): Layout {
-  return widgets.map((widget) =>
-    markRaw({
-      i: widget.id,
-      x: widget.defaultX,
-      y: widget.defaultY,
-      w: widget.defaultW,
-      h: widget.defaultH,
-      minW: widget.minW,
-      minH: widget.minH,
-    })
-  )
+  return widgets
+    .filter((widget) => widget.defaultEnabled !== false)
+    .map((widget) =>
+      markRaw({
+        i: widget.id,
+        x: widget.defaultX,
+        y: widget.defaultY,
+        w: widget.defaultW,
+        h: widget.defaultH,
+        minW: widget.minW,
+        minH: widget.minH,
+      })
+    )
 }
 
 function isIntegerItem(item: unknown): item is LayoutItem {

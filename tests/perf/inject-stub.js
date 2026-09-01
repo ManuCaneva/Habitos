@@ -190,7 +190,7 @@
   const cfg = new Map()
   cfg.set('local-calendar-events', JSON.stringify(calendarEvents))
 
-  // Fixture de rendimiento, no el default real de la app: layout de 5 widgets
+  // Fixture de rendimiento, no el default real de la app: layout de 6 widgets
   // SIN solapamiento para medir el costo real del dashboard (el default real
   // solapa year-calendar y weekly-schedule en la fila 7, lo que duplica el
   // render de los dos widgets pesados y no es representativo de un dashboard
@@ -198,7 +198,8 @@
   const DEFAULT_LAYOUT = [
     { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
     { i: 'tasks', x: 6, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
-    { i: 'goals', x: 0, y: 4, w: 12, h: 2, minW: 1, minH: 1 },
+    { i: 'goals', x: 0, y: 4, w: 8, h: 3, minW: 1, minH: 1 },
+    { i: 'pomodoro', x: 8, y: 4, w: 4, h: 3, minW: 2, minH: 3 },
     { i: 'year-calendar', x: 0, y: 6, w: 6, h: 4, minW: 1, minH: 3 },
     { i: 'weekly-schedule', x: 6, y: 6, w: 6, h: 4, minW: 5, minH: 4 },
   ]

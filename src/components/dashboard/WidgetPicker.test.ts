@@ -52,6 +52,7 @@ describe('WidgetPicker', () => {
     expect(ids).not.toContain('habits')
     expect(ids).toContain('tasks')
     expect(ids).toContain('goals')
+    expect(ids).toContain('pomodoro')
   })
 
   it('al clickear un widget disponible, llama addWidget', async () => {

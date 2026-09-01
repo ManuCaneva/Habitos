@@ -4,6 +4,7 @@ import TasksWidget from '@/components/dashboard/TasksWidget.vue'
 import GoalsWidget from '@/components/dashboard/GoalsWidget.vue'
 import YearCalendarWidget from '@/components/dashboard/YearCalendarWidget.vue'
 import WeeklyScheduleWidget from '@/components/dashboard/WeeklyScheduleWidget.vue'
+import PomodoroWidget from '@/components/dashboard/PomodoroWidget.vue'
 
 export interface DashboardWidget {
   id: string
@@ -16,6 +17,7 @@ export interface DashboardWidget {
   defaultY: number
   defaultW: number
   defaultH: number
+  defaultEnabled?: boolean
 }
 
 export const widgets: DashboardWidget[] = [
@@ -54,6 +56,19 @@ export const widgets: DashboardWidget[] = [
     defaultY: 4,
     defaultW: 12,
     defaultH: 3,
+  },
+  {
+    id: 'pomodoro',
+    title: 'Pomodoro',
+    icon: 'timer',
+    component: PomodoroWidget,
+    minW: 2,
+    minH: 3,
+    defaultX: 0,
+    defaultY: 7,
+    defaultW: 4,
+    defaultH: 3,
+    defaultEnabled: false,
   },
   {
     id: 'year-calendar',
