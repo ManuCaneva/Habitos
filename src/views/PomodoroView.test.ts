@@ -9,6 +9,10 @@ function createStore(overrides: Record<string, unknown> = {}) {
       shortBreakMinutes: 5,
       longBreakMinutes: 15,
       longBreakInterval: 4,
+      autoStartBreak: true,
+      autoStartFocus: false,
+      volume: 0.7,
+      muted: false,
     },
     session: { phase: 'focus', isRunning: false, completedFocusSessions: 2 },
     loaded: true,
@@ -18,6 +22,7 @@ function createStore(overrides: Record<string, unknown> = {}) {
     skip: vi.fn(),
     reset: vi.fn(),
     prepareAudio: vi.fn(),
+    saveSettings: vi.fn(),
     ...overrides,
   }
 }
@@ -44,6 +49,18 @@ describe('PomodoroView', () => {
     wrapper.unmount()
   })
 
+  it('renders timer and settings side by side without a heading', () => {
+    store = createStore()
+    const wrapper = mount(PomodoroView)
+
+    expect(wrapper.find('[data-testid="pomodoro-view"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pomodoro-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pomodoro-settings"]').exists()).toBe(true)
+    // no large Heading "Pomodoro" at the top
+    expect(wrapper.find('h1').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('exposes pause instead of start while running and delegates controls', async () => {
     store = createStore({
       session: { phase: 'focus', isRunning: true, completedFocusSessions: 2 },
@@ -59,6 +76,31 @@ describe('PomodoroView', () => {
     expect(store.pause).toHaveBeenCalled()
     expect(store.skip).toHaveBeenCalled()
     expect(store.reset).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('arranca el timer aunque prepareAudio rechace (best-effort)', async () => {
+    const start = vi.fn().mockResolvedValue(undefined)
+    const prepareAudio = vi.fn().mockRejectedValue(new Error('WebKitGTK audio unavailable'))
+    store = createStore({ start, prepareAudio })
+    const wrapper = mount(PomodoroView)
+
+    await wrapper.get('[data-testid="pomodoro-start"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(prepareAudio).toHaveBeenCalledOnce()
+    expect(start).toHaveBeenCalledOnce()
+    wrapper.unmount()
+  })
+
+  it('el anillo principal usa rgb(var(--color-*)) válido para ambos tramos', () => {
+    store = createStore()
+    const wrapper = mount(PomodoroView)
+    const ring = wrapper.get('[data-testid="pomodoro-progress"]')
+    const style = (ring.attributes('style') ?? '') as string
+    expect(style).toContain('rgb(var(--color-primary)')
+    expect(style).toContain('rgb(var(--color-surface-3)')
     wrapper.unmount()
   })
 })
