@@ -64,13 +64,19 @@ vi.mock('@/composables/useTheme', () => ({
 
 const mockCalendarStore: {
   connected: boolean
+  oauthStatus: 'idle' | 'waiting' | 'connected'
+  connectError: string | null
   syncError: string | null
   connect: ReturnType<typeof vi.fn>
+  cancelConnect: ReturnType<typeof vi.fn>
   disconnect: ReturnType<typeof vi.fn>
 } = {
   connected: false,
+  oauthStatus: 'idle',
+  connectError: null,
   syncError: null,
   connect: vi.fn().mockResolvedValue(undefined),
+  cancelConnect: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn().mockResolvedValue(undefined),
 }
 
@@ -83,6 +89,8 @@ describe('SettingsView', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockCalendarStore.connected = false
+    mockCalendarStore.oauthStatus = 'idle'
+    mockCalendarStore.connectError = null
     mockCalendarStore.syncError = null
   })
 
@@ -135,5 +143,21 @@ describe('SettingsView', () => {
     mockCalendarStore.syncError = 'Token expired'
     const wrapper = mount(SettingsView)
     expect(wrapper.text()).toContain('Token expired')
+  })
+
+  it('muestra que espera autorización y permite cancelar', async () => {
+    mockCalendarStore.oauthStatus = 'waiting'
+    const wrapper = mount(SettingsView)
+    expect(wrapper.text()).toContain('Esperando autorización en el navegador')
+    expect(wrapper.text()).toContain('Cancelar')
+    expect(wrapper.text()).not.toContain('Not connected')
+    await wrapper.find("[data-testid='gcal-cancel-btn']").trigger('click')
+    expect(mockCalendarStore.cancelConnect).toHaveBeenCalled()
+  })
+
+  it('muestra error de conexión separado del sync', () => {
+    mockCalendarStore.connectError = 'OAuth state mismatch'
+    const wrapper = mount(SettingsView)
+    expect(wrapper.text()).toContain('OAuth state mismatch')
   })
 })

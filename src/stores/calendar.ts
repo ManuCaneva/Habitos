@@ -4,7 +4,7 @@ import { saveConfig, loadConfig } from '@/lib/db'
 import {
   generatePkce,
   buildAuthUrl,
-  parseRedirectUri,
+  parseOAuthCallbackQuery,
   buildTokenExchangePayload,
   buildRefreshPayload,
 } from '@/lib/googleOauth'
@@ -17,7 +17,6 @@ import {
 import { GcalEventApiResponseSchema, type CalendarEvent, CALENDAR_COLORS } from '@/schemas/calendar'
 import { yearBounds } from '@/lib/calendarDates'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { fetch } from '@tauri-apps/plugin-http'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
@@ -25,18 +24,23 @@ import { listen } from '@tauri-apps/api/event'
 const GCAL_ACCESS_TOKEN = 'gcal_access_token'
 const GCAL_REFRESH_TOKEN = 'gcal_refresh_token'
 const GCAL_TOKEN_EXPIRY = 'gcal_token_expiry'
+const GCAL_PENDING_OAUTH = 'gcal_pending_oauth'
+const OAUTH_PENDING_TTL = 10 * 60 * 1000
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const SCOPES = 'https://www.googleapis.com/auth/calendar'
 
-let _pendingState: { verifier: string; state: string } | null = null
-let _unlisten: (() => void) | null = null
+type PendingOAuth = { verifier: string; state: string; redirectUri: string; createdAt: number }
 
 export const useCalendarStore = defineStore('calendar', () => {
   const connected = ref(false)
   const currentYear = ref(new Date().getFullYear())
   const syncing = ref(false)
   const syncError = ref<string | null>(null)
+  const connectError = ref<string | null>(null)
+  const oauthStatus = ref<'idle' | 'waiting' | 'connected'>('idle')
+  const pendingOAuth = ref<PendingOAuth | null>(null)
+  let pendingExpiryTimer: ReturnType<typeof setTimeout> | null = null
   const events = ref<CalendarEvent[]>([])
   const localEvents = ref<CalendarEvent[]>([])
   const calendars = ref<
@@ -60,17 +64,6 @@ export const useCalendarStore = defineStore('calendar', () => {
     return import.meta.env.VITE_GCAL_CLIENT_ID ?? ''
   }
 
-  function getClientSecret(): string {
-    return import.meta.env.VITE_GCAL_CLIENT_SECRET ?? ''
-  }
-
-  function getRedirectUri(): string {
-    if (import.meta.env.DEV) {
-      return 'http://localhost:14202/oauth-callback'
-    }
-    return 'com.aeon://oauth/callback'
-  }
-
   async function ensureAccessToken(): Promise<string> {
     if (!accessToken.value) throw new Error('Not connected')
     if (tokenExpiry.value && Date.now() >= tokenExpiry.value) {
@@ -86,11 +79,9 @@ export const useCalendarStore = defineStore('calendar', () => {
       throw new Error('Session expired. Please reconnect.')
     }
     const clientId = getClientId()
-    const clientSecret = getClientSecret()
     const body = buildRefreshPayload({
       refreshToken: refreshToken.value,
       clientId,
-      clientSecret,
     })
     const res = await fetch(TOKEN_URL, {
       method: 'POST',
@@ -127,45 +118,85 @@ export const useCalendarStore = defineStore('calendar', () => {
     ])
   }
 
+  async function clearPendingOAuth(): Promise<void> {
+    if (pendingExpiryTimer) {
+      clearTimeout(pendingExpiryTimer)
+      pendingExpiryTimer = null
+    }
+    pendingOAuth.value = null
+    await saveConfig(GCAL_PENDING_OAUTH, '')
+  }
+
+  async function loadPendingOAuth(): Promise<PendingOAuth | null> {
+    const raw = await loadConfig(GCAL_PENDING_OAUTH)
+    if (!raw) {
+      pendingOAuth.value = null
+      return null
+    }
+    try {
+      const pending = JSON.parse(raw) as PendingOAuth
+      if (
+        typeof pending.verifier !== 'string' ||
+        typeof pending.state !== 'string' ||
+        typeof pending.redirectUri !== 'string' ||
+        typeof pending.createdAt !== 'number'
+      ) {
+        await clearPendingOAuth()
+        return null
+      }
+      pendingOAuth.value = pending
+      return pending
+    } catch {
+      await clearPendingOAuth()
+      return null
+    }
+  }
+
   async function connect(): Promise<void> {
     const clientId = getClientId()
     if (!clientId) {
-      throw new Error('Google Calendar client ID not configured')
+      connectError.value = 'Google Calendar client ID not configured'
+      throw new Error(connectError.value)
     }
+    connectError.value = null
     const { verifier, challenge } = await generatePkce()
     const state = verifier.slice(0, 16)
-    _pendingState = { verifier, state }
+    try {
+      const redirectUri = await invoke<string>('start_oauth_server')
+      pendingOAuth.value = { verifier, state, redirectUri, createdAt: Date.now() }
+      await saveConfig(GCAL_PENDING_OAUTH, JSON.stringify(pendingOAuth.value))
+      oauthStatus.value = 'waiting'
+      pendingExpiryTimer = setTimeout(() => {
+        void clearPendingOAuth().then(() => {
+          if (!connected.value) oauthStatus.value = 'idle'
+          connectError.value = 'OAuth authorization expired. Please reconnect.'
+        })
+      }, OAUTH_PENDING_TTL)
 
-    if (import.meta.env.DEV) {
-      await invoke('start_oauth_server')
+      const authUrl = buildAuthUrl({
+        clientId,
+        redirectUri,
+        scope: SCOPES,
+        state,
+        codeChallenge: challenge,
+      })
+      await openUrl(authUrl)
+    } catch (error) {
+      await clearPendingOAuth()
+      oauthStatus.value = 'idle'
+      connectError.value =
+        error instanceof Error ? error.message : 'Failed to open Google authorization'
+      throw error
     }
-
-    const authUrl = buildAuthUrl({
-      clientId,
-      redirectUri: getRedirectUri(),
-      scope: SCOPES,
-      state,
-      codeChallenge: challenge,
-    })
-
-    await openUrl(authUrl)
   }
 
-  async function exchangeCode(code: string, expectedState: string): Promise<void> {
-    if (!_pendingState || _pendingState.state !== expectedState) {
-      throw new Error('OAuth state mismatch')
-    }
-    const { verifier } = _pendingState
-    _pendingState = null
-
+  async function exchangeCode(code: string, pending: PendingOAuth): Promise<void> {
     const clientId = getClientId()
-    const clientSecret = getClientSecret()
     const body = buildTokenExchangePayload({
       code,
       clientId,
-      clientSecret,
-      redirectUri: getRedirectUri(),
-      codeVerifier: verifier,
+      redirectUri: pending.redirectUri,
+      codeVerifier: pending.verifier,
     })
 
     const res = await fetch(TOKEN_URL, {
@@ -183,44 +214,14 @@ export const useCalendarStore = defineStore('calendar', () => {
     accessToken.value = data.access_token
     refreshToken.value = data.refresh_token ?? null
     tokenExpiry.value = Date.now() + (data.expires_in ?? 3600) * 1000
-    connected.value = true
     await persistTokens()
+    connected.value = true
+    oauthStatus.value = 'connected'
   }
 
-  async function exchangeCodeDirect(code: string): Promise<void> {
-    if (!_pendingState) {
-      throw new Error("Por favor, hacé clic en 'Conectar' antes de ingresar el código.")
-    }
-    const { verifier } = _pendingState
-    _pendingState = null
-
-    const clientId = getClientId()
-    const clientSecret = getClientSecret()
-    const body = buildTokenExchangePayload({
-      code,
-      clientId,
-      clientSecret,
-      redirectUri: getRedirectUri(),
-      codeVerifier: verifier,
-    })
-
-    const res = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      throw new Error(
-        `Google API Error: ${data.error_description || data.error || JSON.stringify(data)}`
-      )
-    }
-
-    accessToken.value = data.access_token
-    refreshToken.value = data.refresh_token ?? null
-    tokenExpiry.value = Date.now() + (data.expires_in ?? 3600) * 1000
-    connected.value = true
-    await persistTokens()
+  async function cancelConnect(): Promise<void> {
+    await clearPendingOAuth()
+    oauthStatus.value = connected.value ? 'connected' : 'idle'
   }
 
   async function disconnect(): Promise<void> {
@@ -232,7 +233,9 @@ export const useCalendarStore = defineStore('calendar', () => {
       } catch {}
     }
     await clearTokens()
+    await cancelConnect()
     connected.value = false
+    oauthStatus.value = 'idle'
     events.value = []
   }
 
@@ -320,66 +323,90 @@ export const useCalendarStore = defineStore('calendar', () => {
         localEvents.value = JSON.parse(localJson)
       } catch {}
     }
+    const pending = await loadPendingOAuth()
+    if (pending && Date.now() - pending.createdAt <= OAUTH_PENDING_TTL) {
+      oauthStatus.value = 'waiting'
+      pendingExpiryTimer = setTimeout(
+        () => {
+          void clearPendingOAuth().then(() => {
+            if (!connected.value) oauthStatus.value = 'idle'
+            connectError.value = 'OAuth authorization expired. Please reconnect.'
+          })
+        },
+        Math.max(0, pending.createdAt + OAUTH_PENDING_TTL - Date.now())
+      )
+    } else if (pending) {
+      await clearPendingOAuth()
+      connectError.value = 'OAuth authorization expired. Please reconnect.'
+    }
     if (at && rt) {
       accessToken.value = at
       refreshToken.value = rt
       tokenExpiry.value = exp ? Number(exp) : null
       connected.value = true
+      oauthStatus.value = 'connected'
     }
-  }
-
-  async function initDeepLink(): Promise<void> {
-    try {
-      _unlisten = await onOpenUrl(async (urls: string[]) => {
-        if (!_pendingState || urls.length === 0) return
-        const { code, error, state } = parseRedirectUri(urls[0])
-        if (error) {
-          _pendingState = null
-          syncError.value = `OAuth error: ${error}`
-          return
-        }
-        if (code && state && _pendingState.state === state) {
-          try {
-            await exchangeCode(code, state)
-          } catch (e: unknown) {
-            console.error('Deep link token exchange failed:', e)
-            syncError.value = e instanceof Error ? e.message : String(e)
-          }
-        }
-      })
-    } catch {}
   }
 
   let _unlistenOauth: (() => void) | null = null
 
   async function initTauriEvent(): Promise<void> {
     try {
-      _unlistenOauth = await listen<{ code: string; state: string }>(
-        'oauth-callback',
-        async (event) => {
-          const { code, state } = event.payload
-          if (code && state && _pendingState && _pendingState.state === state) {
-            try {
-              await exchangeCode(code, state)
-            } catch (e: unknown) {
-              console.error('Tauri event token exchange failed:', e)
-              syncError.value = e instanceof Error ? e.message : String(e)
-            }
-          }
+      _unlistenOauth = await listen<string>('oauth-callback', async (event) => {
+        const pending = await loadPendingOAuth()
+        if (!pending) {
+          await clearPendingOAuth()
+          connectError.value = 'OAuth callback received without a pending connection'
+          oauthStatus.value = 'idle'
+          return
         }
-      )
-    } catch {}
+        if (Date.now() - pending.createdAt > OAUTH_PENDING_TTL) {
+          await clearPendingOAuth()
+          connectError.value = 'OAuth authorization expired. Please reconnect.'
+          oauthStatus.value = 'idle'
+          return
+        }
+        const { code, error, state } = parseOAuthCallbackQuery(event.payload)
+        await clearPendingOAuth()
+        if (error) {
+          connectError.value = `OAuth error: ${error}`
+          oauthStatus.value = 'idle'
+          return
+        }
+        if (!state || state !== pending.state) {
+          connectError.value = 'OAuth state mismatch'
+          oauthStatus.value = 'idle'
+          return
+        }
+        if (!code) {
+          connectError.value = 'OAuth callback did not include an authorization code'
+          oauthStatus.value = 'idle'
+          return
+        }
+        try {
+          await exchangeCode(code, pending)
+          connectError.value = null
+        } catch (error) {
+          connectError.value = error instanceof Error ? error.message : String(error)
+          oauthStatus.value = 'idle'
+        }
+      })
+    } catch (error) {
+      connectError.value =
+        error instanceof Error ? error.message : 'Failed to listen for OAuth callback'
+    }
   }
 
-  initDeepLink()
   initTauriEvent()
-  loadPersistedConfig()
+  loadPersistedConfig().catch((error) => {
+    connectError.value =
+      error instanceof Error ? error.message : 'Failed to load calendar configuration'
+  })
 
   onUnmounted(() => {
-    _unlisten?.()
-    _unlisten = null
     _unlistenOauth?.()
     _unlistenOauth = null
+    if (pendingExpiryTimer) clearTimeout(pendingExpiryTimer)
   })
 
   async function createEvent(
@@ -576,15 +603,17 @@ export const useCalendarStore = defineStore('calendar', () => {
     currentYear,
     syncing,
     syncError,
+    connectError,
+    oauthStatus,
     events,
     eventsByDate,
     connect,
     disconnect,
+    cancelConnect,
     syncYear,
     goNextYear,
     goPrevYear,
     loadPersistedConfig,
-    exchangeCodeDirect,
     accessToken,
     refreshToken,
     tokenExpiry,

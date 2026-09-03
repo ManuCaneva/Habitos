@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCalendarStore } from './calendar'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
+import { invoke } from '@tauri-apps/api/core'
 
 vi.stubEnv('VITE_GCAL_CLIENT_ID', 'test.apps.googleusercontent.com')
 
-const deepLinkHolder = vi.hoisted(() => ({ cb: null as ((urls: string[]) => void) | null }))
+const oauthHolder = vi.hoisted(() => ({
+  cb: null as ((event: { payload: string }) => void) | null,
+}))
 const mockFetch = vi.hoisted(() => vi.fn())
 const dbStore = vi.hoisted(() => new Map<string, string | null>())
 
@@ -23,23 +25,19 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@tauri-apps/plugin-deep-link', () => ({
-  onOpenUrl: vi.fn((cb) => {
-    deepLinkHolder.cb = cb
-    return vi.fn()
-  }),
-}))
-
 vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: mockFetch,
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn().mockResolvedValue(undefined),
+  invoke: vi.fn().mockResolvedValue('http://127.0.0.1:45678/oauth-callback'),
 }))
 
 vi.mock('@tauri-apps/api/event', () => ({
-  listen: vi.fn().mockResolvedValue(vi.fn()),
+  listen: vi.fn((_, cb) => {
+    oauthHolder.cb = cb
+    return Promise.resolve(vi.fn())
+  }),
 }))
 
 vi.stubGlobal('crypto', {
@@ -56,13 +54,10 @@ describe('useCalendarStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    deepLinkHolder.cb = null
+    oauthHolder.cb = null
     mockFetch.mockReset()
     dbStore.clear()
-    vi.mocked(onOpenUrl).mockImplementation((async (cb: (urls: string[]) => void) => {
-      deepLinkHolder.cb = cb as (urls: string[]) => void
-      return () => {}
-    }) as any)
+    vi.mocked(invoke).mockResolvedValue('http://127.0.0.1:45678/oauth-callback')
     vi.mocked(openUrl).mockResolvedValue(undefined)
   })
 
@@ -77,7 +72,9 @@ describe('useCalendarStore', () => {
   it('connect() opens browser consent URL', async () => {
     const store = useCalendarStore()
     await store.connect()
-    expect(deepLinkHolder.cb).toBeTruthy()
+    expect(vi.mocked(invoke)).toHaveBeenCalledWith('start_oauth_server')
+    expect(store.oauthStatus).toBe('waiting')
+    expect(oauthHolder.cb).toBeTruthy()
   })
 
   it('connect() throws if VITE_GCAL_CLIENT_ID is empty', async () => {
@@ -87,7 +84,7 @@ describe('useCalendarStore', () => {
     vi.stubEnv('VITE_GCAL_CLIENT_ID', 'test.apps.googleusercontent.com')
   })
 
-  it('deep-link callback exchanges code and persists tokens', async () => {
+  it('callback exchanges encoded code and persists tokens', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -104,18 +101,98 @@ describe('useCalendarStore', () => {
     const authUrl = vi.mocked(openUrl).mock.calls[0][0]
     const state = new URL(authUrl).searchParams.get('state')
 
-    await deepLinkHolder.cb!([`com.aeon://oauth/callback?code=abc123&state=${state}`])
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc%2F123&state=${state}` })
 
     expect(dbStore.get('gcal_access_token')).toBe('at123')
     expect(dbStore.get('gcal_refresh_token')).toBe('rt123')
     expect(store.connected).toBe(true)
+    expect(store.oauthStatus).toBe('connected')
+    expect(dbStore.get('gcal_pending_oauth')).toBe('')
   })
 
-  it('deep-link callback with error does not connect', async () => {
+  it('callback with Google error exposes a persistent connection error', async () => {
     const store = useCalendarStore()
     await store.connect()
 
-    await deepLinkHolder.cb!(['com.aeon://oauth/callback?error=access_denied&state=xyz'])
+    await oauthHolder.cb!({ payload: '/oauth-callback?error=access_denied&state=xyz' })
+    expect(store.connected).toBe(false)
+    expect(store.connectError).toContain('access_denied')
+    expect(store.oauthStatus).toBe('idle')
+  })
+
+  it('rehydrates a pending callback after store reload', async () => {
+    const first = useCalendarStore()
+    await first.connect()
+    const authUrl = vi.mocked(openUrl).mock.calls[0][0]
+    const state = new URL(authUrl).searchParams.get('state')!
+    const pending = JSON.parse(dbStore.get('gcal_pending_oauth')!)
+
+    setActivePinia(createPinia())
+    const second = useCalendarStore()
+    await second.loadPersistedConfig()
+    expect(second.oauthStatus).toBe('waiting')
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ access_token: 'at-reloaded', refresh_token: 'rt-reloaded' }),
+    })
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
+    expect(second.connected).toBe(true)
+    expect(pending.redirectUri).toBe('http://127.0.0.1:45678/oauth-callback')
+  })
+
+  it('rejects mismatched and expired callbacks visibly', async () => {
+    const store = useCalendarStore()
+    await store.connect()
+    await oauthHolder.cb!({ payload: '/oauth-callback?code=abc&state=wrong' })
+    expect(store.connectError).toContain('state mismatch')
+    expect(dbStore.get('gcal_pending_oauth')).toBe('')
+
+    await store.connect()
+    const pending = JSON.parse(dbStore.get('gcal_pending_oauth')!)
+    dbStore.set(
+      'gcal_pending_oauth',
+      JSON.stringify({ ...pending, createdAt: Date.now() - 11 * 60 * 1000 })
+    )
+    await store.loadPersistedConfig()
+    expect(store.connectError).toContain('expired')
+
+    await store.connect()
+    const expired = JSON.parse(dbStore.get('gcal_pending_oauth')!)
+    dbStore.set(
+      'gcal_pending_oauth',
+      JSON.stringify({ ...expired, createdAt: Date.now() - 11 * 60 * 1000 })
+    )
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${expired.state}` })
+    expect(store.connectError).toContain('expired')
+  })
+
+  it('keeps connection and sync errors independent', async () => {
+    const store = useCalendarStore()
+    await store.connect()
+    await oauthHolder.cb!({ payload: '/oauth-callback?error=access_denied' })
+    expect(store.connectError).toBeTruthy()
+    await store.syncYear()
+    expect(store.connectError).toBeTruthy()
+    expect(store.syncError).toBeNull()
+  })
+
+  it('reports callbacks without a pending authorization', async () => {
+    const store = useCalendarStore()
+    await oauthHolder.cb!({ payload: '/oauth-callback?code=abc&state=unknown' })
+    expect(store.connectError).toContain('without a pending connection')
+    expect(dbStore.get('gcal_pending_oauth')).toBe('')
+  })
+
+  it('reports token exchange failures as connection errors', async () => {
+    const store = useCalendarStore()
+    await store.connect()
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error_description: 'invalid_grant' }),
+    })
+    const state = new URL(vi.mocked(openUrl).mock.calls[0][0]).searchParams.get('state')
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
+    expect(store.connectError).toContain('invalid_grant')
     expect(store.connected).toBe(false)
   })
 
@@ -200,7 +277,7 @@ describe('useCalendarStore', () => {
     await store.connect()
     const authUrl = vi.mocked(openUrl).mock.calls[0][0]
     const state = new URL(authUrl).searchParams.get('state')
-    await deepLinkHolder.cb!([`com.aeon://oauth/callback?code=abc&state=${state}`])
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
 
     store.currentYear = 2026
     await store.syncYear(2026)

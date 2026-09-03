@@ -9,7 +9,6 @@ import Button from '@/components/ui/Button.vue'
 
 const { current, currentId, themes, setTheme } = useTheme()
 const store = useCalendarStore()
-const connecting = ref(false)
 
 const primaryColor = computed(() => `rgb(${current.value.colors.primary})`)
 const surfaceColor = computed(() => `rgb(${current.value.colors.surface1})`)
@@ -34,13 +33,10 @@ onMounted(() => document.addEventListener('mousedown', handleClickOutside))
 onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutside))
 
 async function handleConnect() {
-  connecting.value = true
   try {
     await store.connect()
   } catch {
-    // Error handling is done via store.syncError
-  } finally {
-    connecting.value = false
+    // The store exposes the persistent connection error below the card.
   }
 }
 
@@ -131,13 +127,26 @@ async function handleDisconnect() {
             v-if="!store.connected"
             variant="primary"
             size="sm"
-            :loading="connecting"
+            :loading="store.oauthStatus === 'waiting'"
             data-testid="gcal-connect-btn"
             @click="handleConnect"
           >
-            Conectar
+            {{
+              store.oauthStatus === 'waiting'
+                ? 'Esperando autorización en el navegador…'
+                : 'Conectar'
+            }}
           </Button>
-          <div v-else class="flex items-center gap-3">
+          <Button
+            v-if="store.oauthStatus === 'waiting'"
+            variant="secondary"
+            size="sm"
+            data-testid="gcal-cancel-btn"
+            @click="store.cancelConnect"
+          >
+            Cancelar
+          </Button>
+          <div v-if="store.connected" class="flex items-center gap-3">
             <span class="flex items-center gap-1.5 text-sm font-medium text-green-500">
               <span class="h-2 w-2 rounded-full bg-green-500"></span>
               Connected
@@ -153,7 +162,7 @@ async function handleDisconnect() {
           </div>
         </div>
         <span
-          v-if="!store.connected"
+          v-if="!store.connected && store.oauthStatus !== 'waiting'"
           class="flex items-center gap-1.5 text-sm font-medium text-red-500"
         >
           <span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
@@ -161,12 +170,20 @@ async function handleDisconnect() {
         </span>
       </div>
       <Text
+        v-if="store.connectError"
+        variant="caption"
+        color="muted"
+        class="mt-2 font-mono font-medium text-red-500"
+      >
+        Connection error: {{ store.connectError }}
+      </Text>
+      <Text
         v-if="store.syncError"
         variant="caption"
         color="muted"
         class="mt-2 font-mono font-medium text-red-500"
       >
-        Error: {{ store.syncError }}
+        Sync error: {{ store.syncError }}
       </Text>
     </Card>
   </main>

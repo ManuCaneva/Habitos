@@ -62,7 +62,9 @@ export function parseOAuthCallbackQuery(query: string): {
   error?: string
   state?: string
 } {
-  const params = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query)
+  const queryStart = query.indexOf('?')
+  const rawQuery = queryStart >= 0 ? query.slice(queryStart + 1) : query.replace(/^\?/, '')
+  const params = new URLSearchParams(rawQuery)
   return {
     code: params.get('code') ?? undefined,
     error: params.get('error') ?? undefined,
