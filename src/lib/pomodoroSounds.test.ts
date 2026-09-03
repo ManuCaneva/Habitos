@@ -99,4 +99,40 @@ describe('pomodoro sound player', () => {
 
     expect(AudioContextMock).not.toHaveBeenCalled()
   })
+
+  it('resolves safely when AudioContext construction throws (WebKitGTK backend unavailable)', async () => {
+    const AudioContextMock = vi.fn(() => {
+      throw new Error('WebKitGTK audio unavailable')
+    })
+    vi.stubGlobal('AudioContext', AudioContextMock)
+    const player = createPomodoroSoundPlayer()
+
+    await expect(player.prepareFromUserGesture()).resolves.toBeUndefined()
+    expect(AudioContextMock).toHaveBeenCalledOnce()
+
+    // subsequent chime attempts degrade silently
+    expect(() => player.playFocusEndChime(defaultPomodoroSettings)).not.toThrow()
+    expect(() => player.playBreakEndChime(defaultPomodoroSettings)).not.toThrow()
+  })
+
+  it('resolves safely when AudioContext resume rejects', async () => {
+    const audio = createAudioContextMock()
+    audio.context.resume = vi.fn(async () => {
+      throw new Error('resume failed')
+    })
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function () {
+        return audio.context
+      })
+    )
+    const player = createPomodoroSoundPlayer()
+
+    await expect(player.prepareFromUserGesture()).resolves.toBeUndefined()
+    expect(audio.context.resume).toHaveBeenCalledOnce()
+
+    // preparation failure must not break subsequent preparation or playback
+    await expect(player.prepareFromUserGesture()).resolves.toBeUndefined()
+    expect(() => player.playFocusEndChime(defaultPomodoroSettings)).not.toThrow()
+  })
 })

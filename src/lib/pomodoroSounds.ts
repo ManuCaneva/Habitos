@@ -26,8 +26,21 @@ export function createPomodoroSoundPlayer(): PomodoroSoundPlayer {
   let context: AudioContext | null = null
 
   async function prepareFromUserGesture(): Promise<void> {
-    context ??= new AudioContext()
-    if (context.state === 'suspended') await context.resume()
+    if (context === null) {
+      try {
+        context = new AudioContext()
+      } catch {
+        context = null
+        return
+      }
+    }
+    if (context.state === 'suspended') {
+      try {
+        await context.resume()
+      } catch {
+        // best-effort: WebKitGTK/pa backend may reject
+      }
+    }
   }
 
   function play(chime: Chime, settings: PomodoroSettings): void {

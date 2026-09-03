@@ -1,6 +1,6 @@
 # 02: Store progresivo — incrementar / decrementar progreso
 
-Status: complete
+Status: done
 
 Blocked by: 01 — Fundamento de datos
 

@@ -1,6 +1,6 @@
 # 03: Heatmap con intensidad proporcional
 
-Status: ready-for-agent
+Status: done
 
 Blocked by: 02 — Store progresivo
 

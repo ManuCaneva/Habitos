@@ -3,7 +3,7 @@
 // Rust es solo I/O. Cero lógica de negocio acá.
 // =============================================================
 
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use std::path::Path;
 use std::sync::Mutex;
 use thiserror::Error;
@@ -120,7 +120,7 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 8] = [
+        let migrations: [(i64, &str, &str); 9] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (
@@ -141,6 +141,7 @@ impl Db {
             (6, "006_block_slots", ""), // Migración 006 se ejecuta en Rust (run_migration_006)
             (7, "007_aeon_storage_keys", ""), // Migración 007 se ejecuta en Rust (run_migration_007)
             (8, "008_habit_logs_count", ""), // Migración 008 se ejecuta en Rust (run_migration_008)
+            (9, "009_repair_habit_progressive_schema", ""),
         ];
 
         for (version, name, sql) in &migrations {
@@ -152,7 +153,9 @@ impl Db {
                 )
                 .unwrap_or(false);
 
-            if !already_applied {
+            // La 009 reconcilia el esquema real y debe ejecutarse también si
+            // quedó registrada durante una ejecución incompleta anterior.
+            if !already_applied || *version == 9 {
                 // Para migraciones 006/007, manejar por lógica Rust (rutas parciales)
                 if *version == 6 {
                     Self::run_migration_006(&conn)?;
@@ -168,6 +171,12 @@ impl Db {
                     )?;
                 } else if *version == 8 {
                     Self::run_migration_008(&conn)?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                } else if *version == 9 {
+                    Self::run_migration_009(&conn)?;
                     conn.execute(
                         "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
                         params![version, now_iso8601()],
@@ -419,53 +428,160 @@ impl Db {
     /// "ALTER TABLE ... DROP/RECREATE": PRAGMA foreign_keys=OFF → recrear →
     /// PRAGMA foreign_keys=ON, seguido de un foreign_key_check.
     fn run_migration_008(conn: &Connection) -> DbResult<()> {
+        Self::ensure_progressive_schema(conn, "008")
+    }
+
+    /// Repara instalaciones donde la versión 008 quedó registrada sin aplicar
+    /// sus cambios de esquema. La inspección real permite que sea idempotente.
+    fn run_migration_009(conn: &Connection) -> DbResult<()> {
+        Self::ensure_progressive_schema(conn, "009")
+    }
+
+    fn ensure_progressive_schema(conn: &Connection, migration: &str) -> DbResult<()> {
+        let has_count_column = Self::habit_log_count_exists(conn)?;
+        let has_valid_count = Self::habit_log_count_is_valid(conn)?;
+        let has_valid_count_values =
+            has_count_column && Self::habit_log_count_values_are_valid(conn)?;
+        let needs_habits_rebuild = !Self::habits_accept_target_twenty(conn)?;
+
+        if has_valid_count && has_valid_count_values && !needs_habits_rebuild {
+            return Ok(());
+        }
+
         // PRAGMA foreign_keys=OFF debe correr en autocommit (no puede
         // ejecutarse dentro de una transacción). En este punto la conexión
         // está en autocommit (las migraciones previas ya committearon).
         conn.pragma_update(None, "foreign_keys", "OFF")
-            .map_err(|e| DbError::Migration(format!("008: foreign_keys=OFF: {e}")))?;
+            .map_err(|e| DbError::Migration(format!("{migration}: foreign_keys=OFF: {e}")))?;
 
         let result = (|| -> DbResult<()> {
-            conn.execute_batch(
-                "BEGIN TRANSACTION;
-                 CREATE TABLE habits_new (
-                   id                TEXT    PRIMARY KEY,
-                   name              TEXT    NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 100),
-                   description       TEXT             CHECK (description IS NULL OR length(description) <= 500),
-                   icon              TEXT             CHECK (icon       IS NULL OR length(icon)       <= 32),
-                   color             TEXT    NOT NULL CHECK (color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'),
-                   frequency_type    TEXT    NOT NULL CHECK (frequency_type IN ('daily','weekly','interval')),
-                   target_per_period INTEGER NOT NULL DEFAULT 1 CHECK (target_per_period > 0 AND target_per_period <= 20),
-                   interval_days     INTEGER          CHECK (interval_days IS NULL OR interval_days BETWEEN 1 AND 365),
-                   days_of_week      TEXT             CHECK (days_of_week  IS NULL OR json_valid(days_of_week)),
-                   sort_order        INTEGER NOT NULL DEFAULT 0,
-                   created_at        TEXT    NOT NULL,
-                   updated_at        TEXT    NOT NULL,
-                   archived_at       TEXT             CHECK (archived_at IS NULL OR archived_at >= created_at),
-                   CHECK (
-                     (frequency_type = 'daily'    AND interval_days IS NULL AND days_of_week IS NULL) OR
-                     (frequency_type = 'weekly'   AND interval_days IS NULL AND days_of_week IS NOT NULL) OR
-                     (frequency_type = 'interval' AND interval_days IS NOT NULL AND days_of_week IS NULL)
-                   )
-                 );
-                 INSERT INTO habits_new (
-                   id, name, description, icon, color, frequency_type, target_per_period,
-                   interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
-                 )
-                 SELECT
-                   id, name, description, icon, color, frequency_type, target_per_period,
-                   interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
-                 FROM habits;
-                 DROP TABLE habits;
-                 ALTER TABLE habits_new RENAME TO habits;
-                 CREATE INDEX idx_habits_archived ON habits(archived_at);
-                 CREATE INDEX idx_habits_sort     ON habits(sort_order) WHERE archived_at IS NULL;
-                 ALTER TABLE habit_logs ADD COLUMN count INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1);
-                 UPDATE habit_logs SET count = 1 WHERE count IS NULL;
-                 COMMIT;",
-            )
-            .map_err(|e| DbError::Migration(format!("008: recrear habits/habit_logs: {e}")))?;
-            Ok(())
+            conn.execute_batch("BEGIN TRANSACTION;")
+                .map_err(|e| DbError::Migration(format!("{migration}: begin transaction: {e}")))?;
+
+            let result = (|| -> DbResult<()> {
+                if needs_habits_rebuild {
+                    conn.execute_batch(
+                        "CREATE TABLE habits_new (
+                          id                TEXT    PRIMARY KEY,
+                          name              TEXT    NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 100),
+                          description       TEXT             CHECK (description IS NULL OR length(description) <= 500),
+                          icon              TEXT             CHECK (icon       IS NULL OR length(icon)       <= 32),
+                          color             TEXT    NOT NULL CHECK (color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'),
+                          frequency_type    TEXT    NOT NULL CHECK (frequency_type IN ('daily','weekly','interval')),
+                          target_per_period INTEGER NOT NULL DEFAULT 1 CHECK (target_per_period > 0 AND target_per_period <= 20),
+                          interval_days     INTEGER          CHECK (interval_days IS NULL OR interval_days BETWEEN 1 AND 365),
+                          days_of_week      TEXT             CHECK (days_of_week  IS NULL OR json_valid(days_of_week)),
+                          sort_order        INTEGER NOT NULL DEFAULT 0,
+                          created_at        TEXT    NOT NULL,
+                          updated_at        TEXT    NOT NULL,
+                          archived_at       TEXT             CHECK (archived_at IS NULL OR archived_at >= created_at),
+                          CHECK (
+                            (frequency_type = 'daily'    AND interval_days IS NULL AND days_of_week IS NULL) OR
+                            (frequency_type = 'weekly'   AND interval_days IS NULL AND days_of_week IS NOT NULL) OR
+                            (frequency_type = 'interval' AND interval_days IS NOT NULL AND days_of_week IS NULL)
+                          )
+                        );
+                        INSERT INTO habits_new (
+                          id, name, description, icon, color, frequency_type, target_per_period,
+                          interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
+                        )
+                        SELECT
+                          id, name, description, icon, color, frequency_type, target_per_period,
+                          interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
+                        FROM habits;
+                        DROP TABLE habits;
+                        ALTER TABLE habits_new RENAME TO habits;
+                        CREATE INDEX idx_habits_archived ON habits(archived_at);
+                        CREATE INDEX idx_habits_sort ON habits(sort_order) WHERE archived_at IS NULL;",
+                    )
+                    .map_err(|e| {
+                        DbError::Migration(format!("{migration}: recrear habits: {e}"))
+                    })?;
+                }
+
+                if has_count_column && (!has_valid_count || !has_valid_count_values) {
+                    conn.execute_batch(
+                        "CREATE TABLE habit_logs_new (
+                           id            TEXT    PRIMARY KEY,
+                           habit_id     TEXT    NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+                           log_date     TEXT    NOT NULL CHECK (log_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+                           completed_at TEXT    NOT NULL,
+                           note         TEXT             CHECK (note IS NULL OR length(note) <= 280),
+                           count        INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1),
+                           created_at   TEXT    NOT NULL,
+                           UNIQUE (habit_id, log_date)
+                         );
+                         INSERT INTO habit_logs_new (
+                           id, habit_id, log_date, completed_at, note, count, created_at
+                         )
+                         SELECT
+                           id, habit_id, log_date, completed_at, note,
+                            CASE
+                              WHEN CAST(count AS INTEGER) >= 1
+                                AND CAST(count AS REAL) = CAST(count AS INTEGER)
+                                AND (
+                                  typeof(count) IN ('integer', 'real')
+                                   OR (
+                                     typeof(count) = 'text'
+                                     AND trim(count) <> ''
+                                     AND trim(count) NOT GLOB '*[^0-9]*'
+                                   )
+                                )
+                              THEN CAST(count AS INTEGER)
+                             ELSE 1
+                           END,
+                           created_at
+                         FROM habit_logs;
+                         DROP TABLE habit_logs;
+                         ALTER TABLE habit_logs_new RENAME TO habit_logs;
+                         CREATE INDEX idx_logs_habit_date ON habit_logs(habit_id, log_date DESC);
+                         CREATE INDEX idx_logs_date ON habit_logs(log_date DESC);",
+                    )
+                    .map_err(|e| {
+                        DbError::Migration(format!("{migration}: recrear habit_logs: {e}"))
+                    })?;
+                } else if !has_count_column {
+                    conn.execute(
+                        "ALTER TABLE habit_logs ADD COLUMN count INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1)",
+                        [],
+                    )?;
+                }
+
+                let violations: i64 =
+                    conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |row| {
+                        row.get(0)
+                    })?;
+                if violations > 0 {
+                    return Err(DbError::Migration(format!(
+                        "{migration}: foreign_key_check encontró {violations} violaciones"
+                    )));
+                }
+
+                Ok(())
+            })();
+
+            match result {
+                Ok(()) => match conn.execute_batch("COMMIT;") {
+                    Ok(()) => Ok(()),
+                    Err(error) => {
+                        let rollback = conn.execute_batch("ROLLBACK;");
+                        match rollback {
+                            Ok(()) => {
+                                Err(DbError::Migration(format!("{migration}: commit: {error}")))
+                            }
+                            Err(rollback_error) => Err(DbError::Migration(format!(
+                                "{migration}: commit: {error}; rollback failed: {rollback_error}"
+                            ))),
+                        }
+                    }
+                },
+                Err(error) => match conn.execute_batch("ROLLBACK;") {
+                    Ok(()) => Err(error),
+                    Err(rollback_error) => Err(DbError::Migration(format!(
+                        "{migration}: migration: {error}; rollback failed: {rollback_error}"
+                    ))),
+                },
+            }
         })();
 
         let fk_check: DbResult<()> = (|| {
@@ -476,7 +592,7 @@ impl Db {
                 })?;
             if violations > 0 {
                 return Err(DbError::Migration(format!(
-                    "008: foreign_key_check encontró {violations} violaciones"
+                    "{migration}: foreign_key_check encontró {violations} violaciones"
                 )));
             }
             Ok(())
@@ -484,11 +600,103 @@ impl Db {
 
         match result {
             Ok(()) => fk_check,
-            Err(e) => {
-                // Rehabilitar FK incluso si falló la migración.
-                let _ = conn.pragma_update(None, "foreign_keys", "ON");
-                Err(e)
+            Err(e) => match conn.pragma_update(None, "foreign_keys", "ON") {
+                Ok(()) => Err(e),
+                Err(fk_error) => Err(DbError::Migration(format!(
+                    "{e}; foreign_keys=ON: {fk_error}"
+                ))),
+            },
+        }
+    }
+
+    fn habit_log_count_exists(conn: &Connection) -> DbResult<bool> {
+        Ok(conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM pragma_table_info('habit_logs') WHERE name = 'count')",
+            [],
+            |row| row.get(0),
+        )?)
+    }
+
+    fn habit_log_count_is_valid(conn: &Connection) -> DbResult<bool> {
+        let definition: Option<(String, i64, Option<String>)> = conn
+            .query_row(
+                "SELECT type, \"notnull\", dflt_value
+                 FROM pragma_table_info('habit_logs') WHERE name = 'count'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()?;
+        let Some((column_type, not_null, default_value)) = definition else {
+            return Ok(false);
+        };
+        if !column_type.eq_ignore_ascii_case("INTEGER")
+            || not_null != 1
+            || default_value.as_deref() != Some("1")
+        {
+            return Ok(false);
+        }
+        let table_sql: String = conn.query_row(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'habit_logs'",
+            [],
+            |row| row.get(0),
+        )?;
+        let normalized_sql: String = table_sql
+            .to_ascii_lowercase()
+            .chars()
+            .filter(|character| !character.is_ascii_whitespace())
+            .collect();
+        Ok(normalized_sql.contains("count>=1"))
+    }
+
+    fn habit_log_count_values_are_valid(conn: &Connection) -> DbResult<bool> {
+        let invalid_values: i64 = conn.query_row(
+            "SELECT count(*) FROM habit_logs
+             WHERE count IS NULL
+                OR (typeof(count) = 'integer' AND count < 1)
+                OR (typeof(count) = 'real' AND (count < 1 OR count != CAST(count AS INTEGER)))
+                OR (typeof(count) = 'text' AND (
+                     trim(count) = ''
+                     OR trim(count) GLOB '*[^0-9]*'
+                     OR CAST(trim(count) AS INTEGER) < 1
+                ))
+                OR typeof(count) NOT IN ('integer', 'real', 'text')",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(invalid_values == 0)
+    }
+
+    /// Comprueba el límite mediante SQLite, en lugar de interpretar el SQL
+    /// serializado de sqlite_master. El INSERT vive en un savepoint y nunca
+    /// modifica los datos persistidos.
+    fn habits_accept_target_twenty(conn: &Connection) -> DbResult<bool> {
+        conn.execute_batch("SAVEPOINT progressive_schema_probe;")?;
+        let result = conn.execute(
+            "INSERT INTO habits (
+                id, name, color, frequency_type, target_per_period,
+                interval_days, days_of_week, sort_order, created_at, updated_at, archived_at
+             ) VALUES (
+                'progressive-schema-probe-' || lower(hex(randomblob(16))), 'schema probe', '#000000', 'daily', 20,
+                NULL, NULL, 0, '1970-01-01T00:00:00.000Z',
+                '1970-01-01T00:00:00.000Z', NULL
+             )",
+            [],
+        );
+        conn.execute_batch(
+            "ROLLBACK TO progressive_schema_probe; RELEASE progressive_schema_probe;",
+        )?;
+
+        match result {
+            Ok(_) => Ok(true),
+            Err(rusqlite::Error::SqliteFailure(error, message))
+                if error.code == rusqlite::ErrorCode::ConstraintViolation
+                    && message
+                        .as_deref()
+                        .is_some_and(|message| message.contains("target_per_period")) =>
+            {
+                Ok(false)
             }
+            Err(error) => Err(error.into()),
         }
     }
 }
@@ -532,3 +740,6 @@ fn civil_from_days(z: i64) -> (i32, u32, u32) {
     let y = if m <= 2 { y + 1 } else { y };
     (y, m, d)
 }
+
+#[cfg(test)]
+mod tests;

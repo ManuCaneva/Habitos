@@ -18,10 +18,10 @@ Idea general para la primera vez que se inicia la app:
 
 - Pantalla de bienvenida con el logo y nombre de la app
 - Introducción breve a las funcionalidades principales
-- Posibilidad de crear una cuenta o continuar como invitado (si hay sync en el futuro)
-- Setup inicial rápido: elegir qué widgets mostrar en el dashboard
+- Posibilidad de crear una cuenta (iniciar sesíon con google, ya se carga todo en el calendario anual) o continuar como invitado (si hay sync en el futuro)
+- Setup inicial rápido: elegir qué widgets mostrar en el dashboard (un predeterminado con la mejor distribución)
 - Tutorial interactivo corto o tooltips guiados
-- Enlace a documentación o soporte
+- Enlace a documentación o soporte (enlace a github)
 
 ---
 

@@ -1,6 +1,6 @@
 # 01: Fundamento de datos — `count`, tope 20 y `upsert_habit_log`
 
-Status: ready-for-agent
+Status: done
 
 Blocked by: None (can start immediately)
 

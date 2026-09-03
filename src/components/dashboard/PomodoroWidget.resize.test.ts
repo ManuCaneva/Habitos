@@ -17,11 +17,7 @@ type DashDragCallbacks = {
 let dashCallbacks: Partial<DashDragCallbacks> = {}
 
 vi.mock('@/composables/useDashDrag', () => ({
-  useDashDrag: (
-    _elRef: unknown,
-    _editMode: unknown,
-    callbacks: DashDragCallbacks
-  ) => {
+  useDashDrag: (_elRef: unknown, _editMode: unknown, callbacks: DashDragCallbacks) => {
     dashCallbacks = callbacks
     return vi.fn()
   },

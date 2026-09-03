@@ -1,6 +1,6 @@
 # 04: Círculo segmentado + vistas (HabitCard y HabitRow)
 
-Status: complete
+Status: done
 
 Blocked by: 02 — Store progresivo
 

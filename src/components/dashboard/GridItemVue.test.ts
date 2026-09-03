@@ -137,7 +137,19 @@ describe('GridItemVue', () => {
     Object.defineProperty(container, 'clientHeight', { value: 800, configurable: true })
     Object.defineProperty(el, 'getBoundingClientRect', {
       configurable: true,
-      value: () => ({ left: 600, top: 560, width: 400, height: 240, right: 1000, bottom: 800, x: 600, y: 560, toJSON() { return {} } }),
+      value: () => ({
+        left: 600,
+        top: 560,
+        width: 400,
+        height: 240,
+        right: 1000,
+        bottom: 800,
+        x: 600,
+        y: 560,
+        toJSON() {
+          return {}
+        },
+      }),
     })
     dragCallbacks.onResizeStart?.()
     // Anclaje: no debe desplazarse (sin position/left/top)
@@ -160,8 +172,6 @@ describe('GridItemVue', () => {
     expect(el.style.width).toBe('')
     expect(el.style.height).toBe('')
   })
-
-
 
   it('al soltar un drag aplica FLIP: llama flipTransform/flipNeedsAnimation e inyecta grid-item--flip', async () => {
     const wrapper = mount(GridItemVue, {

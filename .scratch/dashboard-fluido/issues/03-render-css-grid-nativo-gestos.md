@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (necesita el modelo entero).
 
-**Status:** claimed (en implementación)
+**Status:** done
 
 - [x] El contenedor del dashboard es `display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(10, 1fr); gap: 4px`.
 - [x] Cada widget se posiciona con `grid-column`/`grid-row` derivados de sus enteros `x/y/w/h`.
@@ -16,11 +16,14 @@
 - [x] Durante el gesto no hay transiciones CSS de layout (misma protección que hoy con `grid-item--dragging`).
 - [x] El espaciado visual entre widgets se mantiene (gap 4px, equivalente al `applyGapToPixel` actual).
 - [x] Los tests de `DashboardView` y `GridItemVue` pasan sin `dims`; los tests de `useDashGrid` se adaptan o eliminan junto con el composable.
-- [x] `npm run build` y `npm run test` pasan; el resize de ventana se percibe fluido en `npm run tauri dev`.
+- [x] `npm run build` y `npm run test` pasan.
+- [x] Verificación manual del resize fluido en `npm run tauri dev` (aceptación del usuario).
 
 ## Comments
 
 - Se implementó el modelo entero 12×10 (bloqueante 02) como prerequisito, ya que 03 depende de él.
-- Se eliminaron `useDashGrid`, `useMonitorChange` y sus tests; se creó `gridSnap.ts` (pxToCells) y `lib/grid.ts` (COLS/ROWS/WIDGET_GAP).
+- Se eliminaron `useDashGrid`, `useMonitorChange` y sus tests; se creó `gridSnap.ts` (pxToCells) y `lib/grid.ts` (COLS/ROWS).
 - `GridItemVue` ahora renderiza con `grid-column`/`grid-row`, drag con `transform`, resize con absolute px, snap al soltar vía `pxToCells`.
-- Falta: verificación manual en `npm run tauri dev` (aceptación del usuario).
+- Code review (dos ejes) aplicado antes del commit `0c21aa0`: se eliminó `WIDGET_GAP` (dead code) y se corrigió que la migración desde porcentajes restaurara `minW`/`minH` desde el registro de widgets.
+- FLIP al soltar (animación) es del ticket 05, fuera de alcance acá.
+- Pendiente de aceptación final: verificación manual en `npm run tauri dev` (repro original del usuario).
