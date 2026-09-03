@@ -120,7 +120,7 @@ impl Db {
         )
         .map_err(|e| DbError::Migration(format!("schema_version: {e}")))?;
 
-        let migrations: [(i64, &str, &str); 9] = [
+        let migrations: [(i64, &str, &str); 10] = [
             (1, "001_init", include_str!("migrations/001_init.sql")),
             (2, "002_config", include_str!("migrations/002_config.sql")),
             (
@@ -142,6 +142,7 @@ impl Db {
             (7, "007_aeon_storage_keys", ""), // Migración 007 se ejecuta en Rust (run_migration_007)
             (8, "008_habit_logs_count", ""), // Migración 008 se ejecuta en Rust (run_migration_008)
             (9, "009_repair_habit_progressive_schema", ""),
+            (10, "010_repair_schedule_blocks", ""),
         ];
 
         for (version, name, sql) in &migrations {
@@ -153,9 +154,10 @@ impl Db {
                 )
                 .unwrap_or(false);
 
-            // La 009 reconcilia el esquema real y debe ejecutarse también si
-            // quedó registrada durante una ejecución incompleta anterior.
-            if !already_applied || *version == 9 {
+            // La 009 y la 010 reconcilian el esquema real y deben ejecutarse
+            // también si quedaron registradas durante una ejecución
+            // incompleta anterior.
+            if !already_applied || *version == 9 || *version == 10 {
                 // Para migraciones 006/007, manejar por lógica Rust (rutas parciales)
                 if *version == 6 {
                     Self::run_migration_006(&conn)?;
@@ -177,6 +179,12 @@ impl Db {
                     )?;
                 } else if *version == 9 {
                     Self::run_migration_009(&conn)?;
+                    conn.execute(
+                        "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
+                        params![version, now_iso8601()],
+                    )?;
+                } else if *version == 10 {
+                    Self::run_migration_010(&conn)?;
                     conn.execute(
                         "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (?1, ?2)",
                         params![version, now_iso8601()],
@@ -435,6 +443,279 @@ impl Db {
     /// sus cambios de esquema. La inspección real permite que sea idempotente.
     fn run_migration_009(conn: &Connection) -> DbResult<()> {
         Self::ensure_progressive_schema(conn, "009")
+    }
+
+    /// Migración 010: repara `schedule_blocks`/`schedule_block_slots`.
+    /// La 006 detectaba la forma vieja por la columna `day_of_week`, pero las
+    /// instalaciones reales quedaron en un estado intermedio: sin `day_of_week`
+    /// y con `start_minutes`/`end_minutes` NOT NULL en `schedule_blocks`, con
+    /// `schema_version` ya en la última. Esta repair detecta por
+    /// `start_minutes` (presente en la forma 005 completa y en la intermedia,
+    /// ausente en la nueva) y reconstruye a Bloque 1:N Slots preservando datos:
+    /// las filas con día+horario se convierten a slots con id UUID, y las
+    /// intermedias (ya sin día) conservan bloque + slots existentes.
+    /// Sigue el procedimiento oficial de SQLite (PRAGMA foreign_keys=OFF en
+    /// autocommit → recrear → ON + foreign_key_check) para que el DROP no
+    /// dispare borrados en cascada de slots. Idempotente por inspección real.
+    fn run_migration_010(conn: &Connection) -> DbResult<()> {
+        Self::ensure_schedule_blocks_schema(conn, "010")
+    }
+
+    fn ensure_schedule_blocks_schema(conn: &Connection, migration: &str) -> DbResult<()> {
+        let slots_table_exists: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_block_slots')",
+            [],
+            |row| row.get(0),
+        )?;
+        if slots_table_exists && !Self::schedule_slot_ids_are_uuid(conn)? {
+            Self::normalize_schedule_slot_ids(conn, migration)?;
+        }
+
+        let has_time_columns = Self::schedule_blocks_has_time_columns(conn)?;
+        if !has_time_columns {
+            let violations: i64 =
+                conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |row| {
+                    row.get(0)
+                })?;
+            if violations > 0 {
+                return Err(DbError::Migration(format!(
+                    "{migration}: foreign_key_check encontró {violations} violaciones"
+                )));
+            }
+            return Ok(());
+        }
+
+        // PRAGMA foreign_keys=OFF debe correr en autocommit (no puede
+        // ejecutarse dentro de una transacción). En este punto la conexión
+        // está en autocommit (las migraciones previas ya committearon).
+        conn.pragma_update(None, "foreign_keys", "OFF")
+            .map_err(|e| DbError::Migration(format!("{migration}: foreign_keys=OFF: {e}")))?;
+
+        let result = (|| -> DbResult<()> {
+            conn.execute_batch("BEGIN TRANSACTION;")
+                .map_err(|e| DbError::Migration(format!("{migration}: begin transaction: {e}")))?;
+
+            let result = (|| -> DbResult<()> {
+                if !slots_table_exists {
+                    conn.execute_batch(
+                        "CREATE TABLE schedule_block_slots (
+                           id            TEXT PRIMARY KEY,
+                           block_id      TEXT NOT NULL REFERENCES schedule_blocks(id) ON DELETE CASCADE,
+                           day_of_week   INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+                           start_minutes INTEGER NOT NULL CHECK (start_minutes >= 0 AND start_minutes < 1440),
+                           end_minutes   INTEGER NOT NULL CHECK (end_minutes > 0 AND end_minutes <= 1440),
+                           created_at    TEXT NOT NULL,
+                           updated_at    TEXT NOT NULL,
+                           CHECK (end_minutes > start_minutes)
+                         );
+                         CREATE INDEX idx_schedule_block_slots_block ON schedule_block_slots(block_id);
+                         CREATE INDEX idx_schedule_block_slots_day ON schedule_block_slots(day_of_week);",
+                    )
+                    .map_err(|e| {
+                        DbError::Migration(format!("{migration}: crear tabla slots: {e}"))
+                    })?;
+                }
+
+                let has_day_column: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM pragma_table_info('schedule_blocks') WHERE name='day_of_week')",
+                    [],
+                    |row| row.get(0),
+                )?;
+
+                if has_day_column {
+                    // Forma 005 completa: convertir filas a slots UUID antes de
+                    // descartar las columnas de horario.
+                    conn.execute_batch(
+                        "INSERT OR IGNORE INTO schedule_block_slots
+                           (id, block_id, day_of_week, start_minutes, end_minutes, created_at, updated_at)
+                         SELECT
+                           lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4'
+                             || substr(lower(hex(randomblob(2))), 2) || '-'
+                             || substr('89ab', abs(random()) % 4 + 1, 1)
+                             || substr(lower(hex(randomblob(2))), 2) || '-'
+                             || lower(hex(randomblob(6))),
+                           id,
+                           day_of_week,
+                           start_minutes,
+                           end_minutes,
+                           created_at,
+                           updated_at
+                         FROM schedule_blocks;",
+                    )
+                    .map_err(|e| {
+                        DbError::Migration(format!("{migration}: migrar datos: {e}"))
+                    })?;
+                }
+
+                conn.execute_batch("DROP INDEX IF EXISTS idx_schedule_blocks_day;")
+                    .map_err(|e| DbError::Migration(format!("{migration}: drop index: {e}")))?;
+
+                // Completar un rename parcial previo si quedó a medias.
+                let new_table_exists: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='schedule_blocks_new')",
+                    [],
+                    |row| row.get(0),
+                )?;
+                if new_table_exists {
+                    conn.execute_batch(
+                        "INSERT OR IGNORE INTO schedule_blocks_new
+                           (id, title, color, sort_order, created_at, updated_at)
+                         SELECT id, title, color, sort_order, created_at, updated_at
+                         FROM schedule_blocks;
+                         DROP TABLE schedule_blocks;
+                         ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;",
+                    )
+                    .map_err(|e| {
+                        DbError::Migration(format!("{migration}: completar rename: {e}"))
+                    })?;
+                } else {
+                    conn.execute_batch(
+                        "CREATE TABLE schedule_blocks_new (
+                           id            TEXT PRIMARY KEY,
+                           title         TEXT NOT NULL,
+                           color         TEXT NOT NULL,
+                           sort_order    REAL NOT NULL DEFAULT 0,
+                           created_at    TEXT NOT NULL,
+                           updated_at    TEXT NOT NULL
+                         );
+                         INSERT INTO schedule_blocks_new
+                           (id, title, color, sort_order, created_at, updated_at)
+                         SELECT id, title, color, sort_order, created_at, updated_at
+                         FROM schedule_blocks;
+                         DROP TABLE schedule_blocks;
+                         ALTER TABLE schedule_blocks_new RENAME TO schedule_blocks;",
+                    )
+                    .map_err(|e| DbError::Migration(format!("{migration}: recrear tabla: {e}")))?;
+                }
+
+                let violations: i64 =
+                    conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |row| {
+                        row.get(0)
+                    })?;
+                if violations > 0 {
+                    return Err(DbError::Migration(format!(
+                        "{migration}: foreign_key_check encontró {violations} violaciones"
+                    )));
+                }
+
+                Ok(())
+            })();
+
+            match result {
+                Ok(()) => match conn.execute_batch("COMMIT;") {
+                    Ok(()) => Ok(()),
+                    Err(error) => {
+                        let rollback = conn.execute_batch("ROLLBACK;");
+                        match rollback {
+                            Ok(()) => {
+                                Err(DbError::Migration(format!("{migration}: commit: {error}")))
+                            }
+                            Err(rollback_error) => Err(DbError::Migration(format!(
+                                "{migration}: commit: {error}; rollback failed: {rollback_error}"
+                            ))),
+                        }
+                    }
+                },
+                Err(error) => match conn.execute_batch("ROLLBACK;") {
+                    Ok(()) => Err(error),
+                    Err(rollback_error) => Err(DbError::Migration(format!(
+                        "{migration}: migration: {error}; rollback failed: {rollback_error}"
+                    ))),
+                },
+            }
+        })();
+
+        let fk_check: DbResult<()> = (|| {
+            conn.pragma_update(None, "foreign_keys", "ON")?;
+            let violations: i64 =
+                conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
+                    r.get(0)
+                })?;
+            if violations > 0 {
+                return Err(DbError::Migration(format!(
+                    "{migration}: foreign_key_check encontró {violations} violaciones"
+                )));
+            }
+            Self::normalize_schedule_slot_ids(conn, migration)?;
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => fk_check,
+            Err(e) => match conn.pragma_update(None, "foreign_keys", "ON") {
+                Ok(()) => Err(e),
+                Err(fk_error) => Err(DbError::Migration(format!(
+                    "{e}; foreign_keys=ON: {fk_error}"
+                ))),
+            },
+        }
+    }
+
+    fn schedule_blocks_has_time_columns(conn: &Connection) -> DbResult<bool> {
+        Ok(conn.query_row(
+            "SELECT EXISTS(
+               SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schedule_blocks'
+             ) AND EXISTS(
+               SELECT 1 FROM pragma_table_info('schedule_blocks') WHERE name = 'start_minutes'
+             )",
+            [],
+            |row| row.get(0),
+        )?)
+    }
+
+    /// Los ids `slot-…` generados por la 006 no pasan la validación UUID del
+    /// frontend (`z.string().uuid()`) y la carga falla con "Error al cargar".
+    /// Detecta por forma: 36 chars con guiones y versión/variante UUID.
+    fn schedule_slot_ids_are_uuid(conn: &Connection) -> DbResult<bool> {
+        let non_uuid: i64 = conn.query_row(
+            "SELECT count(*) FROM schedule_block_slots
+             WHERE length(id) != 36
+                OR substr(id, 9, 1) != '-'
+                OR substr(id, 14, 1) != '-'
+                OR substr(id, 19, 1) != '-'
+                OR substr(id, 24, 1) != '-'
+                OR substr(id, 15, 1) != '4'
+                OR substr(id, 20, 1) NOT IN ('8', '9', 'a', 'b', 'A', 'B')",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(non_uuid == 0)
+    }
+
+    fn normalize_schedule_slot_ids(conn: &Connection, migration: &str) -> DbResult<()> {
+        let legacy_ids: Vec<String> = conn
+            .prepare(
+                "SELECT id FROM schedule_block_slots
+                 WHERE length(id) != 36
+                    OR substr(id, 9, 1) != '-'
+                    OR substr(id, 14, 1) != '-'
+                    OR substr(id, 19, 1) != '-'
+                    OR substr(id, 24, 1) != '-'
+                    OR substr(id, 15, 1) != '4'
+                    OR substr(id, 20, 1) NOT IN ('8', '9', 'a', 'b', 'A', 'B')",
+            )
+            .and_then(|mut stmt| {
+                stmt.query_map([], |row| row.get(0))
+                    .and_then(|rows| rows.collect::<Result<Vec<String>, _>>())
+            })
+            .map_err(|e| DbError::Migration(format!("{migration}: leer slot ids: {e}")))?;
+        for old_id in legacy_ids {
+            let new_id: String = conn.query_row(
+                "SELECT lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4'
+                   || substr(lower(hex(randomblob(2))), 2) || '-'
+                   || substr('89ab', abs(random()) % 4 + 1, 1)
+                   || substr(lower(hex(randomblob(2))), 2) || '-'
+                   || lower(hex(randomblob(6)))",
+                [],
+                |row| row.get(0),
+            )?;
+            conn.execute(
+                "UPDATE schedule_block_slots SET id = ?1 WHERE id = ?2",
+                rusqlite::params![new_id, old_id],
+            )
+            .map_err(|e| DbError::Migration(format!("{migration}: normalizar slot id: {e}")))?;
+        }
+        Ok(())
     }
 
     fn ensure_progressive_schema(conn: &Connection, migration: &str) -> DbResult<()> {
