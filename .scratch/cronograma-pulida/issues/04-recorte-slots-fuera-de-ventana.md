@@ -4,8 +4,8 @@
 
 **Blocked by:** 02 (Ventana visible auto-ajustable — el filtro que se reemplaza vive en la misma zona de la grilla).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Test del grid con un slot que cruza el borde de la Ventana visible: el bloque se renderiza recortado (altura parcial hasta el borde), no desaparece.
-- [ ] Un slot íntegramente dentro de la ventana se dibuja igual que antes (tests existentes del grid en verde).
-- [ ] `npm run test` y `npm run build` en verde; `npm run test:perf` en verde.
+- [x] Test del grid con un slot que cruza el borde de la Ventana visible: el bloque se renderiza recortado (altura parcial hasta el borde), no desaparece.
+- [x] Un slot íntegramente dentro de la ventana se dibuja igual que antes (tests existentes del grid en verde).
+- [x] `npm run test` y `npm run build` en verde; `npm run test:perf` en verde.

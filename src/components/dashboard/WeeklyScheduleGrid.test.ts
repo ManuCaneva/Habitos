@@ -177,4 +177,124 @@ describe('WeeklyScheduleGrid', () => {
     ]
     mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
   })
+
+  it('recorta en el borde un slot que cruza la Ventana visible en vez de ocultarlo', () => {
+    mockStore.settings.granularity_minutes = 30
+    mockStore.visibleWindow = { start_minutes: 900, end_minutes: 1200 } // 15:00-20:00
+    mockStore.blocksWithSlots = [
+      {
+        id: '333e8400-e29b-41d4-a716-446655440000',
+        title: 'Adentro',
+        color: 'lavender',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            block_id: '333e8400-e29b-41d4-a716-446655440000',
+            day_of_week: 0,
+            start_minutes: 960, // 16:00
+            end_minutes: 1020, // 17:00 (60' visibles, íntegro)
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+      {
+        id: '333e8400-e29b-41d4-a716-446655440001',
+        title: 'Cruza abajo',
+        color: 'green',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440002',
+            block_id: '333e8400-e29b-41d4-a716-446655440001',
+            day_of_week: 1,
+            start_minutes: 1140, // 19:00
+            end_minutes: 1260, // 21:00 (recortado a 20:00)
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+      {
+        id: '333e8400-e29b-41d4-a716-446655440002',
+        title: 'Cruza arriba',
+        color: 'red',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440003',
+            block_id: '333e8400-e29b-41d4-a716-446655440002',
+            day_of_week: 2,
+            start_minutes: 840, // 14:00
+            end_minutes: 960, // 16:00 (recortado a 15:00)
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+    ]
+
+    const wrapper = mount(WeeklyScheduleGrid)
+    const blocks = wrapper.findAll('.schedule-block')
+    expect(blocks).toHaveLength(3)
+
+    function stylePx(el: { attributes: (n: string) => string | undefined }, prop: string): number {
+      const style = el.attributes('style') ?? ''
+      const entry = style
+        .split(';')
+        .map((s) => s.trim())
+        .find((s) => s.startsWith(prop + ':'))
+      return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
+    }
+
+    const byDay = new Map(
+      blocks.map((b) => [b.attributes('data-day'), b] as [string, (typeof blocks)[number]])
+    )
+    const inside = byDay.get('0')!
+    const crossesBottom = byDay.get('1')!
+    const crossesTop = byDay.get('2')!
+    const insideHeight = stylePx(inside, 'height')
+    expect(insideHeight).toBeGreaterThan(0)
+
+    // El que cruza el borde inferior conserva su rango real en data-*...
+    expect(crossesBottom.attributes('data-start')).toBe('1140')
+    expect(crossesBottom.attributes('data-end')).toBe('1260')
+    // ...pero se dibuja recortado: misma altura que un slot íntegro de 60'
+    expect(stylePx(crossesBottom, 'height')).toBe(insideHeight)
+
+    // El que cruza el borde superior se dibuja desde el borde (top 0) recortado
+    expect(stylePx(crossesTop, 'top')).toBe(0)
+    expect(stylePx(crossesTop, 'height')).toBe(insideHeight)
+    wrapper.unmount()
+
+    mockStore.blocksWithSlots = [
+      {
+        id: '333e8400-e29b-41d4-a716-446655440000',
+        title: 'Gimnasio',
+        color: 'lavender',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            block_id: '333e8400-e29b-41d4-a716-446655440000',
+            day_of_week: 1,
+            start_minutes: 360,
+            end_minutes: 420,
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+    ]
+    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
+  })
 })

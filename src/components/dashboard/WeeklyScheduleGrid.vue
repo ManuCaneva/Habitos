@@ -95,17 +95,19 @@ const gridTotalHeightPx = computed(() => visibleRows.value * rowHeightPx.value)
 const gridHeightStyle = computed(() => gridTotalHeightPx.value + 'px')
 const rowHeightStyle = computed(() => rowHeightPx.value + 'px')
 
-function slotTopPx(s: ScheduleSlot) {
-  return (s.start_minutes - windowStart.value) * minuteHeightPx.value
-}
-
-function slotHeightPx(s: ScheduleSlot) {
-  return (s.end_minutes - s.start_minutes) * minuteHeightPx.value
-}
-
 interface VisibleSlot {
   slot: ScheduleSlot
   block: ScheduleBlockWithSlots
+  clipStart: number
+  clipEnd: number
+}
+
+function slotTopPx(vs: VisibleSlot) {
+  return (vs.clipStart - windowStart.value) * minuteHeightPx.value
+}
+
+function slotHeightPx(vs: VisibleSlot) {
+  return (vs.clipEnd - vs.clipStart) * minuteHeightPx.value
 }
 
 const visibleSlots = computed((): VisibleSlot[] => {
@@ -114,9 +116,10 @@ const visibleSlots = computed((): VisibleSlot[] => {
   const result: VisibleSlot[] = []
   for (const bw of store.blocksWithSlots) {
     for (const slot of bw.slots) {
-      if (slot.start_minutes >= start && slot.end_minutes <= end) {
-        result.push({ slot, block: bw })
-      }
+      const clipStart = Math.max(slot.start_minutes, start)
+      const clipEnd = Math.min(slot.end_minutes, end)
+      if (clipEnd <= clipStart) continue
+      result.push({ slot, block: bw, clipStart, clipEnd })
     }
   }
   return result
@@ -177,8 +180,8 @@ function slotsForDay(day: number): VisibleSlot[] {
               :end-minutes="vs.slot.end_minutes"
               class="absolute z-10 shadow-sm"
               :style="{
-                top: slotTopPx(vs.slot) + 'px',
-                height: slotHeightPx(vs.slot) + 'px',
+                top: slotTopPx(vs) + 'px',
+                height: slotHeightPx(vs) + 'px',
                 left: '2%',
                 width: '96%',
               }"
