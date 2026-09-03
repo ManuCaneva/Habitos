@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   generatePkce,
   buildAuthUrl,
-  parseRedirectUri,
+  parseOAuthCallbackQuery,
   buildTokenExchangePayload,
   buildRefreshPayload,
 } from './googleOauth'
@@ -35,7 +35,7 @@ describe('googleOauth', () => {
       const url = buildAuthUrl({
         clientId: '123.apps.googleusercontent.com',
         redirectUri: 'com.aeon://oauth/callback',
-        scope: 'https://www.googleapis.com/auth/calendar.readonly',
+        scope: 'https://www.googleapis.com/auth/calendar',
         state: 'xyz123',
         codeChallenge: 'challenge123',
       })
@@ -50,23 +50,30 @@ describe('googleOauth', () => {
     })
   })
 
-  describe('parseRedirectUri', () => {
-    it('extrae code y state de una URI válida', () => {
-      const result = parseRedirectUri('com.aeon://oauth/callback?code=abc123&state=xyz')
-      expect(result.code).toBe('abc123')
+  describe('parseOAuthCallbackQuery', () => {
+    it('decodifica una query cruda exactamente una vez', () => {
+      const result = parseOAuthCallbackQuery('code=4%2F0AVG%2Babc&state=xyz')
+      expect(result.code).toBe('4/0AVG+abc')
       expect(result.state).toBe('xyz')
       expect(result.error).toBeUndefined()
     })
 
     it('extrae error cuando Google lo envía', () => {
-      const result = parseRedirectUri('com.aeon://oauth/callback?error=access_denied&state=xyz')
+      const result = parseOAuthCallbackQuery('error=access_denied&state=xyz')
       expect(result.error).toBe('access_denied')
       expect(result.code).toBeUndefined()
     })
 
     it('retorna undefined para params faltantes', () => {
-      const result = parseRedirectUri('com.aeon://oauth/callback')
+      const result = parseOAuthCallbackQuery('')
       expect(result.code).toBeUndefined()
+      expect(result.error).toBeUndefined()
+      expect(result.state).toBeUndefined()
+    })
+
+    it('no lanza con una query malformada', () => {
+      const result = parseOAuthCallbackQuery('code=%E0%A4%A')
+      expect(result.code).toBe('\uFFFD%A')
       expect(result.error).toBeUndefined()
       expect(result.state).toBeUndefined()
     })
@@ -77,13 +84,12 @@ describe('googleOauth', () => {
       const payload = buildTokenExchangePayload({
         code: 'authcode123',
         clientId: '123.apps.googleusercontent.com',
-        clientSecret: 'GOCSPX-secret123',
         redirectUri: 'com.aeon://oauth/callback',
         codeVerifier: 'verifier123',
       })
       expect(payload.get('code')).toBe('authcode123')
       expect(payload.get('client_id')).toBe('123.apps.googleusercontent.com')
-      expect(payload.get('client_secret')).toBe('GOCSPX-secret123')
+      expect(payload.has('client_secret')).toBe(false)
       expect(payload.get('redirect_uri')).toBe('com.aeon://oauth/callback')
       expect(payload.get('code_verifier')).toBe('verifier123')
       expect(payload.get('grant_type')).toBe('authorization_code')
@@ -95,11 +101,10 @@ describe('googleOauth', () => {
       const payload = buildRefreshPayload({
         refreshToken: 'rt123',
         clientId: '123.apps.googleusercontent.com',
-        clientSecret: 'GOCSPX-secret123',
       })
       expect(payload.get('refresh_token')).toBe('rt123')
       expect(payload.get('client_id')).toBe('123.apps.googleusercontent.com')
-      expect(payload.get('client_secret')).toBe('GOCSPX-secret123')
+      expect(payload.has('client_secret')).toBe(false)
       expect(payload.get('grant_type')).toBe('refresh_token')
     })
   })
