@@ -111,13 +111,17 @@ describe('weeklySchedule store', () => {
 
     it('slot 15:50–18:05 → 15:00–19:00', () => {
       const store = useWeeklyScheduleStore()
-      store.blocksWithSlots = [blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })])]
+      store.blocksWithSlots = [
+        blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })]),
+      ]
       expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1140 })
     })
 
     it('slot 18:10–20:25 → 18:00–21:00', () => {
       const store = useWeeklyScheduleStore()
-      store.blocksWithSlots = [blockWith([slot({ day_of_week: 3, start_minutes: 1090, end_minutes: 1225 })])]
+      store.blocksWithSlots = [
+        blockWith([slot({ day_of_week: 3, start_minutes: 1090, end_minutes: 1225 })]),
+      ]
       expect(store.visibleWindow).toEqual({ start_minutes: 1080, end_minutes: 1260 })
     })
 
@@ -143,13 +147,17 @@ describe('weeklySchedule store', () => {
 
     it('slot exacto 15:00–16:00 → 15:00–16:00 (sin mínimo artificial)', () => {
       const store = useWeeklyScheduleStore()
-      store.blocksWithSlots = [blockWith([slot({ day_of_week: 2, start_minutes: 900, end_minutes: 960 })])]
+      store.blocksWithSlots = [
+        blockWith([slot({ day_of_week: 2, start_minutes: 900, end_minutes: 960 })]),
+      ]
       expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 960 })
     })
 
     it('se expande al agregar un slot más temprano y uno más tardío', () => {
       const store = useWeeklyScheduleStore()
-      store.blocksWithSlots = [blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })])]
+      store.blocksWithSlots = [
+        blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })]),
+      ]
       expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1140 })
 
       store.blocksWithSlots = [
@@ -379,6 +387,310 @@ describe('weeklySchedule store', () => {
 
       expect(store.blocksWithSlots).toHaveLength(0)
       expect(db.deleteScheduleBlock).toHaveBeenCalledWith(validUuid)
+    })
+  })
+
+  describe('saveBlock (Guardar único del modal)', () => {
+    const blockId = '333e8400-e29b-41d4-a716-446655440000'
+    const slotAId = '550e8400-e29b-41d4-a716-446655440001'
+    const slotBId = '550e8400-e29b-41d4-a716-446655440002'
+
+    const blockWith = (id: string, slots: any[], title = 'Redes de datos') => ({
+      id,
+      title,
+      color: 'cyan' as const,
+      sort_order: 0,
+      created_at: validIso,
+      updated_at: validIso,
+      slots,
+    })
+    const slot = (id: string, block: string, day: number, start: number, end: number) => ({
+      id,
+      block_id: block,
+      day_of_week: day,
+      start_minutes: start,
+      end_minutes: end,
+      created_at: validIso,
+      updated_at: validIso,
+    })
+
+    beforeEach(() => {
+      vi.mocked(db.createScheduleBlock).mockImplementation(async (draft, id) => ({
+        id,
+        ...draft,
+        created_at: validIso,
+        updated_at: validIso,
+      }))
+      vi.mocked(db.createScheduleSlot).mockImplementation(async (draft, id, block) => ({
+        id,
+        block_id: block,
+        ...draft,
+        created_at: validIso,
+        updated_at: validIso,
+      }))
+      vi.mocked(db.updateScheduleSlot).mockImplementation(async (id, patch) => ({
+        id,
+        block_id: blockId,
+        day_of_week: patch.day_of_week ?? 1,
+        start_minutes: patch.start_minutes ?? 480,
+        end_minutes: patch.end_minutes ?? 540,
+        created_at: validIso,
+        updated_at: validIso,
+      }))
+    })
+
+    it('en modo crear persiste UN bloque y todos los slots, en orden, exactamente una vez', async () => {
+      const store = useWeeklyScheduleStore()
+
+      await store.saveBlock({
+        title: 'AACSW',
+        color: 'cyan',
+        slots: [
+          { day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+          { day_of_week: 3, start_minutes: 1090, end_minutes: 1225 },
+        ],
+      })
+
+      expect(db.createScheduleBlock).toHaveBeenCalledTimes(1)
+      expect(db.createScheduleSlot).toHaveBeenCalledTimes(2)
+      const persistedBlockId = vi.mocked(db.createScheduleBlock).mock.calls[0][1]
+      expect(db.createScheduleSlot).toHaveBeenNthCalledWith(
+        1,
+        { day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+        expect.any(String),
+        persistedBlockId,
+        expect.any(String),
+        expect.any(String)
+      )
+      expect(db.createScheduleSlot).toHaveBeenNthCalledWith(
+        2,
+        { day_of_week: 3, start_minutes: 1090, end_minutes: 1225 },
+        expect.any(String),
+        persistedBlockId,
+        expect.any(String),
+        expect.any(String)
+      )
+      expect(store.blocksWithSlots).toHaveLength(1)
+      expect(store.blocksWithSlots[0].slots).toHaveLength(2)
+      expect(store.blocksWithSlots[0].slots.map((s) => s.day_of_week)).toEqual([1, 3])
+    })
+
+    it('en modo edición solo crea/actualiza/elimina los slots del diff y deja el bloque consistente', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith(blockId, [
+          slot(slotAId, blockId, 1, 950, 1085),
+          slot(slotBId, blockId, 3, 1090, 1225),
+        ]),
+      ]
+
+      // A queda igual, B se mueve a otro día/hora, y se agrega C nuevo.
+      await store.saveBlock({
+        blockId,
+        title: 'Redes de datos',
+        color: 'cyan',
+        slots: [
+          { id: slotAId, day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+          { id: slotBId, day_of_week: 2, start_minutes: 480, end_minutes: 540 },
+          { day_of_week: 4, start_minutes: 1090, end_minutes: 1225 },
+        ],
+      })
+
+      expect(db.updateScheduleBlock).toHaveBeenCalledTimes(0)
+      expect(db.createScheduleSlot).toHaveBeenCalledTimes(1)
+      expect(db.updateScheduleSlot).toHaveBeenCalledTimes(1)
+      expect(db.updateScheduleSlot).toHaveBeenCalledWith(
+        slotBId,
+        { day_of_week: 2, start_minutes: 480, end_minutes: 540 },
+        expect.any(String)
+      )
+      expect(db.deleteScheduleSlot).not.toHaveBeenCalled()
+      expect(store.blocksWithSlots[0].slots).toHaveLength(3)
+      expect(store.blocksWithSlots[0].slots.map((s) => s.day_of_week).sort()).toEqual([1, 2, 4])
+    })
+
+    it('en modo edición elimina los slots ausentes del diff', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith(blockId, [
+          slot(slotAId, blockId, 1, 950, 1085),
+          slot(slotBId, blockId, 3, 1090, 1225),
+        ]),
+      ]
+
+      await store.saveBlock({
+        blockId,
+        title: 'Redes de datos',
+        color: 'cyan',
+        slots: [{ id: slotAId, day_of_week: 1, start_minutes: 950, end_minutes: 1085 }],
+      })
+
+      expect(db.deleteScheduleSlot).toHaveBeenCalledWith(slotBId)
+      expect(db.createScheduleSlot).not.toHaveBeenCalled()
+      expect(db.updateScheduleSlot).not.toHaveBeenCalled()
+      expect(store.blocksWithSlots[0].slots).toHaveLength(1)
+    })
+
+    it('actualiza el título/color del bloque editado si cambiaron', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith(blockId, [
+          slot(slotAId, blockId, 1, 950, 1085),
+          slot(slotBId, blockId, 3, 1090, 1225),
+        ]),
+      ]
+
+      await store.saveBlock({
+        blockId,
+        title: 'Base de datos',
+        color: 'green',
+        slots: [
+          { id: slotAId, day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+          { id: slotBId, day_of_week: 3, start_minutes: 1090, end_minutes: 1225 },
+        ],
+      })
+
+      expect(db.updateScheduleBlock).toHaveBeenCalledTimes(1)
+      expect(db.updateScheduleBlock).toHaveBeenCalledWith(
+        blockId,
+        { title: 'Base de datos', color: 'green' },
+        expect.any(String)
+      )
+      expect(store.blocksWithSlots[0].title).toBe('Base de datos')
+    })
+
+    it('rechaza Guardar sin horarios con mensaje humano y no persiste nada', async () => {
+      const store = useWeeklyScheduleStore()
+
+      await expect(store.saveBlock({ title: 'AACSW', color: 'cyan', slots: [] })).rejects.toThrow(
+        'Agregá al menos un horario'
+      )
+      expect(db.createScheduleBlock).not.toHaveBeenCalled()
+      expect(db.createScheduleSlot).not.toHaveBeenCalled()
+
+      // También en edición: vaciar la lista no elimina los slots persistidos.
+      store.blocksWithSlots = [blockWith(blockId, [slot(slotAId, blockId, 1, 950, 1085)])]
+      await expect(
+        store.saveBlock({ blockId, title: 'AACSW', color: 'cyan', slots: [] })
+      ).rejects.toThrow('Agregá al menos un horario')
+      expect(db.deleteScheduleSlot).not.toHaveBeenCalled()
+    })
+
+    it('rechaza Guardar con título vacío y no persiste nada', async () => {
+      const store = useWeeklyScheduleStore()
+
+      await expect(
+        store.saveBlock({
+          title: '   ',
+          color: 'cyan',
+          slots: [{ day_of_week: 1, start_minutes: 950, end_minutes: 1085 }],
+        })
+      ).rejects.toThrow('El título es obligatorio')
+      expect(db.createScheduleBlock).not.toHaveBeenCalled()
+    })
+
+    it('rechaza Guardar si dos horarios del mismo bloque se superponen en el mismo día', async () => {
+      const store = useWeeklyScheduleStore()
+
+      await expect(
+        store.saveBlock({
+          title: 'AACSW',
+          color: 'cyan',
+          slots: [
+            { day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+            { day_of_week: 1, start_minutes: 1000, end_minutes: 1100 },
+          ],
+        })
+      ).rejects.toThrow('superponen')
+      expect(db.createScheduleBlock).not.toHaveBeenCalled()
+    })
+
+    it('rechaza Guardar si un horario se superpone con otro bloque ya existente', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        {
+          id: blockId,
+          title: 'Gimnasio',
+          color: 'lavender',
+          sort_order: 0,
+          created_at: validIso,
+          updated_at: validIso,
+          slots: [slot(slotAId, blockId, 1, 950, 1085)],
+        },
+      ]
+
+      await expect(
+        store.saveBlock({
+          title: 'Estudio',
+          color: 'green',
+          slots: [{ day_of_week: 1, start_minutes: 1000, end_minutes: 1100 }],
+        })
+      ).rejects.toThrow('superponen con «Gimnasio»')
+      expect(db.createScheduleBlock).not.toHaveBeenCalled()
+    })
+
+    it('en modo edición, rechaza si el slot editado se superpone con otro bloque y lo nombra', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith(blockId, [
+          slot(slotAId, blockId, 1, 950, 1085),
+          slot(slotBId, blockId, 3, 1090, 1225),
+        ]),
+        {
+          id: '999e8400-e29b-41d4-a716-446655440000',
+          title: 'Gimnasio',
+          color: 'lavender',
+          sort_order: 0,
+          created_at: validIso,
+          updated_at: validIso,
+          slots: [
+            slot(
+              '888e8400-e29b-41d4-a716-446655440001',
+              '999e8400-e29b-41d4-a716-446655440000',
+              3,
+              1100,
+              1200
+            ),
+          ],
+        },
+      ]
+
+      // Muevo el slot B al jueves 18:20-20:25 → choca con Gimnasio (jueves 18:20-20:00)
+      await expect(
+        store.saveBlock({
+          blockId,
+          title: 'Redes de datos',
+          color: 'cyan',
+          slots: [
+            { id: slotAId, day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+            { id: slotBId, day_of_week: 3, start_minutes: 1100, end_minutes: 1225 },
+          ],
+        })
+      ).rejects.toThrow('superponen con «Gimnasio»')
+      expect(db.updateScheduleSlot).not.toHaveBeenCalled()
+    })
+
+    it('en modo edición, rechaza si el slot editado choca contra un slot propio sin tocar', async () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith(blockId, [
+          slot(slotAId, blockId, 1, 950, 1085),
+          slot(slotBId, blockId, 1, 1000, 1100), // choca con A si A se mueve encima
+        ]),
+      ]
+
+      await expect(
+        store.saveBlock({
+          blockId,
+          title: 'Redes de datos',
+          color: 'cyan',
+          slots: [
+            { id: slotAId, day_of_week: 1, start_minutes: 1000, end_minutes: 1100 },
+            { id: slotBId, day_of_week: 1, start_minutes: 950, end_minutes: 1085 },
+          ],
+        })
+      ).rejects.toThrow('superponen')
+      expect(db.updateScheduleSlot).not.toHaveBeenCalled()
     })
   })
 })

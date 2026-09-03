@@ -45,8 +45,12 @@ Una actividad coloreada del cronograma semanal (una materia, el gimnasio, el tra
 _Avoid_: actividad, evento, slot
 
 **Slot**:
-Una ocurrencia concreta de un bloque en la grilla: un día de la semana con hora de inicio y fin.
+Una ocurrencia concreta de un bloque en la grilla: un día de la semana con hora de inicio y fin. Un bloque puede tener varios slots.
 _Avoid_: franja, espacio
+
+**Ventana visible**:
+El rango horario que la grilla del cronograma muestra de cada día. Se ajusta sola: abraza desde el slot más temprano hasta el más tardío (redondeado a horas enteras), o muestra un horario por defecto cuando no hay slots. No se configura manualmente.
+_Avoid_: rango de la grilla, desde/hasta, horario de la grilla
 
 **Archivado**:
 Ocultar un hábito, tarea u objetivo de las vistas activas sin perder su historial. Puede restaurarse. Los hábitos archivados dejan de sumar racha pero conservan sus logs.

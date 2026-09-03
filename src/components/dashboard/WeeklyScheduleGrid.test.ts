@@ -110,4 +110,71 @@ describe('WeeklyScheduleGrid', () => {
     expect(hourHeight).not.toBe(defaultHourHeight)
     wrapper.unmount()
   })
+
+  it('muestra un solo bloque con dos slots (lunes 15:50 y jueves 18:10) como un único título', () => {
+    mockStore.blocksWithSlots = [
+      {
+        id: '333e8400-e29b-41d4-a716-446655440000',
+        title: 'AACSW',
+        color: 'cyan',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            block_id: '333e8400-e29b-41d4-a716-446655440000',
+            day_of_week: 0,
+            start_minutes: 950, // 15:50
+            end_minutes: 1085, // 18:05
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+          {
+            id: '550e8400-e29b-41d4-a716-446655440002',
+            block_id: '333e8400-e29b-41d4-a716-446655440000',
+            day_of_week: 3,
+            start_minutes: 1090, // 18:10
+            end_minutes: 1225, // 20:25
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+    ]
+    mockStore.visibleWindow = { start_minutes: 900, end_minutes: 1260 } // 15:00-21:00
+    const wrapper = mount(WeeklyScheduleGrid)
+
+    const blocks = wrapper.findAll('.schedule-block')
+    expect(blocks).toHaveLength(2)
+    expect(blocks.map((b) => b.attributes('data-day'))).toEqual(['0', '3'])
+    expect(blocks.map((b) => b.attributes('data-start'))).toEqual(['950', '1090'])
+    expect(blocks.map((b) => b.attributes('data-end'))).toEqual(['1085', '1225'])
+    // Ambos slots son de la misma instancia AACSW
+    blocks.forEach((b) => expect(b.text()).toContain('AACSW'))
+    wrapper.unmount()
+
+    mockStore.blocksWithSlots = [
+      {
+        id: '333e8400-e29b-41d4-a716-446655440000',
+        title: 'Gimnasio',
+        color: 'lavender',
+        sort_order: 0,
+        created_at: '2026-07-12T19:00:00.000Z',
+        updated_at: '2026-07-12T19:00:00.000Z',
+        slots: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            block_id: '333e8400-e29b-41d4-a716-446655440000',
+            day_of_week: 1,
+            start_minutes: 360,
+            end_minutes: 420,
+            created_at: '2026-07-12T19:00:00.000Z',
+            updated_at: '2026-07-12T19:00:00.000Z',
+          },
+        ],
+      },
+    ]
+    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
+  })
 })

@@ -4,64 +4,121 @@ import Modal from '@/components/ui/Modal.vue'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import TimePicker from '@/components/ui/TimePicker.vue'
-import { useWeeklyScheduleStore } from '@/stores/weeklySchedule'
+import { useWeeklyScheduleStore, minutesToHHMM, hhmmToMinutes } from '@/stores/weeklySchedule'
 import {
   BLOCK_COLOR_TOKENS,
+  SCHEDULE_VALIDATION_ERRORS,
+  type SaveScheduleSlotDraft,
   type ScheduleBlockWithSlots,
-  type CreateScheduleSlotDraft,
 } from '@/schemas/weeklySchedule'
-import { minutesToHHMM, hhmmToMinutes } from '@/stores/weeklySchedule'
 
 const props = defineProps<{ open: boolean; block: ScheduleBlockWithSlots | null }>()
 const emit = defineEmits<{ close: [] }>()
 const store = useWeeklyScheduleStore()
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
 const title = ref('')
 const color = ref<(typeof BLOCK_COLOR_TOKENS)[number]>('lavender')
 const error = ref<string | null>(null)
+const drafts = ref<SaveScheduleSlotDraft[]>([])
 
-const newSlotDay = ref(0)
-const newSlotStart = ref('06:00')
-const newSlotEnd = ref('07:00')
-const editingSlotId = ref<string | null>(null)
-const createdBlockId = ref<string | null>(null)
+const slotDay = ref(0)
+const slotStart = ref('06:00')
+const slotEnd = ref('07:00')
+const editingIndex = ref<number | null>(null)
+
+function resetSlotForm() {
+  slotDay.value = 0
+  slotStart.value = '06:00'
+  slotEnd.value = '07:00'
+  editingIndex.value = null
+}
+
+function resetAll() {
+  error.value = null
+  if (props.block) {
+    title.value = props.block.title
+    color.value = props.block.color
+    drafts.value = props.block.slots.map((s) => ({
+      id: s.id,
+      day_of_week: s.day_of_week,
+      start_minutes: s.start_minutes,
+      end_minutes: s.end_minutes,
+    }))
+  } else {
+    title.value = ''
+    color.value = 'lavender'
+    drafts.value = []
+  }
+  resetSlotForm()
+}
 
 watch(
   () => props.open,
   (o) => {
-    if (!o) return
-    error.value = null
-    editingSlotId.value = null
-    createdBlockId.value = null
-    if (props.block) {
-      title.value = props.block.title
-      color.value = props.block.color
-      newSlotDay.value = 0
-      newSlotStart.value = '06:00'
-      newSlotEnd.value = '07:00'
-    } else {
-      title.value = ''
-      color.value = 'lavender'
-      newSlotDay.value = 0
-      newSlotStart.value = '06:00'
-      newSlotEnd.value = '07:00'
-    }
+    if (o) resetAll()
   },
   { immediate: true }
 )
 
+function addOrUpdateSlot() {
+  error.value = null
+  const start = hhmmToMinutes(slotStart.value)
+  const end = hhmmToMinutes(slotEnd.value)
+  if (end <= start) {
+    error.value = SCHEDULE_VALIDATION_ERRORS.endAfterStart
+    return
+  }
+  const draft: SaveScheduleSlotDraft = {
+    day_of_week: slotDay.value,
+    start_minutes: start,
+    end_minutes: end,
+  }
+  if (editingIndex.value !== null) {
+    const existing = drafts.value[editingIndex.value]
+    drafts.value[editingIndex.value] = existing?.id ? { ...existing, ...draft } : draft
+  } else {
+    drafts.value.push(draft)
+  }
+  resetSlotForm()
+}
+
+function startEditing(index: number) {
+  const d = drafts.value[index]
+  if (!d) return
+  editingIndex.value = index
+  slotDay.value = d.day_of_week
+  slotStart.value = minutesToHHMM(d.start_minutes)
+  slotEnd.value = minutesToHHMM(d.end_minutes)
+}
+
+function cancelSlotEdit() {
+  resetSlotForm()
+}
+
+function removeDraft(index: number) {
+  drafts.value.splice(index, 1)
+  if (editingIndex.value === index) resetSlotForm()
+  else if (editingIndex.value !== null && editingIndex.value > index) editingIndex.value--
+}
+
 async function save() {
   error.value = null
   try {
-    if (!title.value.trim()) {
-      error.value = 'El título es obligatorio'
-      return
-    }
     if (props.block) {
-      await store.updateBlock(props.block.id, { title: title.value, color: color.value })
+      await store.saveBlock({
+        blockId: props.block.id,
+        title: title.value,
+        color: color.value,
+        slots: drafts.value,
+      })
     } else {
-      await store.createBlock({ title: title.value, color: color.value, sort_order: 0 }, [])
+      await store.saveBlock({
+        title: title.value,
+        color: color.value,
+        slots: drafts.value,
+      })
     }
     emit('close')
   } catch (e: unknown) {
@@ -69,72 +126,7 @@ async function save() {
   }
 }
 
-async function addSlot() {
-  error.value = null
-  try {
-    const s = hhmmToMinutes(newSlotStart.value)
-    const e = hhmmToMinutes(newSlotEnd.value)
-    if (e <= s) {
-      error.value = 'La hora de fin debe ser mayor que la de inicio'
-      return
-    }
-    const slotDraft: CreateScheduleSlotDraft = {
-      day_of_week: newSlotDay.value,
-      start_minutes: s,
-      end_minutes: e,
-    }
-    if (props.block) {
-      if (editingSlotId.value) {
-        await store.updateSlot(editingSlotId.value, slotDraft)
-      } else {
-        await store.addSlot(props.block.id, slotDraft)
-      }
-    } else {
-      if (createdBlockId.value) {
-        await store.addSlot(createdBlockId.value, slotDraft)
-      } else {
-        const bw = await store.createBlock(
-          { title: title.value, color: color.value, sort_order: 0 },
-          [slotDraft]
-        )
-        createdBlockId.value = bw.id
-      }
-    }
-    editingSlotId.value = null
-    newSlotDay.value = 0
-    newSlotStart.value = '06:00'
-    newSlotEnd.value = '07:00'
-  } catch (e: unknown) {
-    error.value = String(e instanceof Error ? e.message : e)
-  }
-}
-
-function editSlot(slotId: string) {
-  if (!props.block) return
-  const slot = props.block.slots.find((s) => s.id === slotId)
-  if (!slot) return
-  editingSlotId.value = slotId
-  newSlotDay.value = slot.day_of_week
-  newSlotStart.value = minutesToHHMM(slot.start_minutes)
-  newSlotEnd.value = minutesToHHMM(slot.end_minutes)
-}
-
-async function deleteSlot(slotId: string) {
-  error.value = null
-  try {
-    await store.deleteSlot(slotId)
-    if (editingSlotId.value === slotId) {
-      editingSlotId.value = null
-      newSlotDay.value = 0
-      newSlotStart.value = '06:00'
-      newSlotEnd.value = '07:00'
-    }
-  } catch (e: unknown) {
-    error.value = String(e instanceof Error ? e.message : e)
-  }
-}
-
-async function remove() {
+async function deleteBlock() {
   if (!props.block) return
   try {
     await store.deleteBlock(props.block.id)
@@ -142,13 +134,6 @@ async function remove() {
   } catch (e: unknown) {
     error.value = String(e instanceof Error ? e.message : e)
   }
-}
-
-function cancelSlotEdit() {
-  editingSlotId.value = null
-  newSlotDay.value = 0
-  newSlotStart.value = '06:00'
-  newSlotEnd.value = '07:00'
 }
 
 const colorMap: Record<string, string> = {
@@ -194,36 +179,37 @@ function getBgColorStyle(c: string) {
         />
       </div>
 
-      <div v-if="block" class="mt-4">
+      <div class="mt-4">
         <label class="mb-2 block text-caption text-xs font-medium text-ink-muted">Horarios</label>
-        <div
-          v-if="block.slots.length === 0"
-          class="mb-2 text-body-sm text-sm italic text-ink-subtle"
-        >
+        <div v-if="drafts.length === 0" class="mb-2 text-body-sm text-sm italic text-ink-subtle">
           Sin horarios asignados
         </div>
         <div
-          v-for="slot in block.slots"
-          :key="slot.id"
-          class="mb-2 flex items-center gap-2 rounded-sm border border-hairline bg-surface-2 p-2"
+          v-for="(draft, index) in drafts"
+          :key="index"
+          :class="[
+            'mb-2 flex items-center gap-2 rounded-sm border bg-surface-2 p-2',
+            editingIndex === index ? 'border-primary' : 'border-hairline',
+          ]"
         >
           <div class="flex-1 text-body-sm text-sm">
-            <span class="font-medium">{{ DAYS[slot.day_of_week] }}</span>
+            <span class="font-medium">{{ DAYS[draft.day_of_week] }}</span>
             <span class="ml-2 text-ink-subtle"
-              >{{ minutesToHHMM(slot.start_minutes) }} - {{ minutesToHHMM(slot.end_minutes) }}</span
+              >{{ minutesToHHMM(draft.start_minutes) }} -
+              {{ minutesToHHMM(draft.end_minutes) }}</span
             >
           </div>
           <button
             type="button"
             class="px-2 py-1 text-xs text-primary hover:text-primary-hover"
-            @click="editSlot(slot.id)"
+            @click="startEditing(index)"
           >
             Editar
           </button>
           <button
             type="button"
             class="px-2 py-1 text-xs text-red-500 hover:text-red-600"
-            @click="deleteSlot(slot.id)"
+            @click="removeDraft(index)"
           >
             Eliminar
           </button>
@@ -232,11 +218,11 @@ function getBgColorStyle(c: string) {
 
       <div class="mt-4 rounded-sm border border-hairline bg-surface-2 p-3">
         <label class="mb-2 block text-caption text-xs font-medium text-ink-muted">
-          {{ editingSlotId ? 'Editar horario' : 'Agregar horario' }}
+          {{ editingIndex !== null ? 'Editar horario' : 'Agregar horario' }}
         </label>
         <label class="mb-1 block text-caption text-xs font-medium text-ink-muted">Día</label>
         <select
-          v-model="newSlotDay"
+          v-model="slotDay"
           class="mb-2 w-full rounded-sm border border-hairline bg-surface-2 px-2 py-1.5 text-body"
         >
           <option v-for="(d, i) in DAYS" :key="i" :value="i">{{ d }}</option>
@@ -246,18 +232,20 @@ function getBgColorStyle(c: string) {
             <label class="mb-1.5 block text-center text-caption text-xs font-medium text-ink-muted"
               >Inicio</label
             >
-            <TimePicker v-model="newSlotStart" />
+            <TimePicker v-model="slotStart" />
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-center text-caption text-xs font-medium text-ink-muted"
               >Fin</label
             >
-            <TimePicker v-model="newSlotEnd" />
+            <TimePicker v-model="slotEnd" />
           </div>
         </div>
         <div class="mt-2 flex gap-2">
-          <Button size="sm" @click="addSlot">{{ editingSlotId ? 'Actualizar' : 'Agregar' }}</Button>
-          <Button v-if="editingSlotId" size="sm" variant="ghost" @click="cancelSlotEdit"
+          <Button size="sm" @click="addOrUpdateSlot">
+            {{ editingIndex !== null ? 'Actualizar' : 'Agregar' }}
+          </Button>
+          <Button v-if="editingIndex !== null" size="sm" variant="ghost" @click="cancelSlotEdit"
             >Cancelar</Button
           >
         </div>
@@ -266,12 +254,11 @@ function getBgColorStyle(c: string) {
       <p v-if="error" class="mt-2 text-body-sm text-sm text-primary">{{ error }}</p>
 
       <div class="mt-5 flex justify-between">
-        <Button v-if="block" variant="danger" @click="remove">Eliminar</Button>
+        <Button v-if="block" variant="danger" @click="deleteBlock">Eliminar</Button>
         <div v-else />
         <div class="flex gap-2">
           <Button variant="ghost" @click="emit('close')">Cancelar</Button>
-          <Button v-if="!block" @click="save">Crear</Button>
-          <Button v-else @click="save">Guardar</Button>
+          <Button @click="save">Guardar</Button>
         </div>
       </div>
     </div>

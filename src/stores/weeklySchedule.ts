@@ -2,14 +2,17 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import * as db from '../lib/db'
 import {
+  type BlockColorToken,
   type CreateScheduleBlockDraft,
   type CreateScheduleSlotDraft,
+  type SaveScheduleSlotDraft,
   type ScheduleBlock,
   type ScheduleBlockWithSlots,
   type ScheduleSlot,
   type UpdateScheduleBlockDraft,
   type WeeklyScheduleSettings,
   DEFAULT_WEEKLY_SCHEDULE_SETTINGS,
+  SCHEDULE_VALIDATION_ERRORS,
   rowToScheduleBlock,
   rowToScheduleSlot,
 } from '../schemas/weeklySchedule'
@@ -48,7 +51,16 @@ export function overlaps(
 }
 
 export type ValidationResult =
-  { ok: true } | { ok: false; reason: 'overlap'; day: number; start: number; end: number }
+  | { ok: true }
+  | { ok: false; reason: 'overlap'; day: number; start: number; end: number }
+  | {
+      ok: false
+      reason: 'overlapBlock'
+      day: number
+      start: number
+      end: number
+      blockTitle: string
+    }
 
 export const DEFAULT_VISIBLE_WINDOW = { start_minutes: 360, end_minutes: 1380 } as const
 export type VisibleWindow = { start_minutes: number; end_minutes: number }
@@ -244,6 +256,169 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     blocksWithSlots.value = blocksWithSlots.value.filter((bw) => bw.id !== id)
   }
 
+  interface FinalSlot {
+    id: string
+    day: number
+    start: number
+    end: number
+    blockTitle: string
+    fromSelf: boolean
+  }
+
+  function overlapMessage(desired: SaveScheduleSlotDraft[], selfBlockId?: string): string | null {
+    const selfTitle =
+      selfBlockId !== undefined
+        ? blocksWithSlots.value.find((bw) => bw.id === selfBlockId)?.title
+        : undefined
+    const selfTitleFallback = selfTitle ?? 'este bloque'
+    const finals: FinalSlot[] = []
+    for (const bw of blocksWithSlots.value) {
+      if (selfBlockId !== undefined && bw.id === selfBlockId) continue
+      for (const s of bw.slots) {
+        finals.push({
+          id: s.id,
+          day: s.day_of_week,
+          start: s.start_minutes,
+          end: s.end_minutes,
+          blockTitle: bw.title,
+          fromSelf: false,
+        })
+      }
+    }
+    desired.forEach((s, i) => {
+      finals.push({
+        id: s.id ?? `new-${i}`,
+        day: s.day_of_week,
+        start: s.start_minutes,
+        end: s.end_minutes,
+        blockTitle: selfTitleFallback,
+        fromSelf: true,
+      })
+    })
+    for (const a of finals) {
+      for (const b of finals) {
+        if (a.id >= b.id || a.day !== b.day) continue
+        if (
+          !overlaps(
+            { start_minutes: a.start, end_minutes: a.end },
+            { start_minutes: b.start, end_minutes: b.end }
+          )
+        )
+          continue
+        if (a.fromSelf && b.fromSelf) {
+          return `Los horarios se superponen entre sí en el día de la semana`
+        }
+        const other = a.fromSelf ? b : a
+        return `Los horarios se superponen con «${other.blockTitle}»`
+      }
+    }
+    return null
+  }
+
+  interface SaveScheduleBlockInput {
+    blockId?: string
+    title: string
+    color: BlockColorToken
+    slots: SaveScheduleSlotDraft[]
+  }
+
+  async function saveBlock(input: SaveScheduleBlockInput): Promise<void> {
+    const title = input.title.trim()
+    if (!title) throw new Error(SCHEDULE_VALIDATION_ERRORS.titleRequired)
+    if (input.slots.length === 0) throw new Error(SCHEDULE_VALIDATION_ERRORS.atLeastOneSlot)
+    for (const s of input.slots) {
+      if (s.end_minutes <= s.start_minutes) {
+        throw new Error(SCHEDULE_VALIDATION_ERRORS.endAfterStart)
+      }
+    }
+    const clash = overlapMessage(input.slots, input.blockId)
+    if (clash) throw new Error(clash)
+
+    const ts = nowIsoUtc()
+    if (input.blockId === undefined) {
+      await createBlock(
+        { title, color: input.color, sort_order: 0 },
+        input.slots.map((s) => ({
+          day_of_week: s.day_of_week,
+          start_minutes: s.start_minutes,
+          end_minutes: s.end_minutes,
+        }))
+      )
+      return
+    }
+
+    const existing = blocksWithSlots.value.find((bw) => bw.id === input.blockId)
+    if (!existing) throw new Error('Bloque no encontrado')
+    const existingById = new Map(existing.slots.map((s) => [s.id, s]))
+    const desiredById = new Map(
+      input.slots
+        .filter((s): s is SaveScheduleSlotDraft & { id: string } => !!s.id)
+        .map((s) => [s.id, s])
+    )
+
+    for (const oldSlot of existing.slots) {
+      if (!desiredById.has(oldSlot.id)) {
+        await db.deleteScheduleSlot(oldSlot.id)
+      }
+    }
+    const blockChanged = title !== existing.title || input.color !== existing.color
+    if (blockChanged) {
+      await db.updateScheduleBlock(input.blockId, { title, color: input.color }, ts)
+    }
+
+    const finalSlots: ScheduleSlot[] = []
+    for (const draft of input.slots) {
+      if (draft.id !== undefined) {
+        const old = existingById.get(draft.id)
+        if (!old) throw new Error('Slot no encontrado')
+        if (
+          old.day_of_week !== draft.day_of_week ||
+          old.start_minutes !== draft.start_minutes ||
+          old.end_minutes !== draft.end_minutes
+        ) {
+          const row = await db.updateScheduleSlot(
+            draft.id,
+            {
+              day_of_week: draft.day_of_week,
+              start_minutes: draft.start_minutes,
+              end_minutes: draft.end_minutes,
+            },
+            ts
+          )
+          finalSlots.push(rowToScheduleSlot(row))
+        } else {
+          finalSlots.push(old)
+        }
+      } else {
+        const slotId = uuidv4()
+        const row = await db.createScheduleSlot(
+          {
+            day_of_week: draft.day_of_week,
+            start_minutes: draft.start_minutes,
+            end_minutes: draft.end_minutes,
+          },
+          slotId,
+          existing.id,
+          ts,
+          ts
+        )
+        finalSlots.push(rowToScheduleSlot(row))
+      }
+    }
+
+    const updatedBlock: ScheduleBlock = {
+      id: existing.id,
+      title,
+      color: input.color,
+      sort_order: existing.sort_order,
+      created_at: existing.created_at,
+      updated_at: blockChanged ? ts : existing.updated_at,
+    }
+    blocksWithSlots.value = blocksWithSlots.value.map((bw) =>
+      bw.id === existing.id ? { ...updatedBlock, slots: finalSlots } : bw
+    )
+  }
+
   async function saveSettings(patch: Partial<WeeklyScheduleSettings>): Promise<void> {
     settings.value = { ...settings.value, ...patch }
     await db.saveWeeklyScheduleSettings(settings.value)
@@ -265,6 +440,7 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     addSlot,
     updateSlot,
     deleteSlot,
+    saveBlock,
     saveSettings,
   }
 })

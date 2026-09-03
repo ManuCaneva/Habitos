@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   BLOCK_COLOR_TOKENS,
   blockColorSchema,
+  SaveScheduleSlotDraftSchema,
+  SCHEDULE_VALIDATION_ERRORS,
   ScheduleBlockSchema,
   ScheduleSlotSchema,
   ScheduleBlockWithSlotsSchema,
@@ -206,6 +208,39 @@ describe('weeklySchedule schema tests', () => {
     it('rowToScheduleBlock normaliza colores legacy', () => {
       const legacyRow = { ...validBlockRow, color: 'primary' }
       expect(rowToScheduleBlock(legacyRow).color).toBe('lavender')
+    })
+  })
+
+  describe('SaveScheduleSlotDraftSchema', () => {
+    const validDraft = {
+      day_of_week: 1,
+      start_minutes: 360,
+      end_minutes: 420,
+    }
+
+    it('acepta un draft de slot sin id', () => {
+      expect(SaveScheduleSlotDraftSchema.parse(validDraft)).toEqual(validDraft)
+    })
+
+    it('acepta un draft de slot con id (edición)', () => {
+      const withId = { ...validDraft, id: validUuid }
+      expect(SaveScheduleSlotDraftSchema.parse(withId)).toEqual(withId)
+    })
+
+    it('rechaza end_minutes <= start_minutes', () => {
+      expect(() =>
+        SaveScheduleSlotDraftSchema.parse({ ...validDraft, start_minutes: 420, end_minutes: 360 })
+      ).toThrow()
+    })
+  })
+
+  describe('SCHEDULE_VALIDATION_ERRORS', () => {
+    it('expone los mensajes humanos para mostrar en la UI', () => {
+      expect(SCHEDULE_VALIDATION_ERRORS.titleRequired).toBe('El título es obligatorio')
+      expect(SCHEDULE_VALIDATION_ERRORS.atLeastOneSlot).toBe('Agregá al menos un horario')
+      expect(SCHEDULE_VALIDATION_ERRORS.endAfterStart).toBe(
+        'La hora de fin debe ser mayor que la de inicio'
+      )
     })
   })
 

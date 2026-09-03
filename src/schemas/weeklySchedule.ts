@@ -64,16 +64,37 @@ export const UpdateScheduleBlockDraftSchema = CreateScheduleBlockDraftSchema.par
 export type UpdateScheduleBlockDraft = z.infer<typeof UpdateScheduleBlockDraftSchema>
 
 // ── Slot drafts ──
-export const CreateScheduleSlotDraftSchema = ScheduleSlotObject.omit({
+const ScheduleSlotDraftObject = ScheduleSlotObject.omit({
   id: true,
   block_id: true,
   created_at: true,
   updated_at: true,
+})
+export const CreateScheduleSlotDraftSchema = ScheduleSlotDraftObject.refine(
+  (s) => s.end_minutes > s.start_minutes,
+  {
+    message: 'end_minutes debe ser mayor que start_minutes',
+    path: ['end_minutes'],
+  }
+)
+export type CreateScheduleSlotDraft = z.infer<typeof CreateScheduleSlotDraftSchema>
+
+// ── Draft de slot para guardar un bloque (id presente solo en edición) ──
+export const SaveScheduleSlotDraftSchema = ScheduleSlotDraftObject.extend({
+  id: uuid.optional(),
 }).refine((s) => s.end_minutes > s.start_minutes, {
   message: 'end_minutes debe ser mayor que start_minutes',
   path: ['end_minutes'],
 })
-export type CreateScheduleSlotDraft = z.infer<typeof CreateScheduleSlotDraftSchema>
+export type SaveScheduleSlotDraft = z.infer<typeof SaveScheduleSlotDraftSchema>
+
+// ── Mensajes de validación humanos (la UI los muestra, nunca un dump de Zod) ──
+export const SCHEDULE_VALIDATION_ERRORS = {
+  titleRequired: 'El título es obligatorio',
+  atLeastOneSlot: 'Agregá al menos un horario',
+  endAfterStart: 'La hora de fin debe ser mayor que la de inicio',
+} as const
+export type ScheduleValidationErrorKey = keyof typeof SCHEDULE_VALIDATION_ERRORS
 
 // ── Row (espejo exacto de columnas SQLite; valida frontera Tauri) ──
 export const ScheduleBlockRowSchema = z.object({
