@@ -39,10 +39,6 @@ export function hhmmToMinutes(s: string): number {
   return h * 60 + mm
 }
 
-export function snapToSlot(minutes: number, granularity: number): number {
-  return Math.max(0, Math.floor(minutes / granularity) * granularity)
-}
-
 export function overlaps(
   a: { start_minutes: number; end_minutes: number },
   b: { start_minutes: number; end_minutes: number }

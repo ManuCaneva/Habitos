@@ -84,6 +84,47 @@ describe('themes', () => {
     })
   })
 
+  describe('ThemeBlockColors', () => {
+    const requiredBlockColors = [
+      'lavender',
+      'green',
+      'yellow',
+      'red',
+      'pink',
+      'cyan',
+      'orange',
+      'bone',
+    ] as const
+
+    it('cada tema tiene los 8 colores de bloque requeridos', () => {
+      for (const theme of themes) {
+        for (const color of requiredBlockColors) {
+          expect(theme.blockColors).toHaveProperty(color)
+          expect(typeof theme.blockColors[color]).toBe('string')
+          expect(theme.blockColors[color].length).toBeGreaterThan(0)
+        }
+      }
+    })
+
+    it('los valores son formato RGB (3 numeros separados por espacios)', () => {
+      const rgbPattern = /^\d{1,3}\s\d{1,3}\s\d{1,3}$/
+      for (const theme of themes) {
+        for (const color of requiredBlockColors) {
+          expect(theme.blockColors[color]).toMatch(rgbPattern)
+        }
+      }
+    })
+
+    it('lavender coincide con el palette de bloque del resto de temas (identidad estable)', () => {
+      const lavenderDark = themes.find((t) => t.id === 'dark')!.blockColors.lavender
+      for (const theme of themes) {
+        expect(theme.blockColors.lavender).toBe(lavenderDark)
+        expect(theme.blockColors.cyan).toBe('86 182 194')
+        expect(theme.blockColors.bone).toBe('212 212 212')
+      }
+    })
+  })
+
   describe('ThemeFonts', () => {
     it('cada tema tiene fonts.sans como array de strings', () => {
       for (const theme of themes) {
@@ -175,6 +216,8 @@ describe('themes', () => {
       expect(root.style.getPropertyValue('--color-brand-secure')).toBe(theme.colors.brandSecure)
       expect(root.style.getPropertyValue('--color-success')).toBe(theme.colors.success)
       expect(root.style.getPropertyValue('--color-overlay')).toBe(theme.colors.overlay)
+      expect(root.style.getPropertyValue('--color-block-lavender')).toBe(theme.blockColors.lavender)
+      expect(root.style.getPropertyValue('--color-block-cyan')).toBe(theme.blockColors.cyan)
     })
 
     it('setea las CSS vars de fuentes en documentElement', () => {

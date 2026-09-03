@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import TimePicker from '@/components/ui/TimePicker.vue'
 import { useWeeklyScheduleStore, minutesToHHMM, hhmmToMinutes } from '@/stores/weeklySchedule'
+import { blockColorRgb } from '@/lib/scheduleColors'
 import {
   BLOCK_COLOR_TOKENS,
   SCHEDULE_VALIDATION_ERRORS,
@@ -135,21 +136,6 @@ async function deleteBlock() {
     error.value = String(e instanceof Error ? e.message : e)
   }
 }
-
-const colorMap: Record<string, string> = {
-  lavender: '#5e6ad2',
-  green: '#4cb782',
-  yellow: '#f2c94c',
-  red: '#eb5757',
-  pink: '#f178b6',
-  cyan: '#56b6c2',
-  orange: '#f2994a',
-  bone: '#d4d4d4',
-}
-
-function getBgColorStyle(c: string) {
-  return colorMap[c] || colorMap.lavender
-}
 </script>
 
 <template>
@@ -173,7 +159,7 @@ function getBgColorStyle(c: string) {
               ? 'scale-110 border-ink ring-2 ring-primary/25'
               : 'border-transparent hover:scale-105',
           ]"
-          :style="{ backgroundColor: getBgColorStyle(c) }"
+          :style="{ backgroundColor: blockColorRgb(c) }"
           :aria-label="c"
           @click="color = c"
         />

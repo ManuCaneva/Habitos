@@ -17,14 +17,13 @@ describe('WeeklyScheduleBlock', () => {
       props: {
         title: 'Gimnasio',
         color: 'lavender',
-        dayOfWeek: 1,
-        startMinutes: 360,
-        endMinutes: 420,
       },
     })
 
     expect(wrapper.text()).toContain('Gimnasio')
-    expect((wrapper.element as HTMLElement).style.borderColor).toBe('#5e6ad2')
+    expect((wrapper.element as HTMLElement).style.borderColor).toBe(
+      'rgb(var(--color-block-lavender))'
+    )
   })
 
   it('emite click cuando el usuario hace click en el bloque', async () => {
@@ -32,9 +31,6 @@ describe('WeeklyScheduleBlock', () => {
       props: {
         title: 'Gimnasio',
         color: 'lavender',
-        dayOfWeek: 1,
-        startMinutes: 360,
-        endMinutes: 420,
       },
     })
 

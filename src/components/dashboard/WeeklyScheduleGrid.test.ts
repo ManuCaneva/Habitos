@@ -147,11 +147,26 @@ describe('WeeklyScheduleGrid', () => {
 
     const blocks = wrapper.findAll('.schedule-block')
     expect(blocks).toHaveLength(2)
-    expect(blocks.map((b) => b.attributes('data-day'))).toEqual(['0', '3'])
-    expect(blocks.map((b) => b.attributes('data-start'))).toEqual(['950', '1090'])
-    expect(blocks.map((b) => b.attributes('data-end'))).toEqual(['1085', '1225'])
     // Ambos slots son de la misma instancia AACSW
     blocks.forEach((b) => expect(b.text()).toContain('AACSW'))
+
+    function stylePx(el: { attributes: (n: string) => string | undefined }, prop: string): number {
+      const style = el.attributes('style') ?? ''
+      const entry = style
+        .split(';')
+        .map((s) => s.trim())
+        .find((s) => s.startsWith(prop + ':'))
+      return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
+    }
+
+    // Posicionamiento vertical por minutos: el slot de Lunes (15:50) empieza
+    // antes que el de Jueves (18:10), por lo que su `top` es menor.
+    const monday = blocks[0]
+    const thursday = blocks[1]
+    expect(stylePx(thursday, 'top')).toBeGreaterThan(stylePx(monday, 'top'))
+    // Ambos duran 135' (15:50-18:05 y 18:10-20:25) → misma altura
+    expect(stylePx(monday, 'height')).toBeGreaterThan(0)
+    expect(stylePx(monday, 'height')).toBe(stylePx(thursday, 'height'))
     wrapper.unmount()
 
     mockStore.blocksWithSlots = [
@@ -254,19 +269,17 @@ describe('WeeklyScheduleGrid', () => {
       return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
     }
 
-    const byDay = new Map(
-      blocks.map((b) => [b.attributes('data-day'), b] as [string, (typeof blocks)[number]])
+    const byTitle = new Map(
+      blocks.map((b) => [b.text().trim(), b] as [string, (typeof blocks)[number]])
     )
-    const inside = byDay.get('0')!
-    const crossesBottom = byDay.get('1')!
-    const crossesTop = byDay.get('2')!
+    const inside = byTitle.get('Adentro')!
+    const crossesBottom = byTitle.get('Cruza abajo')!
+    const crossesTop = byTitle.get('Cruza arriba')!
     const insideHeight = stylePx(inside, 'height')
     expect(insideHeight).toBeGreaterThan(0)
 
-    // El que cruza el borde inferior conserva su rango real en data-*...
-    expect(crossesBottom.attributes('data-start')).toBe('1140')
-    expect(crossesBottom.attributes('data-end')).toBe('1260')
-    // ...pero se dibuja recortado: misma altura que un slot íntegro de 60'
+    // El que cruza el borde inferior se dibuja recortado: misma altura que un
+    // slot íntegro de 60' (visible 19:00-20:00 pese a durar hasta las 21:00).
     expect(stylePx(crossesBottom, 'height')).toBe(insideHeight)
 
     // El que cruza el borde superior se dibuja desde el borde (top 0) recortado

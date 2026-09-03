@@ -1,12 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import {
-  useWeeklyScheduleStore,
-  minutesToHHMM,
-  hhmmToMinutes,
-  snapToSlot,
-  overlaps,
-} from './weeklySchedule'
+import { useWeeklyScheduleStore, minutesToHHMM, hhmmToMinutes, overlaps } from './weeklySchedule'
 import * as db from '@/lib/db'
 
 vi.mock('@/lib/db', () => ({
@@ -51,16 +45,6 @@ describe('weeklySchedule store', () => {
       expect(() => hhmmToMinutes('invalid')).toThrow()
       expect(() => hhmmToMinutes('25:00')).toThrow()
       expect(() => hhmmToMinutes('12:60')).toThrow()
-    })
-  })
-
-  describe('snapToSlot', () => {
-    it('ajusta minutos a la granularidad indicada', () => {
-      expect(snapToSlot(45, 30)).toBe(30)
-      expect(snapToSlot(59, 30)).toBe(30)
-      expect(snapToSlot(60, 30)).toBe(60)
-      expect(snapToSlot(14, 15)).toBe(0)
-      expect(snapToSlot(15, 15)).toBe(15)
     })
   })
 

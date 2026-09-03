@@ -19,6 +19,17 @@ export interface ThemeColors {
   overlay: string
 }
 
+export interface ThemeBlockColors {
+  lavender: string
+  green: string
+  yellow: string
+  red: string
+  pink: string
+  cyan: string
+  orange: string
+  bone: string
+}
+
 export interface ThemeFonts {
   sans: string[]
   mono: string[]
@@ -29,7 +40,19 @@ export interface ThemeDefinition {
   name: string
   isDark: boolean
   colors: ThemeColors
+  blockColors: ThemeBlockColors
   fonts: ThemeFonts
+}
+
+const sharedBlockColors: ThemeBlockColors = {
+  lavender: '94 106 210',
+  green: '76 183 130',
+  yellow: '242 201 76',
+  red: '235 87 87',
+  pink: '241 120 182',
+  cyan: '86 182 194',
+  orange: '242 153 74',
+  bone: '212 212 212',
 }
 
 const sharedFonts: ThemeFonts = {
@@ -62,6 +85,7 @@ export const themes: readonly ThemeDefinition[] = [
       success: '39 166 68',
       overlay: '0 0 0',
     },
+    blockColors: sharedBlockColors,
     fonts: sharedFonts,
   },
   {
@@ -88,6 +112,7 @@ export const themes: readonly ThemeDefinition[] = [
       success: '29 138 54',
       overlay: '0 0 0',
     },
+    blockColors: sharedBlockColors,
     fonts: sharedFonts,
   },
   {
@@ -114,6 +139,7 @@ export const themes: readonly ThemeDefinition[] = [
       success: '155 222 172',
       overlay: '0 0 0',
     },
+    blockColors: sharedBlockColors,
     fonts: sharedFonts,
   },
 ] as const
@@ -127,6 +153,7 @@ export function getThemeById(id: string): ThemeDefinition | undefined {
 export function applyTheme(theme: ThemeDefinition): void {
   const root = document.documentElement
   const c = theme.colors
+  const b = theme.blockColors
 
   root.style.setProperty('--color-canvas', c.canvas)
   root.style.setProperty('--color-surface-1', c.surface1)
@@ -146,6 +173,10 @@ export function applyTheme(theme: ThemeDefinition): void {
   root.style.setProperty('--color-brand-secure', c.brandSecure)
   root.style.setProperty('--color-success', c.success)
   root.style.setProperty('--color-overlay', c.overlay)
+
+  for (const [name, value] of Object.entries(b)) {
+    root.style.setProperty(`--color-block-${name}`, value)
+  }
 
   root.style.setProperty('--font-sans', theme.fonts.sans.join(', '))
   root.style.setProperty('--font-mono', theme.fonts.mono.join(', '))

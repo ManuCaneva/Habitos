@@ -175,9 +175,6 @@ function slotsForDay(day: number): VisibleSlot[] {
               :key="vs.slot.id"
               :title="vs.block.title"
               :color="vs.block.color"
-              :day-of-week="vs.slot.day_of_week"
-              :start-minutes="vs.slot.start_minutes"
-              :end-minutes="vs.slot.end_minutes"
               class="absolute z-10 shadow-sm"
               :style="{
                 top: slotTopPx(vs) + 'px',
