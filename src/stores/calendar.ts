@@ -28,6 +28,7 @@ const GCAL_PENDING_OAUTH = 'gcal_pending_oauth'
 const OAUTH_PENDING_TTL = 10 * 60 * 1000
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const TOKEN_REFRESH_TIMEOUT = 15_000
 const SCOPES = 'https://www.googleapis.com/auth/calendar'
 
 type PendingOAuth = { verifier: string; state: string; redirectUri: string; createdAt: number }
@@ -50,6 +51,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   const accessToken = ref<string | null>(null)
   const refreshToken = ref<string | null>(null)
   const tokenExpiry = ref<number | null>(null)
+  let refreshPromise: Promise<void> | null = null
 
   const eventsByDate = computed(() => {
     const map = new Map<string, CalendarEvent[]>()
@@ -67,7 +69,12 @@ export const useCalendarStore = defineStore('calendar', () => {
   async function ensureAccessToken(): Promise<string> {
     if (!accessToken.value) throw new Error('Not connected')
     if (tokenExpiry.value && Date.now() >= tokenExpiry.value) {
-      await refreshAccessToken()
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(() => {
+          refreshPromise = null
+        })
+      }
+      await refreshPromise
     }
     return accessToken.value!
   }
@@ -83,17 +90,39 @@ export const useCalendarStore = defineStore('calendar', () => {
       refreshToken: refreshToken.value,
       clientId,
     })
-    const res = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      connected.value = false
-      await clearTokens()
-      throw new Error(data.error_description ?? 'Token refresh failed')
+    let res: Response
+    let data: {
+      access_token?: string
+      expires_in?: number
+      error?: string
+      error_description?: string
     }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TOKEN_REFRESH_TIMEOUT)
+    try {
+      res = await fetch(TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+        signal: controller.signal,
+      })
+      data = await res.json()
+    } catch {
+      throw new Error('Temporary Google Calendar sync error. Please try again.')
+    } finally {
+      clearTimeout(timeout)
+    }
+    if (!res.ok) {
+      if (data.error === 'invalid_grant') {
+        await clearTokens()
+        connected.value = false
+        connectError.value = 'Google Calendar session expired. Please reconnect.'
+        throw new Error(connectError.value)
+      }
+      throw new Error('Temporary Google Calendar sync error. Please try again.')
+    }
+    if (!data.access_token)
+      throw new Error('Temporary Google Calendar sync error. Please try again.')
     accessToken.value = data.access_token
     tokenExpiry.value = Date.now() + (data.expires_in ?? 3600) * 1000
     await persistTokens()

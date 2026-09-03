@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCalendarStore } from './calendar'
+import { saveConfig } from '@/lib/db'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { invoke } from '@tauri-apps/api/core'
 
@@ -289,6 +290,134 @@ describe('useCalendarStore', () => {
     expect(store.eventsByDate.get('2026-02-01')?.[0].title).toBe('Evento 2')
     expect(store.syncing).toBe(false)
     expect(store.syncError).toBeNull()
+  })
+
+  it.each([429, 500])(
+    'keeps the session connected when token refresh returns %s',
+    async (status) => {
+      const store = useCalendarStore()
+      store.connected = true
+      store.accessToken = 'expired-at'
+      store.refreshToken = 'rt123'
+      store.tokenExpiry = Date.now() - 1
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status,
+        json: async () => ({ error: 'temporarily_unavailable' }),
+      })
+
+      await expect(store.syncYear(2026)).rejects.toThrow()
+
+      expect(store.connected).toBe(true)
+      expect(store.accessToken).toBe('expired-at')
+      expect(store.refreshToken).toBe('rt123')
+      expect(dbStore.get('gcal_refresh_token')).toBeUndefined()
+      expect(store.syncError).toBeTruthy()
+    }
+  )
+
+  it('keeps the session connected when the token refresh loses the network', async () => {
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'rt123'
+    store.tokenExpiry = Date.now() - 1
+    mockFetch.mockRejectedValueOnce(new TypeError('network unavailable'))
+
+    await expect(store.syncYear(2026)).rejects.toThrow(/temporary/i)
+
+    expect(store.connected).toBe(true)
+    expect(store.refreshToken).toBe('rt123')
+    expect(store.syncError).toMatch(/temporary/i)
+  })
+
+  it('clears the session and asks the user to reconnect for invalid_grant', async () => {
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'revoked-rt'
+    store.tokenExpiry = Date.now() - 1
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'invalid_grant', error_description: 'Token has been expired' }),
+    })
+
+    await expect(store.syncYear(2026)).rejects.toThrow(/reconnect/i)
+
+    expect(store.connected).toBe(false)
+    expect(store.accessToken).toBeNull()
+    expect(store.refreshToken).toBeNull()
+    expect(store.connectError).toMatch(/reconnect/i)
+    expect(store.syncError).toBeTruthy()
+    expect(dbStore.get('gcal_refresh_token')).toBe('')
+  })
+
+  it('shares one token refresh between concurrent syncs and recovers after a transient failure', async () => {
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'rt123'
+    store.tokenExpiry = Date.now() - 1
+
+    let resolveRefresh!: (response: unknown) => void
+    mockFetch.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve
+      })
+    )
+    const firstSync = store.syncYear(2026)
+    const secondSync = store.syncYear(2027)
+    await Promise.resolve()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+
+    resolveRefresh({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: 'backendError' }),
+    })
+    await expect(firstSync).rejects.toThrow()
+    await expect(secondSync).rejects.toThrow()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(store.connected).toBe(true)
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: 'fresh-at', expires_in: 3600 }),
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
+    await store.syncYear(2026)
+
+    expect(
+      mockFetch.mock.calls.filter(([url]) => url === 'https://oauth2.googleapis.com/token')
+    ).toHaveLength(2)
+    expect(
+      vi.mocked(saveConfig).mock.calls.filter(([key]) => key === 'gcal_access_token')
+    ).toHaveLength(1)
+    expect(dbStore.get('gcal_access_token')).toBe('fresh-at')
+    expect(dbStore.get('gcal_token_expiry')).toBeTruthy()
+    expect(store.syncError).toBeNull()
+    expect(store.accessToken).toBe('fresh-at')
+    expect(store.connected).toBe(true)
+
+    store.tokenExpiry = Date.now() - 1
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: 'fresh-at-2', expires_in: 3600 }),
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [] }),
+    })
+    await store.syncYear(2026)
+    expect(
+      mockFetch.mock.calls.filter(([url]) => url === 'https://oauth2.googleapis.com/token')
+    ).toHaveLength(3)
   })
 
   it('loadPersistedConfig restores tokens from DB', async () => {
