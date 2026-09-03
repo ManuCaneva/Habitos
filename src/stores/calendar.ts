@@ -271,7 +271,6 @@ export const useCalendarStore = defineStore('calendar', () => {
   async function syncYear(year?: number): Promise<void> {
     const y = year ?? currentYear.value
     syncing.value = true
-    syncError.value = null
     try {
       const localJson = await loadConfig('local-calendar-events')
       if (localJson) {
@@ -286,14 +285,36 @@ export const useCalendarStore = defineStore('calendar', () => {
 
       if (!connected.value) {
         events.value = [...localEvents.value].sort((a, b) => a.date.localeCompare(b.date))
+        syncError.value = null
         return
       }
 
-      const token = await ensureAccessToken()
+      let token = await ensureAccessToken()
 
-      const calRes = await fetch(buildCalendarListUrl(), {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      async function fetchWithRetry(url: string): Promise<Response> {
+        const requestToken = token
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${requestToken}` },
+        })
+        if (response.status !== 401) return response
+
+        if (accessToken.value === requestToken) {
+          if (!refreshPromise) {
+            refreshPromise = refreshAccessToken().finally(() => {
+              refreshPromise = null
+            })
+          }
+          await refreshPromise
+          token = accessToken.value!
+        } else {
+          token = accessToken.value!
+        }
+        return fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      }
+
+      const calRes = await fetchWithRetry(buildCalendarListUrl())
       if (!calRes.ok) {
         throw new Error('Failed to fetch calendars')
       }
@@ -304,26 +325,34 @@ export const useCalendarStore = defineStore('calendar', () => {
 
       const { start, end } = yearBounds(y)
       const allEvents: CalendarEvent[] = []
+      let failedCalendars = 0
 
       await Promise.all(
         calendarIds.map(async (cid: string) => {
           try {
-            const evRes = await fetch(buildEventsListUrl(cid, start, end), {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            if (!evRes.ok) return
+            const evRes = await fetchWithRetry(buildEventsListUrl(cid, start, end))
+            if (!evRes.ok) throw new Error(`Calendar ${cid} returned ${evRes.status}`)
             const raw = await evRes.json()
             const evData = GcalEventApiResponseSchema.parse(raw)
             const calColor = calendarColors.get(cid) ?? '#5e6ad2'
             const mapped = mapGcalEventsToDomain(evData.items, cid, calColor)
             allEvents.push(...mapped)
-          } catch {}
+          } catch {
+            if (!connected.value)
+              throw new Error('Google Calendar session expired. Please reconnect.')
+            failedCalendars++
+          }
         })
       )
 
       allEvents.push(...localEvents.value)
       allEvents.sort((a, b) => a.date.localeCompare(b.date))
       events.value = allEvents
+      if (failedCalendars > 0) {
+        syncError.value = `No se pudieron sincronizar ${failedCalendars} ${failedCalendars === 1 ? 'calendario' : 'calendarios'}`
+      } else {
+        syncError.value = null
+      }
     } catch (e) {
       syncError.value = e instanceof Error ? e.message : 'Sync failed'
       throw e

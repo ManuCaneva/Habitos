@@ -188,11 +188,7 @@ watch(
         />
       </header>
 
-      <div
-        v-if="store.syncError && store.syncError !== 'Not connected'"
-        class="ycw__error"
-        data-testid="sync-error"
-      >
+      <div v-if="store.syncError" class="ycw__error" data-testid="sync-error">
         {{ store.syncError }}
       </div>
 

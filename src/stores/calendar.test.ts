@@ -471,6 +471,175 @@ describe('useCalendarStore', () => {
     expect(store.calendars[1].id).toBe('work')
   })
 
+  it('keeps successful calendar events and reports calendars that fail', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ id: 'primary' }, { id: 'work' }, { id: 'broken' }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 'event-primary',
+              summary: 'Principal',
+              start: { date: '2026-01-02' },
+              end: { date: '2026-01-03' },
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 'event-work',
+              summary: 'Trabajo',
+              start: { date: '2026-02-02' },
+              end: { date: '2026-02-03' },
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'at123'
+
+    await store.syncYear(2026)
+
+    expect(store.events).toHaveLength(2)
+    expect(store.events[0].title).toBe('Principal')
+    expect(store.events[1].title).toBe('Trabajo')
+    expect(store.syncError).toBe('No se pudieron sincronizar 1 calendario')
+  })
+
+  it('refreshes once and retries the calendar list after a 401', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fresh-at', expires_in: 3600 }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'rt123'
+
+    await store.syncYear(2026)
+
+    expect(store.syncError).toBeNull()
+    expect(store.accessToken).toBe('fresh-at')
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      3,
+      expect.any(String),
+      expect.objectContaining({ headers: { Authorization: 'Bearer fresh-at' } })
+    )
+  })
+
+  it('reports a calendar network failure without dropping other events', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ id: 'primary' }, { id: 'offline' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 'event-primary',
+              summary: 'Principal',
+              start: { date: '2026-01-02' },
+              end: { date: '2026-01-03' },
+            },
+          ],
+        }),
+      })
+      .mockRejectedValueOnce(new TypeError('network unavailable'))
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'at123'
+
+    await store.syncYear(2026)
+
+    expect(store.events).toHaveLength(1)
+    expect(store.syncError).toBe('No se pudieron sincronizar 1 calendario')
+  })
+
+  it('refreshes once and retries an event fetch after a 401', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ id: 'primary' }] }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fresh-at', expires_in: 3600 }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'rt123'
+
+    await store.syncYear(2026)
+
+    expect(store.syncError).toBeNull()
+    expect(store.accessToken).toBe('fresh-at')
+    expect(mockFetch).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps a revoked session error visible when an event fetch gets a 401', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ id: 'primary' }] }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'invalid_grant' }),
+      })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'revoked-rt'
+
+    await expect(store.syncYear(2026)).rejects.toThrow(/reconnect/i)
+    expect(store.connected).toBe(false)
+    expect(store.connectError).toMatch(/reconnect/i)
+  })
+
+  it('clears a partial sync error after a later successful sync', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ id: 'primary' }] }) })
+      .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'at123'
+    await store.syncYear(2026)
+    expect(store.syncError).toBeTruthy()
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ id: 'primary' }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+    await store.syncYear(2026)
+
+    expect(store.syncError).toBeNull()
+  })
+
   it('createEvent() performs POST request and updates store locally', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

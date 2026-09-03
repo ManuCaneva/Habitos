@@ -9,7 +9,20 @@ function flushRaf() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
 }
 
-const mockStore = {
+const mockStore: {
+  connected: boolean
+  currentYear: number
+  syncing: boolean
+  syncError: string | null
+  events: unknown[]
+  eventsByDate: Map<unknown, unknown>
+  connect: ReturnType<typeof vi.fn>
+  disconnect: ReturnType<typeof vi.fn>
+  syncYear: ReturnType<typeof vi.fn>
+  goNextYear: ReturnType<typeof vi.fn>
+  goPrevYear: ReturnType<typeof vi.fn>
+  loadPersistedConfig: ReturnType<typeof vi.fn>
+} = {
   connected: false,
   currentYear: 2026,
   syncing: false,
@@ -34,6 +47,7 @@ describe('YearCalendarWidget', () => {
     vi.clearAllMocks()
     mockStore.currentYear = 2026
     mockStore.connected = false
+    mockStore.syncing = false
     mockStore.eventsByDate = new Map()
     mockStore.syncError = null
   })
@@ -100,6 +114,14 @@ describe('YearCalendarWidget', () => {
     mockStore.syncing = true
     const wrapper = mount(YearCalendarWidget)
     expect(wrapper.find("[data-testid='sync-spinner']").exists()).toBe(true)
+  })
+
+  it('mantiene visible un error de sync existente al montarse', () => {
+    mockStore.syncError = 'No se pudieron sincronizar 1 calendario'
+
+    const wrapper = mount(YearCalendarWidget)
+
+    expect(wrapper.find("[data-testid='sync-error']").text()).toContain('1 calendario')
   })
 
   it('usa el componente Container (bg-surface-1 border-hairline)', () => {
