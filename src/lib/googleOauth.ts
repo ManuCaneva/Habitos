@@ -72,19 +72,6 @@ export function parseOAuthCallbackQuery(query: string): {
   }
 }
 
-/** @deprecated Use parseOAuthCallbackQuery with the raw callback query. */
-export function parseRedirectUri(uri: string): {
-  code?: string
-  error?: string
-  state?: string
-} {
-  try {
-    return parseOAuthCallbackQuery(new URL(uri).search)
-  } catch {
-    return {}
-  }
-}
-
 export function buildTokenExchangePayload<T extends TokenExchangePayload>(
   params: T
 ): URLSearchParams {

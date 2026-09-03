@@ -14,15 +14,6 @@ export const CalendarEventSchema = z.object({
 
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>
 
-export const CalendarConfigSchema = z.object({
-  accessToken: z.string().nullable(),
-  refreshToken: z.string().nullable(),
-  tokenExpiry: z.string().nullable(),
-  connected: z.boolean(),
-})
-
-export type CalendarConfig = z.infer<typeof CalendarConfigSchema>
-
 const GcalDateTimeSchema = z.object({
   dateTime: z.string().optional(),
   date: z.string().optional(),

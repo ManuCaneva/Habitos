@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  CalendarEventSchema,
-  CalendarConfigSchema,
-  GcalEventApiResponseSchema,
-  type CalendarEvent,
-  type CalendarConfig,
-} from './calendar'
+import { CalendarEventSchema, GcalEventApiResponseSchema, type CalendarEvent } from './calendar'
 
 describe('CalendarEventSchema', () => {
   it('acepta un evento válido', () => {
@@ -37,31 +31,6 @@ describe('CalendarEventSchema', () => {
         end: '2026-01-15T10:30:00Z',
       })
     ).toThrow()
-  })
-})
-
-describe('CalendarConfigSchema', () => {
-  it('acepta una config completa', () => {
-    const config: CalendarConfig = {
-      accessToken: 'ya29.a0AfH6...',
-      refreshToken: '1//0g...',
-      tokenExpiry: '2026-07-11T19:00:00.000Z',
-      connected: true,
-    }
-    const result = CalendarConfigSchema.parse(config)
-    expect(result.connected).toBe(true)
-    expect(result.accessToken).toBe('ya29.a0AfH6...')
-  })
-
-  it('acepta una config vacía (desconectada)', () => {
-    const config: CalendarConfig = {
-      accessToken: null,
-      refreshToken: null,
-      tokenExpiry: null,
-      connected: false,
-    }
-    const result = CalendarConfigSchema.parse(config)
-    expect(result.connected).toBe(false)
   })
 })
 
