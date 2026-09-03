@@ -160,10 +160,9 @@ export function scheduleSlotToRow(s: ScheduleSlot): ScheduleSlotRow {
 }
 
 // ── Settings (persisten en config table, key weekly-schedule-settings) ──
+// Nota: la Ventana visible es derivada (getter del store), nunca se persiste.
 export const WeeklyScheduleSettingsSchema = z.object({
   granularity_minutes: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(30),
-  day_start_minutes: z.number().int().min(0).max(1439).default(360), // 06:00
-  day_end_minutes: z.number().int().min(60).max(1440).default(1380), // 23:00
   week_starts_monday: z.boolean().default(true), // MVP fijo true (sin UI)
 })
 export type WeeklyScheduleSettings = z.infer<typeof WeeklyScheduleSettingsSchema>

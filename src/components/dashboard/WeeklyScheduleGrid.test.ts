@@ -27,10 +27,9 @@ const mockStore = {
   ],
   settings: {
     granularity_minutes: 30,
-    day_start_minutes: 360,
-    day_end_minutes: 1380,
     week_starts_monday: true,
   },
+  visibleWindow: { start_minutes: 360, end_minutes: 1380 },
 }
 
 vi.mock('@/stores/weeklySchedule', () => ({
@@ -62,6 +61,16 @@ describe('WeeklyScheduleGrid', () => {
     expect(wrapper.text()).toContain('Lun')
     expect(wrapper.text()).toContain('Dom')
     wrapper.unmount()
+  })
+
+  it('renderiza las filas a partir de la Ventana visible derivada (no de settings)', () => {
+    mockStore.visibleWindow = { start_minutes: 900, end_minutes: 960 }
+    mockStore.settings.granularity_minutes = 30
+    const wrapper = mount(WeeklyScheduleGrid)
+    const labels = wrapper.findAll('.schedule-hour-label').map((w) => w.text())
+    expect(labels).toEqual(['15:00', '15:30'])
+    wrapper.unmount()
+    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
   })
 
   it('difiere measure() a rAF: el resize del contenedor no vuelve a medir en cada frame', async () => {

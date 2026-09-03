@@ -8,13 +8,12 @@ vi.mock('@/stores/weeklySchedule', () => ({
     blocksWithSlots: [],
     settings: {
       granularity_minutes: 30,
-      day_start_minutes: 360,
-      day_end_minutes: 1380,
       week_starts_monday: true,
     },
     loading: false,
     lastError: null,
     blocksByDay: new Map(),
+    visibleWindow: { start_minutes: 360, end_minutes: 1380 },
     loadAll: vi.fn(),
   }),
   minutesToHHMM: (min: number) => {

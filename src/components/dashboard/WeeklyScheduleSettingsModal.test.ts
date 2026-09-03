@@ -6,8 +6,6 @@ import WeeklyScheduleSettingsModal from './WeeklyScheduleSettingsModal.vue'
 const mockStore = {
   settings: {
     granularity_minutes: 30,
-    day_start_minutes: 360,
-    day_end_minutes: 1380,
     week_starts_monday: true,
   },
   saveSettings: vi.fn(),
@@ -50,6 +48,19 @@ describe('WeeklyScheduleSettingsModal', () => {
     expect(dialog!.textContent).toContain('Ajustes del cronograma')
   })
 
+  it('solo ofrece granularidad: no hay rastros de Desde/Hasta', () => {
+    wrapper = mount(WeeklyScheduleSettingsModal, {
+      props: { open: true },
+      attachTo: document.body,
+    })
+
+    const dialog = document.body.querySelector("[role='dialog']")
+    expect(dialog).not.toBeNull()
+    expect(dialog!.textContent).toContain('Granularidad')
+    expect(dialog!.textContent).not.toContain('Desde')
+    expect(dialog!.textContent).not.toContain('Hasta')
+  })
+
   it('llama a saveSettings al guardar con los nuevos valores', async () => {
     wrapper = mount(WeeklyScheduleSettingsModal, {
       props: { open: true },
@@ -62,5 +73,6 @@ describe('WeeklyScheduleSettingsModal', () => {
     await saveButton!.click()
 
     expect(mockStore.saveSettings).toHaveBeenCalledTimes(1)
+    expect(mockStore.saveSettings).toHaveBeenCalledWith({ granularity_minutes: 30 })
   })
 })

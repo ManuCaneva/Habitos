@@ -213,8 +213,6 @@ describe('weeklySchedule schema tests', () => {
     it('tiene valores por defecto correctos', () => {
       expect(DEFAULT_WEEKLY_SCHEDULE_SETTINGS).toEqual({
         granularity_minutes: 30,
-        day_start_minutes: 360,
-        day_end_minutes: 1380,
         week_starts_monday: true,
       })
     })
@@ -222,8 +220,6 @@ describe('weeklySchedule schema tests', () => {
     it('acepta settings válidos', () => {
       const customSettings = {
         granularity_minutes: 15,
-        day_start_minutes: 480,
-        day_end_minutes: 1000,
         week_starts_monday: true,
       }
       expect(WeeklyScheduleSettingsSchema.parse(customSettings)).toEqual(customSettings)
@@ -233,8 +229,6 @@ describe('weeklySchedule schema tests', () => {
       expect(() =>
         WeeklyScheduleSettingsSchema.parse({
           granularity_minutes: 20,
-          day_start_minutes: 360,
-          day_end_minutes: 1380,
           week_starts_monday: true,
         })
       ).toThrow()

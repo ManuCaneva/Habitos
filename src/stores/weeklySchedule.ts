@@ -50,6 +50,29 @@ export function overlaps(
 export type ValidationResult =
   { ok: true } | { ok: false; reason: 'overlap'; day: number; start: number; end: number }
 
+export const DEFAULT_VISIBLE_WINDOW = { start_minutes: 360, end_minutes: 1380 } as const
+export type VisibleWindow = { start_minutes: number; end_minutes: number }
+
+export function computeVisibleWindow(
+  blocksWithSlots: Pick<ScheduleBlockWithSlots, 'slots'>[]
+): VisibleWindow {
+  let minStart: number | null = null
+  let maxEnd: number | null = null
+  for (const bw of blocksWithSlots) {
+    for (const slot of bw.slots) {
+      if (minStart === null || slot.start_minutes < minStart) minStart = slot.start_minutes
+      if (maxEnd === null || slot.end_minutes > maxEnd) maxEnd = slot.end_minutes
+    }
+  }
+  if (minStart === null || maxEnd === null) {
+    return { ...DEFAULT_VISIBLE_WINDOW }
+  }
+  return {
+    start_minutes: Math.floor(minStart / 60) * 60,
+    end_minutes: Math.ceil(maxEnd / 60) * 60,
+  }
+}
+
 export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
   const blocksWithSlots = ref<ScheduleBlockWithSlots[]>([])
   const settings = ref<WeeklyScheduleSettings>({ ...DEFAULT_WEEKLY_SCHEDULE_SETTINGS })
@@ -72,6 +95,8 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     }
     return map
   })
+
+  const visibleWindow = computed(() => computeVisibleWindow(blocksWithSlots.value))
 
   function wouldOverlapOnDay(
     day: number,
@@ -230,6 +255,7 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     loading,
     lastError,
     blocksByDay,
+    visibleWindow,
     wouldOverlapOnDay,
     validateSlot,
     loadAll,

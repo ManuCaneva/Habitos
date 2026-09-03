@@ -62,10 +62,10 @@ onUnmounted(() => {
   }
 })
 
-watch(() => store.settings, measure, { deep: true })
+watch(() => [store.settings, store.visibleWindow], measure, { deep: true })
 
 const visibleRows = computed(() => {
-  const diff = store.settings.day_end_minutes - store.settings.day_start_minutes
+  const diff = store.visibleWindow.end_minutes - store.visibleWindow.start_minutes
   return Math.max(1, Math.floor(diff / store.settings.granularity_minutes))
 })
 
@@ -78,12 +78,12 @@ const rowHeightPx = computed(() => {
 })
 
 const minuteHeightPx = computed(() => rowHeightPx.value / store.settings.granularity_minutes)
-const dayStart = computed(() => store.settings.day_start_minutes)
+const windowStart = computed(() => store.visibleWindow.start_minutes)
 
 const hourLabels = computed(() => {
   const out: { minute: number; label: string }[] = []
-  const start = store.settings.day_start_minutes
-  const end = store.settings.day_end_minutes
+  const start = store.visibleWindow.start_minutes
+  const end = store.visibleWindow.end_minutes
   const step = store.settings.granularity_minutes
   for (let m = start; m < end; m += step) {
     out.push({ minute: m, label: minutesToHHMM(m) })
@@ -96,7 +96,7 @@ const gridHeightStyle = computed(() => gridTotalHeightPx.value + 'px')
 const rowHeightStyle = computed(() => rowHeightPx.value + 'px')
 
 function slotTopPx(s: ScheduleSlot) {
-  return (s.start_minutes - dayStart.value) * minuteHeightPx.value
+  return (s.start_minutes - windowStart.value) * minuteHeightPx.value
 }
 
 function slotHeightPx(s: ScheduleSlot) {
@@ -109,8 +109,8 @@ interface VisibleSlot {
 }
 
 const visibleSlots = computed((): VisibleSlot[] => {
-  const start = store.settings.day_start_minutes
-  const end = store.settings.day_end_minutes
+  const start = store.visibleWindow.start_minutes
+  const end = store.visibleWindow.end_minutes
   const result: VisibleSlot[] = []
   for (const bw of store.blocksWithSlots) {
     for (const slot of bw.slots) {

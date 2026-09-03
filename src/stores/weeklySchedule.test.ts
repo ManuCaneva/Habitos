@@ -20,8 +20,6 @@ vi.mock('@/lib/db', () => ({
   deleteScheduleSlot: vi.fn(),
   loadWeeklyScheduleSettings: vi.fn().mockResolvedValue({
     granularity_minutes: 30,
-    day_start_minutes: 360,
-    day_end_minutes: 1380,
     week_starts_monday: true,
   }),
   saveWeeklyScheduleSettings: vi.fn(),
@@ -79,6 +77,95 @@ describe('weeklySchedule store', () => {
       expect(
         overlaps({ start_minutes: 360, end_minutes: 480 }, { start_minutes: 390, end_minutes: 420 })
       ).toBe(true)
+    })
+  })
+
+  describe('visibleWindow (Ventana visible auto-ajustable)', () => {
+    const slot = (
+      overrides: Partial<{ day_of_week: number; start_minutes: number; end_minutes: number }>,
+      ids?: { slotId?: string; blockId?: string }
+    ) => ({
+      id: ids?.slotId ?? '550e8400-e29b-41d4-a716-446655440001',
+      block_id: ids?.blockId ?? validUuid,
+      day_of_week: overrides.day_of_week ?? 1,
+      start_minutes: overrides.start_minutes ?? 950,
+      end_minutes: overrides.end_minutes ?? 1085,
+      created_at: validIso,
+      updated_at: validIso,
+    })
+    const blockWith = (slots: ReturnType<typeof slot>[], blockId = validUuid) => ({
+      id: blockId,
+      title: 'Bloque',
+      color: 'cyan' as const,
+      sort_order: 0,
+      created_at: validIso,
+      updated_at: validIso,
+      slots,
+    })
+
+    it('sin slots muestra el default 06:00–23:00', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = []
+      expect(store.visibleWindow).toEqual({ start_minutes: 360, end_minutes: 1380 })
+    })
+
+    it('slot 15:50–18:05 → 15:00–19:00', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })])]
+      expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1140 })
+    })
+
+    it('slot 18:10–20:25 → 18:00–21:00', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [blockWith([slot({ day_of_week: 3, start_minutes: 1090, end_minutes: 1225 })])]
+      expect(store.visibleWindow).toEqual({ start_minutes: 1080, end_minutes: 1260 })
+    })
+
+    it('ambos en días distintos → 15:00–21:00', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [
+        blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })]),
+        blockWith(
+          [
+            slot(
+              { day_of_week: 3, start_minutes: 1090, end_minutes: 1225 },
+              {
+                slotId: '550e8400-e29b-41d4-a716-446655440002',
+                blockId: '660e8400-e29b-41d4-a716-446655440000',
+              }
+            ),
+          ],
+          '660e8400-e29b-41d4-a716-446655440000'
+        ),
+      ]
+      expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1260 })
+    })
+
+    it('slot exacto 15:00–16:00 → 15:00–16:00 (sin mínimo artificial)', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [blockWith([slot({ day_of_week: 2, start_minutes: 900, end_minutes: 960 })])]
+      expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 960 })
+    })
+
+    it('se expande al agregar un slot más temprano y uno más tardío', () => {
+      const store = useWeeklyScheduleStore()
+      store.blocksWithSlots = [blockWith([slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 })])]
+      expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1140 })
+
+      store.blocksWithSlots = [
+        blockWith([
+          slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 }),
+          slot(
+            { day_of_week: 2, start_minutes: 480, end_minutes: 540 },
+            { slotId: '550e8400-e29b-41d4-a716-446655440002' }
+          ),
+          slot(
+            { day_of_week: 4, start_minutes: 1320, end_minutes: 1390 },
+            { slotId: '550e8400-e29b-41d4-a716-446655440003' }
+          ),
+        ]),
+      ]
+      expect(store.visibleWindow).toEqual({ start_minutes: 480, end_minutes: 1440 })
     })
   })
 
