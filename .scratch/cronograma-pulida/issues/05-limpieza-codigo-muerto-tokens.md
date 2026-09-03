@@ -4,8 +4,8 @@
 
 **Blocked by:** 03 (Modal de bloque — los hex maps viven en el modal y el componente de bloque que 03 reescribe; evita conflictos).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No queda ninguna referencia al composable de drag & drop, a `snapToSlot` ni a los atributos data-* de arrastre (la búsqueda de esos nombres no encuentra nada).
-- [ ] Los componentes del cronograma no contienen literales hex: los colores salen de los tokens del design system.
-- [ ] `npm run test`, `npm run build`, `npm run lint` y `npm run format:check` en verde.
+- [x] No queda ninguna referencia al composable de drag & drop, a `snapToSlot` ni a los atributos data-* de arrastre (la búsqueda de esos nombres no encuentra nada).
+- [x] Los componentes del cronograma no contienen literales hex: los colores salen de los tokens del design system.
+- [x] `npm run test`, `npm run build`, `npm run lint` y `npm run format:check` en verde.
