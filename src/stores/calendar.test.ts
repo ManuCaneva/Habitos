@@ -1,14 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { defineComponent } from 'vue'
+import { mount } from '@vue/test-utils'
 import { useCalendarStore } from './calendar'
 import { saveConfig } from '@/lib/db'
+import { parseGcalVisibleCalendarsJson } from '@/schemas/calendar'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { invoke } from '@tauri-apps/api/core'
 
 vi.stubEnv('VITE_GCAL_CLIENT_ID', 'test.apps.googleusercontent.com')
+vi.stubEnv('VITE_GCAL_CLIENT_SECRET', 'test-secret')
 
 const oauthHolder = vi.hoisted(() => ({
-  cb: null as ((event: { payload: string }) => void) | null,
+  cb: null as ((event: { payload: string }) => Promise<void>) | null,
+  active: false,
 }))
 const mockFetch = vi.hoisted(() => vi.fn())
 const dbStore = vi.hoisted(() => new Map<string, string | null>())
@@ -19,6 +24,12 @@ vi.mock('@/lib/db', () => ({
   }),
   loadConfig: vi.fn(async (key: string) => {
     return dbStore.get(key) ?? null
+  }),
+  loadGcalVisibleCalendars: vi.fn(async () => {
+    return parseGcalVisibleCalendarsJson(dbStore.get('gcal-visible-calendars') ?? null)
+  }),
+  saveGcalVisibleCalendars: vi.fn(async (prefs: { hiddenCalendarIds: string[] }) => {
+    dbStore.set('gcal-visible-calendars', JSON.stringify(prefs))
   }),
 }))
 
@@ -36,8 +47,15 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn((_, cb) => {
-    oauthHolder.cb = cb
-    return Promise.resolve(vi.fn())
+    oauthHolder.active = true
+    oauthHolder.cb = async (event) => {
+      if (oauthHolder.active) await cb(event)
+    }
+    return Promise.resolve(
+      vi.fn(() => {
+        oauthHolder.active = false
+      })
+    )
   }),
 }))
 
@@ -56,6 +74,7 @@ describe('useCalendarStore', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     oauthHolder.cb = null
+    oauthHolder.active = false
     mockFetch.mockReset()
     dbStore.clear()
     vi.mocked(invoke).mockResolvedValue('http://127.0.0.1:45678/oauth-callback')
@@ -83,6 +102,7 @@ describe('useCalendarStore', () => {
     const store = useCalendarStore()
     await expect(store.connect()).rejects.toThrow('client ID not configured')
     vi.stubEnv('VITE_GCAL_CLIENT_ID', 'test.apps.googleusercontent.com')
+    vi.stubEnv('VITE_GCAL_CLIENT_SECRET', 'test-secret')
   })
 
   it('callback exchanges encoded code and persists tokens', async () => {
@@ -109,6 +129,37 @@ describe('useCalendarStore', () => {
     expect(store.connected).toBe(true)
     expect(store.oauthStatus).toBe('connected')
     expect(dbStore.get('gcal_pending_oauth')).toBe('')
+  })
+
+  it('continues receiving callbacks after the first store consumer unmounts', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        access_token: 'at123',
+        refresh_token: 'rt123',
+        expires_in: 3600,
+      }),
+    })
+
+    let store: ReturnType<typeof useCalendarStore> | undefined
+    const firstConsumer = defineComponent({
+      setup() {
+        store = useCalendarStore()
+        return () => null
+      },
+    })
+    const wrapper = mount(firstConsumer)
+
+    await store!.connect()
+    const authUrl = vi.mocked(openUrl).mock.calls[0][0]
+    const state = new URL(authUrl).searchParams.get('state')!
+    wrapper.unmount()
+
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
+
+    expect(store!.connected).toBe(true)
+    expect(store!.oauthStatus).toBe('connected')
   })
 
   it('callback with Google error exposes a persistent connection error', async () => {
@@ -195,6 +246,46 @@ describe('useCalendarStore', () => {
     await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
     expect(store.connectError).toContain('invalid_grant')
     expect(store.connected).toBe(false)
+  })
+
+  it('labels a client_secret rejection as a missing secret config', async () => {
+    const store = useCalendarStore()
+    await store.connect()
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: 'invalid_request',
+        error_description: 'client_secret is missing.',
+      }),
+    })
+    const state = new URL(vi.mocked(openUrl).mock.calls[0][0]).searchParams.get('state')
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
+    expect(store.connectError).toContain('client_secret is missing')
+    expect(store.connectError).toContain('VITE_GCAL_CLIENT_SECRET')
+    expect(store.connected).toBe(false)
+  })
+
+  it('sends client_secret and code_verifier in the token exchange', async () => {
+    const store = useCalendarStore()
+    await store.connect()
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: 'at123', refresh_token: 'rt123', expires_in: 3600 }),
+    })
+    const state = new URL(vi.mocked(openUrl).mock.calls[0][0]).searchParams.get('state')
+    await oauthHolder.cb!({ payload: `/oauth-callback?code=abc&state=${state}` })
+
+    const exchangeCall = mockFetch.mock.calls.find(
+      ([url]) => url === 'https://oauth2.googleapis.com/token'
+    )
+    expect(exchangeCall).toBeTruthy()
+    const body = new URLSearchParams(exchangeCall![1].body as string)
+    expect(body.get('client_id')).toBe('test.apps.googleusercontent.com')
+    expect(body.get('client_secret')).toBeTruthy()
+    expect(body.get('code_verifier')).toBeTruthy()
+    expect(body.get('grant_type')).toBe('authorization_code')
   })
 
   it('disconnect() clears tokens and state', async () => {
@@ -970,5 +1061,262 @@ describe('useCalendarStore', () => {
     expect(mockFetch).not.toHaveBeenCalled()
     expect(store.events).toHaveLength(1)
     expect(store.events[0].title).toBe('Local Event 1')
+  })
+
+  describe('gcal calendar visibility', () => {
+    function mockCalendarListAndEvents(options?: { primaryFails?: boolean }) {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/users/me/calendarList')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              items: [
+                {
+                  id: 'primary',
+                  summary: 'Principal',
+                  primary: true,
+                  backgroundColor: '#7986cb',
+                },
+                { id: 'work', summary: 'Trabajo', backgroundColor: '#33b679' },
+              ],
+            }),
+          }
+        }
+        if (typeof url === 'string' && url.includes('/calendars/primary/events')) {
+          if (options?.primaryFails) {
+            return { ok: false, status: 500, json: async () => ({}) }
+          }
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              items: [
+                {
+                  id: 'e1',
+                  summary: 'Evento 1',
+                  start: { dateTime: '2026-01-15T10:00:00-03:00' },
+                  end: { dateTime: '2026-01-15T11:00:00-03:00' },
+                },
+              ],
+            }),
+          }
+        }
+        if (typeof url === 'string' && url.includes('/calendars/work/events')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              items: [
+                {
+                  id: 'e2',
+                  summary: 'Evento work',
+                  start: { date: '2026-02-01' },
+                  end: { date: '2026-02-02' },
+                },
+              ],
+            }),
+          }
+        }
+        throw new Error(`unexpected fetch: ${url}`)
+      })
+    }
+
+    function fetchedEventCalendarIds(): string[] {
+      return mockFetch.mock.calls
+        .map(([url]) => url as string)
+        .filter((url) => url.includes('/events'))
+        .map((url) => {
+          const match = /\/calendars\/([^/]+)\/events/.exec(url)
+          return match ? decodeURIComponent(match[1]) : ''
+        })
+    }
+
+    function connectStore() {
+      const store = useCalendarStore()
+      store.connected = true
+      store.accessToken = 'at123'
+      return store
+    }
+
+    it('expone hiddenCalendarIds vacío por default (opt-out: nuevos visibles)', async () => {
+      const store = useCalendarStore()
+      await store.loadPersistedConfig()
+      expect(store.hiddenCalendarIds.size).toBe(0)
+      expect(store.isCalendarHidden('work')).toBe(false)
+    })
+
+    it('loadPersistedConfig restaura los ids ocultos persistidos', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      const store = useCalendarStore()
+      await store.loadPersistedConfig()
+      expect(store.hiddenCalendarIds.has('work')).toBe(true)
+      expect(store.isCalendarHidden('work')).toBe(true)
+      expect(store.isCalendarHidden('primary')).toBe(false)
+    })
+
+    it('loadPersistedConfig con JSON corrupto deja todo visible', async () => {
+      dbStore.set('gcal-visible-calendars', '{no-json')
+      const store = useCalendarStore()
+      await store.loadPersistedConfig()
+      expect(store.hiddenCalendarIds.size).toBe(0)
+    })
+
+    it('syncYear() no fetchea eventos de calendarios ocultos pero conserva la metadata completa', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      mockCalendarListAndEvents()
+      const store = connectStore()
+      await store.loadPersistedConfig()
+
+      await store.syncYear(2026)
+
+      expect(fetchedEventCalendarIds()).toEqual(['primary'])
+      expect(store.calendars).toHaveLength(2)
+      expect(store.calendars.map((c) => c.id).sort()).toEqual(['primary', 'work'])
+      expect(store.events).toHaveLength(1)
+      expect(store.events[0].calendarId).toBe('primary')
+      expect(store.syncError).toBeNull()
+    })
+
+    it('los fallos de calendarios visibles cuentan en syncError sin fetchear los ocultos', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      mockCalendarListAndEvents({ primaryFails: true })
+      const store = connectStore()
+      await store.loadPersistedConfig()
+
+      await store.syncYear(2026)
+
+      expect(fetchedEventCalendarIds()).toEqual(['primary'])
+      expect(store.syncError).toContain('1 calendario')
+    })
+
+    it('un calendario oculto que fallaría no genera syncError porque ni se fetchea', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/users/me/calendarList')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              items: [
+                { id: 'primary', summary: 'Principal', backgroundColor: '#7986cb' },
+                { id: 'work', summary: 'Trabajo', backgroundColor: '#33b679' },
+              ],
+            }),
+          }
+        }
+        if (typeof url === 'string' && url.includes('/calendars/primary/events')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ items: [] }),
+          }
+        }
+        throw new Error(`unexpected fetch (oculto no debe fetchearse): ${url}`)
+      })
+      const store = connectStore()
+      await store.loadPersistedConfig()
+
+      await store.syncYear(2026)
+
+      expect(fetchedEventCalendarIds()).toEqual(['primary'])
+      expect(store.syncError).toBeNull()
+    })
+
+    it('con todos los calendarios ocultos no hay fetches de eventos ni error', async () => {
+      dbStore.set(
+        'gcal-visible-calendars',
+        JSON.stringify({ hiddenCalendarIds: ['primary', 'work'] })
+      )
+      mockCalendarListAndEvents()
+      const store = connectStore()
+      await store.loadPersistedConfig()
+
+      await store.syncYear(2026)
+
+      expect(fetchedEventCalendarIds()).toEqual([])
+      expect(store.syncError).toBeNull()
+      expect(store.calendars).toHaveLength(2)
+    })
+
+    it('setCalendarHidden(true) persiste y re-sincroniza el año actual estando conectado', async () => {
+      mockCalendarListAndEvents()
+      const store = connectStore()
+      await store.loadPersistedConfig()
+      store.currentYear = 2026
+      await store.syncYear(2026)
+      expect(store.events).toHaveLength(2)
+      mockFetch.mockClear()
+
+      await store.setCalendarHidden('work', true)
+
+      expect(store.isCalendarHidden('work')).toBe(true)
+      expect(JSON.parse(dbStore.get('gcal-visible-calendars')!)).toEqual({
+        hiddenCalendarIds: ['work'],
+      })
+      expect(fetchedEventCalendarIds()).toEqual(['primary'])
+      expect(store.events).toHaveLength(1)
+      expect(store.events[0].calendarId).toBe('primary')
+    })
+
+    it('setCalendarHidden(false) vuelve a mostrar sin re-sync cuando está desconectado', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      const store = useCalendarStore()
+      await store.loadPersistedConfig()
+      expect(store.isCalendarHidden('work')).toBe(true)
+
+      await store.setCalendarHidden('work', false)
+
+      expect(store.isCalendarHidden('work')).toBe(false)
+      expect(JSON.parse(dbStore.get('gcal-visible-calendars')!)).toEqual({
+        hiddenCalendarIds: [],
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('la preferencia sobrevive a desconectar y reconectar', async () => {
+      mockCalendarListAndEvents()
+      const store = connectStore()
+      await store.loadPersistedConfig()
+      await store.setCalendarHidden('work', true)
+      expect(store.isCalendarHidden('work')).toBe(true)
+
+      await store.disconnect()
+
+      expect(store.connected).toBe(false)
+      expect(store.isCalendarHidden('work')).toBe(true)
+
+      setActivePinia(createPinia())
+      const second = useCalendarStore()
+      await second.loadPersistedConfig()
+      expect(second.hiddenCalendarIds.has('work')).toBe(true)
+    })
+
+    it('los eventos locales no se filtran aunque haya ocultos', async () => {
+      dbStore.set('gcal-visible-calendars', JSON.stringify({ hiddenCalendarIds: ['work'] }))
+      dbStore.set(
+        'local-calendar-events',
+        JSON.stringify([
+          {
+            id: 'local_1',
+            title: 'Local',
+            color: '#33b679',
+            date: '2026-03-01',
+            calendarId: 'local',
+            start: '2026-03-01T10:00:00Z',
+            end: '2026-03-01T11:00:00Z',
+          },
+        ])
+      )
+      mockCalendarListAndEvents()
+      const store = connectStore()
+      await store.loadPersistedConfig()
+
+      await store.syncYear(2026)
+
+      const local = store.events.filter((e) => e.calendarId === 'local')
+      expect(local).toHaveLength(1)
+      expect(store.events.map((e) => e.calendarId).sort()).toEqual(['local', 'primary'])
+    })
   })
 })

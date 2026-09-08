@@ -13,6 +13,8 @@ import {
   deleteGoalLog,
   listGoalLogsInRange,
   upsertHabitLog,
+  loadGcalVisibleCalendars,
+  saveGcalVisibleCalendars,
 } from './db'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -452,5 +454,65 @@ describe('db.listGoalLogsInRange', () => {
       fromDate: '2026-07-01',
       toDate: '2026-07-31',
     })
+  })
+})
+
+describe('db gcal visible calendars', () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset()
+  })
+
+  it('load devuelve default cuando la key no existe', async () => {
+    vi.mocked(invoke).mockResolvedValue(null)
+    const result = await loadGcalVisibleCalendars()
+    expect(invoke).toHaveBeenCalledWith('load_config', { key: 'gcal-visible-calendars' })
+    expect(result).toEqual({ hiddenCalendarIds: [] })
+  })
+
+  it('load parsea una preferencia persistida válida', async () => {
+    vi.mocked(invoke).mockResolvedValue(JSON.stringify({ hiddenCalendarIds: ['work'] }))
+    const result = await loadGcalVisibleCalendars()
+    expect(result).toEqual({ hiddenCalendarIds: ['work'] })
+  })
+
+  it('load devuelve default ante JSON corrupto', async () => {
+    vi.mocked(invoke).mockResolvedValue('{no-json')
+    const result = await loadGcalVisibleCalendars()
+    expect(result).toEqual({ hiddenCalendarIds: [] })
+  })
+
+  it('save persiste la preferencia validada bajo su key', async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined)
+    await saveGcalVisibleCalendars({ hiddenCalendarIds: ['work', 'utn'] })
+    expect(invoke).toHaveBeenCalledWith('save_config', {
+      key: 'gcal-visible-calendars',
+      value: JSON.stringify({ hiddenCalendarIds: ['work', 'utn'] }),
+    })
+  })
+
+  it('save rechaza preferencia inválida sin invocar', async () => {
+    await expect(
+      saveGcalVisibleCalendars({ hiddenCalendarIds: 42 } as unknown as {
+        hiddenCalendarIds: string[]
+      })
+    ).rejects.toThrow()
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('roundtrip save/load conserva los ids ocultos', async () => {
+    const stored = new Map<string, string>()
+    vi.mocked(invoke).mockImplementation(async (cmd: string, args: unknown) => {
+      const params = args as { key: string; value?: string }
+      if (cmd === 'save_config') {
+        stored.set(params.key, params.value ?? '')
+        return undefined
+      }
+      if (cmd === 'load_config') {
+        return stored.get(params.key) ?? null
+      }
+      throw new Error(`unexpected invoke: ${cmd}`)
+    })
+    await saveGcalVisibleCalendars({ hiddenCalendarIds: ['work'] })
+    expect(await loadGcalVisibleCalendars()).toEqual({ hiddenCalendarIds: ['work'] })
   })
 })

@@ -55,6 +55,11 @@ import {
   type UpdateScheduleBlockDraft,
   type WeeklyScheduleSettings,
 } from '../schemas/weeklySchedule'
+import {
+  GcalVisibleCalendarsSchema,
+  parseGcalVisibleCalendarsJson,
+  type GcalVisibleCalendars,
+} from '../schemas/calendar'
 
 // ───────────────────────────────────────────────────────────────
 // Hábitos
@@ -455,4 +460,17 @@ export async function loadWeeklyScheduleSettings(): Promise<WeeklyScheduleSettin
 export async function saveWeeklyScheduleSettings(settings: WeeklyScheduleSettings): Promise<void> {
   const parsed = WeeklyScheduleSettingsSchema.parse(settings)
   await saveConfig('weekly-schedule-settings', JSON.stringify(parsed))
+}
+
+// Visibilidad de calendarios de Google: persiste en config table (key gcal-visible-calendars)
+export const GCAL_VISIBLE_CALENDARS_KEY = 'gcal-visible-calendars'
+
+export async function loadGcalVisibleCalendars(): Promise<GcalVisibleCalendars> {
+  const json = await loadConfig(GCAL_VISIBLE_CALENDARS_KEY)
+  return parseGcalVisibleCalendarsJson(json)
+}
+
+export async function saveGcalVisibleCalendars(prefs: GcalVisibleCalendars): Promise<void> {
+  const parsed = GcalVisibleCalendarsSchema.parse(prefs)
+  await saveConfig(GCAL_VISIBLE_CALENDARS_KEY, JSON.stringify(parsed))
 }

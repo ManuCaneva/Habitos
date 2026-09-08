@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref, computed, onUnmounted } from 'vue'
-import { saveConfig, loadConfig } from '@/lib/db'
+import { ref, computed, readonly } from 'vue'
+import {
+  saveConfig,
+  loadConfig,
+  loadGcalVisibleCalendars,
+  saveGcalVisibleCalendars,
+} from '@/lib/db'
 import {
   generatePkce,
   buildAuthUrl,
@@ -31,6 +36,12 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const TOKEN_REFRESH_TIMEOUT = 15_000
 const SCOPES = 'https://www.googleapis.com/auth/calendar'
 
+function debugLog(...args: unknown[]): void {
+  if (import.meta.env.DEV) {
+    console.debug('[gcal]', ...args)
+  }
+}
+
 type PendingOAuth = { verifier: string; state: string; redirectUri: string; createdAt: number }
 
 export const useCalendarStore = defineStore('calendar', () => {
@@ -53,6 +64,28 @@ export const useCalendarStore = defineStore('calendar', () => {
   const tokenExpiry = ref<number | null>(null)
   let refreshPromise: Promise<void> | null = null
 
+  // Visibilidad de calendarios: opt-out (nuevos visibles por default).
+  // El set vive en memoria y persiste en config bajo 'gcal-visible-calendars'.
+  const hiddenCalendarIds = ref<ReadonlySet<string>>(new Set<string>())
+
+  function isCalendarHidden(calendarId: string): boolean {
+    return hiddenCalendarIds.value.has(calendarId)
+  }
+
+  async function setCalendarHidden(calendarId: string, hidden: boolean): Promise<void> {
+    const next = new Set(hiddenCalendarIds.value)
+    if (hidden) {
+      next.add(calendarId)
+    } else {
+      next.delete(calendarId)
+    }
+    hiddenCalendarIds.value = next
+    await saveGcalVisibleCalendars({ hiddenCalendarIds: [...next] })
+    if (connected.value) {
+      await syncYear(currentYear.value)
+    }
+  }
+
   const eventsByDate = computed(() => {
     const map = new Map<string, CalendarEvent[]>()
     for (const event of events.value) {
@@ -64,6 +97,10 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   function getClientId(): string {
     return import.meta.env.VITE_GCAL_CLIENT_ID ?? ''
+  }
+
+  function getClientSecret(): string {
+    return import.meta.env.VITE_GCAL_CLIENT_SECRET ?? ''
   }
 
   async function ensureAccessToken(): Promise<string> {
@@ -89,6 +126,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     const body = buildRefreshPayload({
       refreshToken: refreshToken.value,
       clientId,
+      clientSecret: getClientSecret(),
     })
     let res: Response
     let data: {
@@ -209,6 +247,7 @@ export const useCalendarStore = defineStore('calendar', () => {
         state,
         codeChallenge: challenge,
       })
+      debugLog('connect', { clientId, redirectUri, authUrl })
       await openUrl(authUrl)
     } catch (error) {
       await clearPendingOAuth()
@@ -224,9 +263,12 @@ export const useCalendarStore = defineStore('calendar', () => {
     const body = buildTokenExchangePayload({
       code,
       clientId,
+      clientSecret: getClientSecret(),
       redirectUri: pending.redirectUri,
       codeVerifier: pending.verifier,
     })
+
+    debugLog('exchangeCode', { clientId, redirectUri: pending.redirectUri, body: body.toString() })
 
     const res = await fetch(TOKEN_URL, {
       method: 'POST',
@@ -234,7 +276,14 @@ export const useCalendarStore = defineStore('calendar', () => {
       body: body.toString(),
     })
     const data = await res.json()
+    debugLog('exchangeCode response', { status: res.status, ok: res.ok, data })
     if (!res.ok) {
+      if (data.error_description?.includes('client_secret') || data.error === 'invalid_client') {
+        throw new Error(
+          `Google API Error: ${data.error_description || data.error}. ` +
+            `Verificá que VITE_GCAL_CLIENT_SECRET esté configurado con el secret del client.`
+        )
+      }
       throw new Error(
         `Google API Error: ${data.error_description || data.error || JSON.stringify(data)}`
       )
@@ -324,7 +373,9 @@ export const useCalendarStore = defineStore('calendar', () => {
       }
 
       const calendarColors = await fetchCalendars()
-      const calendarIds: string[] = calendars.value.map((c) => c.id)
+      const calendarIds: string[] = calendars.value
+        .map((c) => c.id)
+        .filter((id) => !hiddenCalendarIds.value.has(id))
 
       const { start, end } = yearBounds(y)
       const allEvents: CalendarEvent[] = []
@@ -373,12 +424,14 @@ export const useCalendarStore = defineStore('calendar', () => {
   }
 
   async function loadPersistedConfig(): Promise<void> {
-    const [at, rt, exp, localJson] = await Promise.all([
+    const [at, rt, exp, localJson, visibleCalendars] = await Promise.all([
       loadConfig(GCAL_ACCESS_TOKEN),
       loadConfig(GCAL_REFRESH_TOKEN),
       loadConfig(GCAL_TOKEN_EXPIRY),
       loadConfig('local-calendar-events'),
+      loadGcalVisibleCalendars(),
     ])
+    hiddenCalendarIds.value = new Set(visibleCalendars.hiddenCalendarIds)
     if (localJson) {
       try {
         localEvents.value = JSON.parse(localJson)
@@ -409,11 +462,13 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
   }
 
-  let _unlistenOauth: (() => void) | null = null
+  let oauthListenerRegistered = false
 
   async function initTauriEvent(): Promise<void> {
+    if (oauthListenerRegistered) return
+    oauthListenerRegistered = true
     try {
-      _unlistenOauth = await listen<string>('oauth-callback', async (event) => {
+      await listen<string>('oauth-callback', async (event) => {
         const pending = await loadPendingOAuth()
         if (!pending) {
           await clearPendingOAuth()
@@ -453,6 +508,7 @@ export const useCalendarStore = defineStore('calendar', () => {
         }
       })
     } catch (error) {
+      oauthListenerRegistered = false
       connectError.value =
         error instanceof Error ? error.message : 'Failed to listen for OAuth callback'
     }
@@ -462,12 +518,6 @@ export const useCalendarStore = defineStore('calendar', () => {
   loadPersistedConfig().catch((error) => {
     connectError.value =
       error instanceof Error ? error.message : 'Failed to load calendar configuration'
-  })
-
-  onUnmounted(() => {
-    _unlistenOauth?.()
-    _unlistenOauth = null
-    if (pendingExpiryTimer) clearTimeout(pendingExpiryTimer)
   })
 
   async function createEvent(
@@ -680,6 +730,9 @@ export const useCalendarStore = defineStore('calendar', () => {
     refreshToken,
     tokenExpiry,
     calendars,
+    hiddenCalendarIds: readonly(hiddenCalendarIds),
+    isCalendarHidden,
+    setCalendarHidden,
     createEvent,
     updateEvent,
     deleteEvent,

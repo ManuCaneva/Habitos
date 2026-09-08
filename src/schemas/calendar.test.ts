@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { CalendarEventSchema, GcalEventApiResponseSchema, type CalendarEvent } from './calendar'
+import {
+  CalendarEventSchema,
+  GcalEventApiResponseSchema,
+  GcalVisibleCalendarsSchema,
+  DEFAULT_GCAL_VISIBLE_CALENDARS,
+  parseGcalVisibleCalendarsJson,
+  type CalendarEvent,
+} from './calendar'
 
 describe('CalendarEventSchema', () => {
   it('acepta un evento válido', () => {
@@ -31,6 +38,54 @@ describe('CalendarEventSchema', () => {
         end: '2026-01-15T10:30:00Z',
       })
     ).toThrow()
+  })
+})
+
+describe('GcalVisibleCalendarsSchema', () => {
+  it('parsea una preferencia válida con ids ocultos', () => {
+    const result = GcalVisibleCalendarsSchema.parse({
+      hiddenCalendarIds: ['work', 'utn-asignaturas'],
+    })
+    expect(result.hiddenCalendarIds).toEqual(['work', 'utn-asignaturas'])
+  })
+
+  it('usa default [] cuando falta el campo', () => {
+    const result = GcalVisibleCalendarsSchema.parse({})
+    expect(result.hiddenCalendarIds).toEqual([])
+  })
+
+  it('rechaza tipos incorrectos', () => {
+    expect(() => GcalVisibleCalendarsSchema.parse({ hiddenCalendarIds: 'work' })).toThrow()
+    expect(() => GcalVisibleCalendarsSchema.parse({ hiddenCalendarIds: [123] })).toThrow()
+  })
+
+  it('parseGcalVisibleCalendarsJson devuelve default ante JSON corrupto', () => {
+    expect(parseGcalVisibleCalendarsJson('{no-json')).toEqual(DEFAULT_GCAL_VISIBLE_CALENDARS)
+    expect(parseGcalVisibleCalendarsJson(null)).toEqual(DEFAULT_GCAL_VISIBLE_CALENDARS)
+    expect(parseGcalVisibleCalendarsJson(undefined)).toEqual(DEFAULT_GCAL_VISIBLE_CALENDARS)
+  })
+
+  it('parseGcalVisibleCalendarsJson devuelve default ante shape válido pero tipos inválidos', () => {
+    expect(parseGcalVisibleCalendarsJson(JSON.stringify({ hiddenCalendarIds: 42 }))).toEqual(
+      DEFAULT_GCAL_VISIBLE_CALENDARS
+    )
+  })
+
+  it('parseGcalVisibleCalendarsJson parsea una preferencia persistida válida', () => {
+    const raw = JSON.stringify({ hiddenCalendarIds: ['work'] })
+    expect(parseGcalVisibleCalendarsJson(raw)).toEqual({ hiddenCalendarIds: ['work'] })
+  })
+
+  it('los fallbacks devuelven arrays nuevos sin compartir referencia con el default', () => {
+    const a = parseGcalVisibleCalendarsJson(null)
+    const b = parseGcalVisibleCalendarsJson('{no-json')
+    const c = parseGcalVisibleCalendarsJson('{}')
+    for (const result of [a, b, c]) {
+      expect(result.hiddenCalendarIds).toEqual([])
+      expect(result.hiddenCalendarIds).not.toBe(DEFAULT_GCAL_VISIBLE_CALENDARS.hiddenCalendarIds)
+    }
+    a.hiddenCalendarIds.push('work')
+    expect(DEFAULT_GCAL_VISIBLE_CALENDARS.hiddenCalendarIds).toEqual([])
   })
 })
 

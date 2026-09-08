@@ -34,6 +34,26 @@ export const GcalEventApiResponseSchema = z.object({
 
 export type GcalEventApiResponse = z.infer<typeof GcalEventApiResponseSchema>
 
+export const GcalVisibleCalendarsSchema = z.object({
+  hiddenCalendarIds: z.array(z.string()).default([]),
+})
+export type GcalVisibleCalendars = z.infer<typeof GcalVisibleCalendarsSchema>
+export const DEFAULT_GCAL_VISIBLE_CALENDARS: GcalVisibleCalendars =
+  GcalVisibleCalendarsSchema.parse({})
+
+export function parseGcalVisibleCalendarsJson(
+  raw: string | null | undefined
+): GcalVisibleCalendars {
+  if (!raw) return { hiddenCalendarIds: [] }
+  try {
+    const parsed = GcalVisibleCalendarsSchema.safeParse(JSON.parse(raw))
+    if (!parsed.success) return { hiddenCalendarIds: [] }
+    return { hiddenCalendarIds: [...parsed.data.hiddenCalendarIds] }
+  } catch {
+    return { hiddenCalendarIds: [] }
+  }
+}
+
 export const CALENDAR_COLORS: Record<string, string> = {
   '1': '#7986cb',
   '2': '#33b679',
