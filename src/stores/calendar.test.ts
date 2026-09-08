@@ -471,6 +471,85 @@ describe('useCalendarStore', () => {
     expect(store.calendars[1].id).toBe('work')
   })
 
+  it('fetchCalendars() fetches the calendar list without fetching events', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [
+          {
+            id: 'primary',
+            summary: 'Calendario Principal',
+            primary: true,
+            backgroundColor: '#7986cb',
+          },
+          { id: 'work', summary: 'Trabajo', backgroundColor: '#33b679' },
+        ],
+      }),
+    })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'at123'
+
+    const calendarColors = await store.fetchCalendars()
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('calendarList'),
+      expect.objectContaining({ headers: { Authorization: 'Bearer at123' } })
+    )
+    expect(store.calendars).toHaveLength(2)
+    expect(store.calendars[0]).toMatchObject({
+      id: 'primary',
+      summary: 'Calendario Principal',
+      primary: true,
+    })
+    expect(store.calendars[1].id).toBe('work')
+    expect(calendarColors.get('primary')).toBe('#7986cb')
+    expect(calendarColors.get('work')).toBe('#33b679')
+  })
+
+  it('fetchCalendars() throws when the calendar list request fails', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'at123'
+
+    await expect(store.fetchCalendars()).rejects.toThrow('Failed to fetch calendars')
+    expect(store.calendars).toHaveLength(0)
+  })
+
+  it('fetchCalendars() refreshes once and retries the calendar list after a 401', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fresh-at', expires_in: 3600 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ id: 'primary', backgroundColor: '#7986cb' }] }),
+      })
+
+    const store = useCalendarStore()
+    store.connected = true
+    store.accessToken = 'expired-at'
+    store.refreshToken = 'rt123'
+
+    const calendarColors = await store.fetchCalendars()
+
+    expect(store.accessToken).toBe('fresh-at')
+    expect(store.calendars).toHaveLength(1)
+    expect(calendarColors.get('primary')).toBe('#7986cb')
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('calendarList'),
+      expect.objectContaining({ headers: { Authorization: 'Bearer fresh-at' } })
+    )
+  })
+
   it('keeps successful calendar events and reports calendars that fail', async () => {
     mockFetch
       .mockResolvedValueOnce({

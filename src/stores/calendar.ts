@@ -268,6 +268,40 @@ export const useCalendarStore = defineStore('calendar', () => {
     events.value = []
   }
 
+  async function fetchWithRetry(url: string): Promise<Response> {
+    let requestToken = await ensureAccessToken()
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${requestToken}` },
+    })
+    if (response.status !== 401) return response
+
+    if (accessToken.value === requestToken) {
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(() => {
+          refreshPromise = null
+        })
+      }
+      await refreshPromise
+      requestToken = accessToken.value!
+    } else {
+      requestToken = accessToken.value!
+    }
+    return fetch(url, {
+      headers: { Authorization: `Bearer ${requestToken}` },
+    })
+  }
+
+  async function fetchCalendars(): Promise<Map<string, string>> {
+    const calRes = await fetchWithRetry(buildCalendarListUrl())
+    if (!calRes.ok) {
+      throw new Error('Failed to fetch calendars')
+    }
+    const calData = await calRes.json()
+    const items = calData.items ?? []
+    calendars.value = items
+    return mapCalendarListToColors(items)
+  }
+
   async function syncYear(year?: number): Promise<void> {
     const y = year ?? currentYear.value
     syncing.value = true
@@ -289,39 +323,8 @@ export const useCalendarStore = defineStore('calendar', () => {
         return
       }
 
-      let token = await ensureAccessToken()
-
-      async function fetchWithRetry(url: string): Promise<Response> {
-        const requestToken = token
-        const response = await fetch(url, {
-          headers: { Authorization: `Bearer ${requestToken}` },
-        })
-        if (response.status !== 401) return response
-
-        if (accessToken.value === requestToken) {
-          if (!refreshPromise) {
-            refreshPromise = refreshAccessToken().finally(() => {
-              refreshPromise = null
-            })
-          }
-          await refreshPromise
-          token = accessToken.value!
-        } else {
-          token = accessToken.value!
-        }
-        return fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      }
-
-      const calRes = await fetchWithRetry(buildCalendarListUrl())
-      if (!calRes.ok) {
-        throw new Error('Failed to fetch calendars')
-      }
-      const calData = await calRes.json()
-      calendars.value = calData.items ?? []
-      const calendarColors = mapCalendarListToColors(calData.items ?? [])
-      const calendarIds: string[] = (calData.items ?? []).map((c: { id: string }) => c.id)
+      const calendarColors = await fetchCalendars()
+      const calendarIds: string[] = calendars.value.map((c) => c.id)
 
       const { start, end } = yearBounds(y)
       const allEvents: CalendarEvent[] = []
@@ -669,6 +672,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     disconnect,
     cancelConnect,
     syncYear,
+    fetchCalendars,
     goNextYear,
     goPrevYear,
     loadPersistedConfig,
