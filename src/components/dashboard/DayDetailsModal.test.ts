@@ -5,12 +5,16 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref, reactive } from 'vue'
 import TimePicker from '@/components/ui/TimePicker.vue'
 
+const hiddenCalendarIds = ref(new Set<string>())
+
 const mockStore = {
   connected: ref(true),
   syncing: ref(false),
   syncError: ref<string | null>(null),
   events: ref<any[]>([]),
   calendars: ref<any[]>([]),
+  hiddenCalendarIds,
+  isCalendarHidden: (calendarId: string): boolean => hiddenCalendarIds.value.has(calendarId),
   createEvent: vi.fn().mockResolvedValue(undefined),
   updateEvent: vi.fn().mockResolvedValue(undefined),
   deleteEvent: vi.fn().mockResolvedValue(undefined),
@@ -48,6 +52,7 @@ describe('DayDetailsModal', () => {
     ]
 
     mockStore.syncError.value = null
+    hiddenCalendarIds.value = new Set<string>()
     mockStore.createEvent.mockReset().mockResolvedValue(undefined)
     mockStore.updateEvent.mockReset().mockResolvedValue(undefined)
     mockStore.deleteEvent.mockReset().mockResolvedValue(undefined)
@@ -184,5 +189,23 @@ describe('DayDetailsModal', () => {
     await wrapper.vm.$nextTick()
 
     expect(mockStore.deleteEvent).toHaveBeenCalledWith('primary', 'evt1')
+  })
+
+  it('el dropdown de destino incluye calendarios ocultos y el primario sigue por defecto', async () => {
+    hiddenCalendarIds.value = new Set(['primary', 'work'])
+    factory()
+
+    const btn = document.body.querySelector("[data-testid='add-event-btn']") as HTMLElement
+    await btn.click()
+    await wrapper.vm.$nextTick()
+
+    const calSelect = document.body.querySelector(
+      "[data-testid='calendar-select']"
+    ) as HTMLSelectElement
+    const options = Array.from(calSelect.options).map((o) => o.value)
+    expect(options).toContain('primary')
+    expect(options).toContain('work')
+    // El primario sigue siendo el destino por defecto aunque esté oculto
+    expect(calSelect.value).toBe('primary')
   })
 })

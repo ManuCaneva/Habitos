@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 import { useCalendarStore } from '@/stores/calendar'
+import GcalVisibilityCard from '@/components/calendar/GcalVisibilityCard.vue'
 import Card from '@/components/ui/Card.vue'
 import Text from '@/components/ui/Text.vue'
 import Heading from '@/components/ui/Heading.vue'
@@ -186,5 +187,7 @@ async function handleDisconnect() {
         Sync error: {{ store.syncError }}
       </Text>
     </Card>
+
+    <GcalVisibilityCard />
   </main>
 </template>

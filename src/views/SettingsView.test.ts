@@ -67,6 +67,10 @@ const mockCalendarStore: {
   oauthStatus: 'idle' | 'waiting' | 'connected'
   connectError: string | null
   syncError: string | null
+  calendars: { id: string; summary: string; primary?: boolean; backgroundColor?: string }[]
+  fetchCalendars: ReturnType<typeof vi.fn>
+  setCalendarHidden: ReturnType<typeof vi.fn>
+  isCalendarHidden: (calendarId: string) => boolean
   connect: ReturnType<typeof vi.fn>
   cancelConnect: ReturnType<typeof vi.fn>
   disconnect: ReturnType<typeof vi.fn>
@@ -75,6 +79,10 @@ const mockCalendarStore: {
   oauthStatus: 'idle',
   connectError: null,
   syncError: null,
+  calendars: [],
+  fetchCalendars: vi.fn().mockResolvedValue(new Map()),
+  setCalendarHidden: vi.fn().mockResolvedValue(undefined),
+  isCalendarHidden: () => false,
   connect: vi.fn().mockResolvedValue(undefined),
   cancelConnect: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn().mockResolvedValue(undefined),
@@ -92,6 +100,9 @@ describe('SettingsView', () => {
     mockCalendarStore.oauthStatus = 'idle'
     mockCalendarStore.connectError = null
     mockCalendarStore.syncError = null
+    mockCalendarStore.calendars = []
+    mockCalendarStore.isCalendarHidden = () => false
+    mockCalendarStore.fetchCalendars.mockResolvedValue(new Map())
   })
 
   it('el main tiene h-full y overflow-y-auto', () => {
@@ -159,5 +170,41 @@ describe('SettingsView', () => {
     mockCalendarStore.connectError = 'OAuth state mismatch'
     const wrapper = mount(SettingsView)
     expect(wrapper.text()).toContain('OAuth state mismatch')
+  })
+
+  it('muestra la card de visibilidad debajo de la card de conexión', () => {
+    mockCalendarStore.connected = true
+    const wrapper = mount(SettingsView)
+    const card = wrapper.find("[data-testid='gcal-visibility-card']")
+    expect(card.exists()).toBe(true)
+    expect(card.text()).toContain('Calendarios visibles')
+  })
+
+  it('la card de visibilidad muestra estado vacío cuando no hay conexión', () => {
+    mockCalendarStore.connected = false
+    const wrapper = mount(SettingsView)
+    expect(wrapper.find("[data-testid='gcal-visibility-empty']").exists()).toBe(true)
+  })
+
+  it('la card de visibilidad lista los calendarios del store', () => {
+    mockCalendarStore.connected = true
+    mockCalendarStore.calendars = [
+      { id: 'primary', summary: 'Personal', primary: true, backgroundColor: '#7986cb' },
+      { id: 'work', summary: 'Trabajo', backgroundColor: '#33b679' },
+    ]
+    const wrapper = mount(SettingsView)
+    expect(wrapper.findAll("[data-testid='gcal-visibility-row']")).toHaveLength(2)
+    expect(wrapper.text()).toContain('Personal')
+    expect(wrapper.text()).toContain('Trabajo')
+  })
+
+  it('togglear un checkbox desde Settings llama a setCalendarHidden', async () => {
+    mockCalendarStore.connected = true
+    mockCalendarStore.calendars = [
+      { id: 'primary', summary: 'Personal', primary: true, backgroundColor: '#7986cb' },
+    ]
+    const wrapper = mount(SettingsView)
+    await wrapper.find('input[type="checkbox"]').setValue(false)
+    expect(mockCalendarStore.setCalendarHidden).toHaveBeenCalledWith('primary', true)
   })
 })
