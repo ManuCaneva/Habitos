@@ -1,5 +1,18 @@
 # Spec: Integración confiable con Google Calendar (OAuth loopback sin secret + errores visibles)
 
+> **Nota de supersesión (2026-09-11):** La decisión de esta spec de usar **PKCE puro sin
+> `client_secret`** quedó invalidada empíricamente. Contra el token endpoint de Google, un
+> cliente **Desktop** recién creado sin secret responde
+> `invalid_request: client_secret is missing`, y con un secret incorrecto responde
+> `invalid_client`; la documentación de Google solo exime del secret a clientes
+> Android/iOS/Chrome, no al tipo Desktop. Estado vigente: **el `client_secret` es
+> obligatorio** y viaja embebido en el binario (no confidencial por el modelo de Google
+> para apps instaladas). La decisión vigente y la evidencia completa viven en
+> [`.scratch/v1-release/spec.md`](../v1-release/spec.md) y el ticket
+> [`01-oauth-client-secret-en-payloads.md`](../v1-release/issues/01-oauth-client-secret-en-payloads.md).
+>
+> El resto de este documento se conserva como registro histórico; no se reescribe.
+
 Status: ready-for-agent
 Label: ready-for-agent
 
