@@ -1,133 +1,91 @@
-<br />
 <div align="center">
-  <h3 align="center">AEON</h3>
-  <p align="center">
-    Dashboard de productividad <strong>local-first</strong> para escritorio.<br />
-    Inspirado en el design system de Linear, pensado para ser compartible.<br />
-    <a href="docs/ARCHITECTURE.md"><strong>Arquitectura »</strong></a>
-    ·
-    <a href="docs/DESIGN.md"><strong>Design system »</strong></a>
-    ·
-    <a href="AGENTS.md"><strong>AGENTS »</strong></a>
-  </p>
+  <h1>AEON</h1>
+  <p>Dashboard de productividad <strong>local-first</strong> para escritorio.</p>
 </div>
 
----
+AEON reúne hábitos, tareas, objetivos, cronograma semanal, calendario anual y pomodoro en un solo dashboard configurable. Tus datos viven en tu máquina: sin cuentas, sin servidores y sin suscripción.
 
-## Sobre el proyecto
+## Descargar
 
-AEON es un dashboard de productividad **local-first** para escritorio. Tus datos viven en tu máquina, sin cuentas ni servidores remotos obligatorios. Incluye hábitos, tareas, objetivos, calendario anual y cronograma semanal, con una arquitectura simple donde la lógica vive en el frontend y Rust solo persiste.
+Bajá el instalador de tu plataforma desde la [última release](https://github.com/ManuCaneva/Habitos/releases/latest).
 
-**Estado actual**: dashboard configurable con widgets de hábitos, tareas, objetivos, calendario anual y cronograma semanal. La navegación usa vistas controladas por Pinia y el layout se persiste en SQLite.
+> En macOS y Windows el sistema puede avisar que la app "no está verificada" (los binarios no están firmados). Permití la ejecución desde la configuración del sistema.
 
-**Próximamente**: multi-check-in para hábitos y mejoras de tareas. La escritura bidireccional de Google Calendar queda pausada.
+## Qué incluye
 
-### ¿Por qué?
-
-- Las apps de hábitos existentes son o demasiado simples o demasiado complicadas. Quería algo con la pulcritud visual de Linear y la simplicidad de Things.
-- **Local-first importa**: la app tiene que ser útil offline, sin telemetría, sin suscripción.
-- **Compartible**: si a alguien le sirve, que pueda clonar y usar sin fricción.
+- **Hábitos** — check-in diario, rachas, heatmap y multi-check-in progresivo.
+- **Tareas** — estados (todo / doing / done), descripción, color, fecha de vencimiento y sub-tareas.
+- **Objetivos** — métricas cuantificables con registro de avance y frecuencia configurable.
+- **Cronograma semanal** — bloques por día y franja horaria, con drag & drop.
+- **Calendario anual** — los 12 meses en una grilla, con lectura opcional de Google Calendar.
+- **Pomodoro** — timer configurable con conteo de sesiones completadas.
+- **Dashboard** — grilla de widgets con drag, resize, temas claro / oscuro / Popi.
 
 ## Stack
 
-**Frontend**: Vue 3.5 · TypeScript (strict) · Pinia · Vite 6 · Zod · VueUse · Tailwind 3.4 · lucide-vue-next · Inter + JetBrains Mono
+Tauri 2 + Rust (rusqlite) como shell de escritorio, Vue 3.5 + TypeScript + Pinia + Zod + Tailwind en el frontend. La lógica de dominio vive en TypeScript; Rust solo persiste en SQLite local.
 
-**Backend (Tauri shell)**: Tauri 2 · rusqlite (bundled) · thiserror
-
-**Testing**: Vitest 4 con @vue/test-utils y happy-dom
-
-## Empezando
+## Desarrollo
 
 ### Prerrequisitos
 
 - **Node.js 20+**
-- **Rust stable** (vía [rustup](https://rustup.rs))
-- **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`, `libsqlite3-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`. Ver [Tauri Linux prereqs](https://v2.tauri.app/start/prerequisites/#linux).
+- **Rust estable** (vía [rustup](https://rustup.rs))
+- **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
 - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
 - **Windows**: WebView2 (preinstalado en Windows 11) + MSVC build tools
 
-### Instalación
+### Puesta en marcha
 
 ```sh
-git clone https://github.com/tu-usuario/habitos.git
-cd habitos
+git clone https://github.com/ManuCaneva/Habitos.git
+cd Habitos
 npm install
+cp .env.example .env    # opcional, solo si vas a usar Google Calendar
 npm run tauri dev
 ```
 
-La primera compilación de Rust tarda 1–2 minutos; las siguientes son segundos.
+La primera compilación de Rust tarda 1–2 minutos; las siguientes son cuestión de segundos.
 
-## Uso
+### Google Calendar (opcional)
 
-1. Click en **Nuevo hábito** (arriba a la derecha)
-2. Escribir el nombre, elegir un color, **Crear**
-3. Marcar el checkbox del hábito cada día
-4. La columna de la derecha muestra la racha actual (días consecutivos)
+La app funciona sin esto. Para conectar una cuenta de Google:
 
-**Archivar**: hover sobre un hábito → click en `…` → **Archivar**. Los hábitos archivados no suman racha pero conservan su historial. Viv en la tab **Archivados** y se pueden restaurar.
+1. Creá un proyecto en [Google Cloud Console](https://console.cloud.google.com/) y habilitá **Google Calendar API**.
+2. En **APIs & Services → Credentials**, creá un **OAuth client ID** de tipo **Desktop app**.
+3. Copiá `.env.example` a `.env` y completá `VITE_GCAL_CLIENT_ID` y `VITE_GCAL_CLIENT_SECRET` con los valores del cliente.
+4. Reiniciá la app y conectá la cuenta desde **Ajustes**.
 
-**Settings**: tab del ícono ⚙. Toggle de tema claro/oscuro (la elección se guarda en `localStorage`).
+El `client_secret` de un cliente Desktop **no es confidencial** según la política de Google y viaja embebido en el binario de producción; es el mecanismo esperado para apps instaladas.
 
-**Datos**: la DB SQLite vive en
+### Tests
 
-- Linux: `~/.local/share/com.aeon/aeon.sqlite`
-- macOS: `~/Library/Application Support/com.aeon/aeon.sqlite`
-- Windows: `%APPDATA%/com.aeon/aeon.sqlite`
-
-En la primera ejecución posterior al renombrado, AEON migra automáticamente `habitos.sqlite` a `aeon.sqlite`, incluyendo sus archivos WAL/SHM.
-
-Para resetear, cerrá la app y borrá ese archivo.
-
-## Tests
+Este proyecto sigue **TDD estricto**: primero el test, después la implementación. La convención completa está en [AGENTS.md](AGENTS.md).
 
 ```sh
-npm run test          # suite completa, una vez
+npm run test          # suite completa (CI)
 npm run test:watch    # modo watch (ciclo TDD)
 npm run build         # typecheck + build de producción
+npm run test:perf     # presupuesto de rendimiento del dashboard
 ```
-
-Los tests viven al lado del código que prueban (`foo.ts` → `foo.test.ts`). Cubren:
-
-- Schemas Zod (validación de entrada y de filas de SQLite)
-- Helpers puros (`src/lib/`)
-- Lógica de dominio en stores (con `db.*` mockeado)
-- Componentes Vue críticos (con `@vue/test-utils`)
-
-Para la convención de tests y TDD, ver [AGENTS.md](AGENTS.md).
 
 ## Roadmap
 
-**Base de productividad (actual)**
-
-- [x] Schema SQLite + migraciones
-- [x] Dual Zod (domain + row) cruzando la frontera Tauri
-- [x] Pinia store con rachas
-- [x] UI: TopBar, TabBar, Today/Archived/Settings views
-- [x] Modal único de crear/editar con paleta de 8 colores
-- [x] Tema claro/oscuro con persistencia
-- [x] Tests de schemas con Vitest
+**Hoy**
 
 - [x] Dashboard configurable con drag, resize y widgets
-- [x] Hábitos, tareas y objetivos con persistencia local
-- [x] Cronograma semanal con bloques y slots
-- [x] Calendario anual con lectura opcional de Google Calendar
+- [x] Hábitos con rachas, heatmap y multi-check-in progresivo
+- [x] Tareas y objetivos con persistencia local
+- [x] Cronograma semanal y calendario anual
+- [x] Pomodoro
 - [x] Temas claro, oscuro y Popi
 
-**Siguiente trabajo**
+**Próximo**
 
-- [ ] Multi-check-in progresivo para hábitos
-- [ ] Indicadores de urgencia, tags y prioridades en tareas
-- [ ] Kanban, tareas recurrentes, inbox y command palette
-- [ ] Onboarding y calendario integrado
-
-## Contribuir
-
-1. Fork el proyecto
-2. Crear una rama para el feature (`git checkout -b feature/algo-genial`)
-3. Seguir TDD: primero el test, después la implementación. Ver [AGENTS.md](AGENTS.md).
-4. Commit con mensaje descriptivo
-5. Push y abrir un Pull Request
+- [ ] Tareas: indicadores de urgencia, tags, prioridades, recurrentes y kanban
+- [ ] Calendario integrado (vistas diaria, semanal y mensual)
+- [ ] Onboarding, proyectos y notas / journaling
 
 ## Licencia
 
-MIT — ver `LICENSE.txt`.
+MIT — ver [`LICENSE.txt`](LICENSE.txt).
