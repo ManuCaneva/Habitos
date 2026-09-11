@@ -14,6 +14,7 @@ export interface AuthUrlParams {
 export interface TokenExchangePayload {
   code: string
   clientId: string
+  clientSecret: string
   redirectUri: string
   codeVerifier: string
 }
@@ -21,6 +22,7 @@ export interface TokenExchangePayload {
 export interface RefreshPayload {
   refreshToken: string
   clientId: string
+  clientSecret: string
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -78,6 +80,7 @@ export function buildTokenExchangePayload<T extends TokenExchangePayload>(
   return new URLSearchParams({
     code: params.code,
     client_id: params.clientId,
+    client_secret: params.clientSecret,
     redirect_uri: params.redirectUri,
     code_verifier: params.codeVerifier,
     grant_type: 'authorization_code',
@@ -88,6 +91,7 @@ export function buildRefreshPayload<T extends RefreshPayload>(params: T): URLSea
   return new URLSearchParams({
     refresh_token: params.refreshToken,
     client_id: params.clientId,
+    client_secret: params.clientSecret,
     grant_type: 'refresh_token',
   })
 }

@@ -84,12 +84,13 @@ describe('googleOauth', () => {
       const payload = buildTokenExchangePayload({
         code: 'authcode123',
         clientId: '123.apps.googleusercontent.com',
+        clientSecret: 'secret123',
         redirectUri: 'com.aeon://oauth/callback',
         codeVerifier: 'verifier123',
       })
       expect(payload.get('code')).toBe('authcode123')
       expect(payload.get('client_id')).toBe('123.apps.googleusercontent.com')
-      expect(payload.has('client_secret')).toBe(false)
+      expect(payload.get('client_secret')).toBe('secret123')
       expect(payload.get('redirect_uri')).toBe('com.aeon://oauth/callback')
       expect(payload.get('code_verifier')).toBe('verifier123')
       expect(payload.get('grant_type')).toBe('authorization_code')
@@ -101,10 +102,11 @@ describe('googleOauth', () => {
       const payload = buildRefreshPayload({
         refreshToken: 'rt123',
         clientId: '123.apps.googleusercontent.com',
+        clientSecret: 'secret123',
       })
       expect(payload.get('refresh_token')).toBe('rt123')
       expect(payload.get('client_id')).toBe('123.apps.googleusercontent.com')
-      expect(payload.has('client_secret')).toBe(false)
+      expect(payload.get('client_secret')).toBe('secret123')
       expect(payload.get('grant_type')).toBe('refresh_token')
     })
   })
