@@ -5,12 +5,6 @@
 
 AEON reúne hábitos, tareas, objetivos, cronograma semanal, calendario anual y pomodoro en un solo dashboard configurable. Tus datos viven en tu máquina: sin cuentas, sin servidores y sin suscripción.
 
-## Descargar
-
-Bajá el instalador de tu plataforma desde la [última release](https://github.com/ManuCaneva/Habitos/releases/latest).
-
-> En macOS y Windows el sistema puede avisar que la app "no está verificada" (los binarios no están firmados). Permití la ejecución desde la configuración del sistema.
-
 ## Qué incluye
 
 - **Hábitos** — check-in diario, rachas, heatmap y multi-check-in progresivo.

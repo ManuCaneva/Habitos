@@ -2,7 +2,7 @@
 name = "aeon"
 version = "1.0.0"
 description = "AEON — local-first productivity dashboard"
-authors = ["you"]
+authors = ["GOYA"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
