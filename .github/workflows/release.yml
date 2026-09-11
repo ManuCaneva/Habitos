@@ -94,6 +94,8 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_GCAL_CLIENT_ID: ${{ secrets.VITE_GCAL_CLIENT_ID }}
+          VITE_GCAL_CLIENT_SECRET: ${{ secrets.VITE_GCAL_CLIENT_SECRET }}
         with:
           tagName: v__VERSION__
           releaseName: 'AEON v__VERSION__'
