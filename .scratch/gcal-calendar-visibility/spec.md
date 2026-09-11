@@ -87,7 +87,7 @@ día.
     conexión dispara `syncYear(currentYear)` (re-sync inmediato).
   - Los eventos locales (`calendarId === 'local'`) viven fuera del calendarList de Google y no
     se filtran.
-- **Semántica opt-out**: se persisten los IDs *ocultos*; cualquier calendario nuevo en la
+- **Semántica opt-out**: se persisten los IDs _ocultos_; cualquier calendario nuevo en la
   cuenta de Google es visible por defecto.
 - **UI**: componente nuevo en la capa de componentes de calendario (con su test al lado),
   usado desde `SettingsView` debajo de la card de conexión de Google Calendar. Lista con

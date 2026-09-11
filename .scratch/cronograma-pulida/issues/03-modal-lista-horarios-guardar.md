@@ -22,4 +22,3 @@ Implementado en `dev` (se commitea junto con el resto del trabajo del ticket):
 - **Modal** (`src/components/dashboard/WeeklyScheduleModal.vue`): estado local `drafts`; "Agregar/Actualizar" solo muta la lista local (nada persiste hasta "Guardar"); edición in situ y eliminar por ítem; "Guardar" llama a `saveBlock` una sola vez y muestra el error humano en el modal; botón de bloque completo renombrado `deleteBlock`.
 - **Tests**: store (secuencia de llamadas en crear y en edición, rejects sin persistir, solapamiento intra e inter-bloque incl. edición), schemas, modal vía props/emits, y grid con el escenario AACSW (un bloque, dos slots). `npm run test` (815), `npm run build`, `npm run lint`, `npm run format:check` y `npm run test:perf` en verde.
 - El `colorMap` hex del modal es preexistente (estaba en HEAD) y queda para tokenizar en el issue 05.
-

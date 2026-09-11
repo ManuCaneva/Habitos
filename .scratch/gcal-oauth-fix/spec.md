@@ -137,7 +137,7 @@ conectar de forma permanente (app publicada en producción en Google Cloud Conso
   widget ya lo preveía. La variable de entorno del secret deja de leerse y se borra del
   entorno. Nada sensible viaja en el bundle.
 - **Estado pendiente persistente**: al iniciar `connect()`, el par `{verifier, state,
-  redirectUri, createdAt}` se persiste en la tabla de configuración (clave dedicada, no el
+redirectUri, createdAt}` se persiste en la tabla de configuración (clave dedicada, no el
   flag booleano suelto) con TTL de 10 minutos. El listener del callback lo lee de ahí. Un
   callback sin pendiente válido, vencido o con state que no coincide produce un error de
   conexión visible — nunca silencio. El pendiente se limpia en éxito y en error.
@@ -181,23 +181,23 @@ conectar de forma permanente (app publicada en producción en Google Cloud Conso
   (`vi.mock` de los wrappers de config y de los plugins de Tauri); los tests de componentes
   usan `@vue/test-utils` vía props/emit; nada levanta el runtime de Tauri.
 - **Seams (todos existentes, no se crean seam nuevo en el frontend)**:
-  1. *Store de calendario* (seam principal, el más alto que reproduce el flujo): tests que
+  1. _Store de calendario_ (seam principal, el más alto que reproduce el flujo): tests que
      capturan el listener registrado vía los mocks de los plugins/eventos para simular la
      llegada del callback (casos: query con código decodificado, state inválido, pendiente
      vencido, callback sin pendiente, error de Google en el exchange); refresh resiliente
      (invalid_grant destruye, 429/5xx conserva); single-flight de refresh; sync con fallos
      parciales visibles; 401 → refresh + reintento; disconnect limpia todo. Prior art: el
      suite actual del store, que ya mockea `@/lib/db`, el plugin HTTP y los listeners.
-  2. *Helpers puros de OAuth*: parseo de query cruda con `URLSearchParams` (decodificación
+  2. _Helpers puros de OAuth_: parseo de query cruda con `URLSearchParams` (decodificación
      única, casos con `%2F`, sin params, con `error`), auth URL sin `client_secret`, payloads
      sin secret. Prior art: el suite actual de esos helpers (incluye el test de scope a
      alinear).
-  3. *Card de Google Calendar en Settings*: estados idle / esperando autorización / conectado /
+  3. _Card de Google Calendar en Settings_: estados idle / esperando autorización / conectado /
      error visible y persistente. Prior art: el suite actual de la vista con sus
      `data-testid` de conectar/desconectar.
-  4. *Widget de calendario anual*: banner de error de sync persistente (ya no filtra el caso
+  4. _Widget de calendario anual_: banner de error de sync persistente (ya no filtra el caso
      especial). Prior art: el suite actual del widget.
-  5. *Rust, único test nuevo*: unit test del helper puro que extrae path y query de la línea
+  5. _Rust, único test nuevo_: unit test del helper puro que extrae path y query de la línea
      de request HTTP (extraído del command para ser testeable). Prior art: los tests inline
      del módulo de base de datos en Rust.
 - **TDD estricto**: primero el test rojo que captura cada defecto (decodificación del code,
