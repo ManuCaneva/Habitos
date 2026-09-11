@@ -50,6 +50,9 @@ src-tauri/gen/schemas/
 .cache/
 test-results/
 
+# ── Issue tracker local (migrado a GitHub Issues) ────────────
+.scratch/
+
 # ── Misc ─────────────────────────────────────────────────────
 *.bak
 *.tmp
