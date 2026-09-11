@@ -104,7 +104,20 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     return map
   })
 
-  const visibleWindow = computed(() => computeVisibleWindow(blocksWithSlots.value))
+  const enabledDays = computed(() => [...settings.value.enabled_days].sort((a, b) => a - b))
+
+  function isDayEnabled(day: number): boolean {
+    return enabledDays.value.includes(day)
+  }
+
+  const visibleWindow = computed(() => {
+    const enabled = new Set(enabledDays.value)
+    return computeVisibleWindow(
+      blocksWithSlots.value.map((block) => ({
+        slots: block.slots.filter((slot) => enabled.has(slot.day_of_week)),
+      }))
+    )
+  })
 
   function wouldOverlapOnDay(
     day: number,
@@ -326,6 +339,9 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
       if (s.end_minutes <= s.start_minutes) {
         throw new Error(SCHEDULE_VALIDATION_ERRORS.endAfterStart)
       }
+      if (!isDayEnabled(s.day_of_week)) {
+        throw new Error('El día está desactivado en la configuración')
+      }
     }
     const clash = overlapMessage(input.slots, input.blockId)
     if (clash) throw new Error(clash)
@@ -426,6 +442,8 @@ export const useWeeklyScheduleStore = defineStore('weeklySchedule', () => {
     loading,
     lastError,
     blocksByDay,
+    enabledDays,
+    isDayEnabled,
     visibleWindow,
     wouldOverlapOnDay,
     validateSlot,

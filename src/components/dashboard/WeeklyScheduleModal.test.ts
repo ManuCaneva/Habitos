@@ -7,6 +7,7 @@ import TimePicker from '@/components/ui/TimePicker.vue'
 const mockStore = {
   saveBlock: vi.fn().mockResolvedValue(undefined),
   deleteBlock: vi.fn().mockResolvedValue(undefined),
+  enabledDays: [0, 1, 2, 3, 4, 5, 6],
 }
 
 vi.mock('@/stores/weeklySchedule', () => ({

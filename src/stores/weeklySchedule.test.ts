@@ -15,6 +15,7 @@ vi.mock('@/lib/db', () => ({
   loadWeeklyScheduleSettings: vi.fn().mockResolvedValue({
     granularity_minutes: 30,
     week_starts_monday: true,
+    enabled_days: [0, 1, 2, 3, 4, 5, 6],
   }),
   saveWeeklyScheduleSettings: vi.fn(),
 }))
@@ -158,6 +159,74 @@ describe('weeklySchedule store', () => {
         ]),
       ]
       expect(store.visibleWindow).toEqual({ start_minutes: 480, end_minutes: 1440 })
+    })
+  })
+
+  describe('Días habilitados (enabled_days)', () => {
+    const slot = (
+      overrides: Partial<{ day_of_week: number; start_minutes: number; end_minutes: number }> = {},
+      blockId = validUuid
+    ) => ({
+      id: '550e8400-e29b-41d4-a716-446655440001',
+      block_id: blockId,
+      day_of_week: overrides.day_of_week ?? 1,
+      start_minutes: overrides.start_minutes ?? 950,
+      end_minutes: overrides.end_minutes ?? 1085,
+      created_at: validIso,
+      updated_at: validIso,
+    })
+    const blockWith = (id: string, slots: ReturnType<typeof slot>[]) => ({
+      id,
+      title: 'Bloque',
+      color: 'cyan' as const,
+      sort_order: 0,
+      created_at: validIso,
+      updated_at: validIso,
+      slots,
+    })
+
+    it('expone los días habilitados ordenados de menor a mayor', () => {
+      const store = useWeeklyScheduleStore()
+      store.settings = { ...store.settings, enabled_days: [5, 1, 3] }
+      expect(store.enabledDays).toEqual([1, 3, 5])
+    })
+
+    it('isDayEnabled distingue días activos de inactivos', () => {
+      const store = useWeeklyScheduleStore()
+      store.settings = { ...store.settings, enabled_days: [1, 2] }
+      expect(store.isDayEnabled(1)).toBe(true)
+      expect(store.isDayEnabled(6)).toBe(false)
+    })
+
+    it('la ventana visible ignora los slots de días deshabilitados', () => {
+      const store = useWeeklyScheduleStore()
+      store.settings = { ...store.settings, enabled_days: [1] }
+      store.blocksWithSlots = [
+        blockWith(validUuid, [
+          slot({ day_of_week: 1, start_minutes: 950, end_minutes: 1085 }, validUuid),
+        ]),
+        blockWith('660e8400-e29b-41d4-a716-446655440000', [
+          slot(
+            { day_of_week: 6, start_minutes: 480, end_minutes: 540 },
+            '660e8400-e29b-41d4-a716-446655440000'
+          ),
+        ]),
+      ]
+      expect(store.visibleWindow).toEqual({ start_minutes: 900, end_minutes: 1140 })
+    })
+
+    it('saveBlock rechaza un slot en un día deshabilitado y no persiste', async () => {
+      const store = useWeeklyScheduleStore()
+      store.settings = { ...store.settings, enabled_days: [1] }
+
+      await expect(
+        store.saveBlock({
+          title: 'Estudio',
+          color: 'green',
+          slots: [{ day_of_week: 3, start_minutes: 480, end_minutes: 540 }],
+        })
+      ).rejects.toThrow('desactivado')
+      expect(db.createScheduleBlock).not.toHaveBeenCalled()
     })
   })
 

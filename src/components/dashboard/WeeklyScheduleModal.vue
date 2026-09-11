@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
@@ -18,6 +18,7 @@ const emit = defineEmits<{ close: [] }>()
 const store = useWeeklyScheduleStore()
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const enabledDays = computed(() => store.enabledDays)
 
 const title = ref('')
 const color = ref<(typeof BLOCK_COLOR_TOKENS)[number]>('lavender')
@@ -30,7 +31,7 @@ const slotEnd = ref('07:00')
 const editingIndex = ref<number | null>(null)
 
 function resetSlotForm() {
-  slotDay.value = 0
+  slotDay.value = enabledDays.value[0] ?? 0
   slotStart.value = '06:00'
   slotEnd.value = '07:00'
   editingIndex.value = null
@@ -211,7 +212,7 @@ async function deleteBlock() {
           v-model="slotDay"
           class="mb-2 w-full rounded-sm border border-hairline bg-surface-2 px-2 py-1.5 text-body"
         >
-          <option v-for="(d, i) in DAYS" :key="i" :value="i">{{ d }}</option>
+          <option v-for="i in enabledDays" :key="i" :value="i">{{ DAYS[i] }}</option>
         </select>
         <div class="flex gap-3">
           <div class="flex-1">

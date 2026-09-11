@@ -9,6 +9,10 @@ const store = useWeeklyScheduleStore()
 const emit = defineEmits<{ edit: [block: ScheduleBlockWithSlots] }>()
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const enabledDays = computed(() => store.enabledDays)
+const dayGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${Math.max(1, enabledDays.value.length)}, minmax(0, 1fr))`,
+}))
 
 const containerRef = ref<HTMLElement | null>(null)
 const containerHeight = ref(400)
@@ -135,13 +139,13 @@ function slotsForDay(day: number): VisibleSlot[] {
     <div class="scrollbar-gutter-stable relative min-h-0 flex-1 overflow-y-auto bg-canvas">
       <div class="sticky top-0 z-20 flex flex-shrink-0 border-b border-hairline bg-surface-2">
         <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 bg-surface-2" />
-        <div class="grid flex-1 grid-cols-7 border-l border-hairline bg-surface-2">
+        <div class="grid flex-1 border-l border-hairline bg-surface-2" :style="dayGridStyle">
           <div
-            v-for="(day, index) in DAYS"
-            :key="index"
+            v-for="dayIndex in enabledDays"
+            :key="dayIndex"
             class="schedule-day-label border-r border-hairline bg-surface-2 py-2 text-center text-caption text-xs font-semibold text-ink-muted"
           >
-            {{ day }}
+            {{ DAYS[dayIndex] }}
           </div>
         </div>
       </div>
@@ -161,8 +165,15 @@ function slotsForDay(day: number): VisibleSlot[] {
           </div>
         </div>
 
-        <div class="relative grid flex-1 select-none grid-cols-7 border-l border-hairline">
-          <div v-for="dayIndex in 7" :key="dayIndex" class="relative border-r border-hairline">
+        <div
+          class="relative grid flex-1 select-none border-l border-hairline"
+          :style="dayGridStyle"
+        >
+          <div
+            v-for="dayIndex in enabledDays"
+            :key="dayIndex"
+            class="relative border-r border-hairline"
+          >
             <div
               v-for="hl in hourLabels"
               :key="hl.minute"
@@ -171,7 +182,7 @@ function slotsForDay(day: number): VisibleSlot[] {
             />
 
             <WeeklyScheduleBlock
-              v-for="vs in slotsForDay(dayIndex - 1)"
+              v-for="vs in slotsForDay(dayIndex)"
               :key="vs.slot.id"
               :title="vs.block.title"
               :color="vs.block.color"

@@ -249,6 +249,7 @@ describe('weeklySchedule schema tests', () => {
       expect(DEFAULT_WEEKLY_SCHEDULE_SETTINGS).toEqual({
         granularity_minutes: 30,
         week_starts_monday: true,
+        enabled_days: [0, 1, 2, 3, 4, 5, 6],
       })
     })
 
@@ -256,8 +257,21 @@ describe('weeklySchedule schema tests', () => {
       const customSettings = {
         granularity_minutes: 15,
         week_starts_monday: true,
+        enabled_days: [0, 1, 2, 3, 4],
       }
       expect(WeeklyScheduleSettingsSchema.parse(customSettings)).toEqual(customSettings)
+    })
+
+    it('completa los días activos cuando faltan en settings antiguos', () => {
+      expect(
+        WeeklyScheduleSettingsSchema.parse({ granularity_minutes: 30, week_starts_monday: true })
+      ).toEqual(DEFAULT_WEEKLY_SCHEDULE_SETTINGS)
+    })
+
+    it('rechaza días inválidos, repetidos o dejar todos desactivados', () => {
+      expect(() => WeeklyScheduleSettingsSchema.parse({ enabled_days: [0, 7] })).toThrow()
+      expect(() => WeeklyScheduleSettingsSchema.parse({ enabled_days: [0, 0] })).toThrow()
+      expect(() => WeeklyScheduleSettingsSchema.parse({ enabled_days: [] })).toThrow()
     })
 
     it('rechaza granularidad inválida', () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleSettingsModal from './WeeklyScheduleSettingsModal.vue'
 
@@ -7,6 +8,7 @@ const mockStore = {
   settings: {
     granularity_minutes: 30,
     week_starts_monday: true,
+    enabled_days: [0, 1, 2, 3, 4, 5, 6],
   },
   saveSettings: vi.fn(),
 }
@@ -30,6 +32,7 @@ describe('WeeklyScheduleSettingsModal', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockStore.settings.enabled_days = [0, 1, 2, 3, 4, 5, 6]
   })
 
   afterEach(() => {
@@ -73,6 +76,48 @@ describe('WeeklyScheduleSettingsModal', () => {
     await saveButton!.click()
 
     expect(mockStore.saveSettings).toHaveBeenCalledTimes(1)
-    expect(mockStore.saveSettings).toHaveBeenCalledWith({ granularity_minutes: 30 })
+    expect(mockStore.saveSettings).toHaveBeenCalledWith({
+      granularity_minutes: 30,
+      enabled_days: [0, 1, 2, 3, 4, 5, 6],
+    })
+  })
+
+  it('guarda los días activos al desactivar uno', async () => {
+    wrapper = mount(WeeklyScheduleSettingsModal, {
+      props: { open: false },
+      attachTo: document.body,
+    })
+    await wrapper.setProps({ open: true })
+
+    const buttons = Array.from(document.body.querySelectorAll('button'))
+    const martes = buttons.find((b) => b.textContent?.trim() === 'Mar')
+    expect(martes).toBeDefined()
+    await martes!.click()
+
+    const saveButton = buttons.find((b) => b.textContent?.includes('Guardar'))
+    await saveButton!.click()
+
+    expect(mockStore.saveSettings).toHaveBeenCalledWith({
+      granularity_minutes: 30,
+      enabled_days: [0, 2, 3, 4, 5, 6],
+    })
+  })
+
+  it('no permite quedarse sin días activos', async () => {
+    mockStore.settings.enabled_days = [0]
+    wrapper = mount(WeeklyScheduleSettingsModal, {
+      props: { open: false },
+      attachTo: document.body,
+    })
+    await wrapper.setProps({ open: true })
+
+    const buttons = Array.from(document.body.querySelectorAll('button'))
+    const lunes = buttons.find((b) => b.textContent?.trim() === 'Lun')
+    expect(lunes).toBeDefined()
+    await lunes!.click()
+    await nextTick()
+
+    expect(document.body.textContent).toContain('Seleccioná al menos un día')
+    expect(lunes!.getAttribute('aria-pressed')).toBe('true')
   })
 })

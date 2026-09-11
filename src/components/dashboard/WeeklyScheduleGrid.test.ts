@@ -28,7 +28,9 @@ const mockStore = {
   settings: {
     granularity_minutes: 30,
     week_starts_monday: true,
+    enabled_days: [0, 1, 2, 3, 4, 5, 6],
   },
+  enabledDays: [0, 1, 2, 3, 4, 5, 6],
   visibleWindow: { start_minutes: 360, end_minutes: 1380 },
 }
 

@@ -185,6 +185,11 @@ export function scheduleSlotToRow(s: ScheduleSlot): ScheduleSlotRow {
 export const WeeklyScheduleSettingsSchema = z.object({
   granularity_minutes: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(30),
   week_starts_monday: z.boolean().default(true), // MVP fijo true (sin UI)
+  enabled_days: z
+    .array(z.number().int().min(0).max(6))
+    .min(1)
+    .refine((days) => new Set(days).size === days.length, 'Los días no pueden repetirse')
+    .default([0, 1, 2, 3, 4, 5, 6]),
 })
 export type WeeklyScheduleSettings = z.infer<typeof WeeklyScheduleSettingsSchema>
 export const DEFAULT_WEEKLY_SCHEDULE_SETTINGS: WeeklyScheduleSettings =
