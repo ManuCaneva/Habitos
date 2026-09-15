@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import GridItemVue from './GridItemVue.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 import type { LayoutItem } from '@/stores/dashboard'
 
 let dragCallbacks: Record<string, (...args: number[]) => void> = {}
@@ -240,5 +241,13 @@ describe('GridItemVue', () => {
     expect(mockFlipTransform).toHaveBeenCalled()
     expect(wrapper.classes()).toContain('grid-item--flip')
     expect(el.style.position).toBe('')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: true },
+      slots: { default: '<div>contenido</div>' },
+    })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

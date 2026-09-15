@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockStore = {
   blocksWithSlots: [
@@ -56,6 +57,12 @@ describe('WeeklyScheduleGrid', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(WeeklyScheduleGrid)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+    wrapper.unmount()
   })
 
   it('renderiza las columnas de los días de la semana', () => {

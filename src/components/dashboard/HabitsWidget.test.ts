@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import HabitsWidget from './HabitsWidget.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 vi.mock('@/stores/habits', () => ({
   useHabitsStore: () => ({
@@ -61,5 +62,10 @@ describe('HabitsWidget', () => {
     const el = wrapper.find("[data-testid='habits-widget']")
     const style = el.attributes('style') ?? ''
     expect(style).toContain('container-type: inline-size')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(HabitsWidget)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

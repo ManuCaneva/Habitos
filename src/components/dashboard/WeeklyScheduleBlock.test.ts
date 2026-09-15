@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleBlock from './WeeklyScheduleBlock.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 vi.mock('@/stores/weeklySchedule', () => ({
   useWeeklyScheduleStore: () => ({}),
@@ -36,5 +37,12 @@ describe('WeeklyScheduleBlock', () => {
 
     await wrapper.find('button').trigger('click')
     expect(wrapper.emitted('click')).toBeTruthy()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(WeeklyScheduleBlock, {
+      props: { title: 'Gimnasio', color: 'lavender' },
+    })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

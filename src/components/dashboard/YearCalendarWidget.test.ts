@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import YearCalendarWidget from './YearCalendarWidget.vue'
 import MonthMini from '@/components/calendar/MonthMini.vue'
 import DayDetailsModal from '@/components/dashboard/DayDetailsModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 function flushRaf() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
@@ -302,5 +303,10 @@ describe('YearCalendarWidget', () => {
     expect(cols).toBeLessThanOrEqual(4)
 
     vi.unstubAllGlobals()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(YearCalendarWidget)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

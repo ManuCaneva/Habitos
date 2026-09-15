@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import DashboardView from './DashboardView.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 vi.mock('@/composables/useDashDrag', () => ({
   useDashDrag: vi.fn(),
@@ -112,6 +113,12 @@ describe('DashboardView', () => {
     const wrapper = mount(DashboardView)
     const removeButtons = wrapper.findAllComponents({ name: 'WidgetRemoveButton' })
     expect(removeButtons.length).toBe(0)
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    editModeValue = true
+    const wrapper = mount(DashboardView)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 
   it('al remover un widget, llama removeWidget del store', async () => {

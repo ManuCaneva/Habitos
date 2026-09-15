@@ -49,7 +49,7 @@ function openEdit(b: ScheduleBlockWithSlots) {
       </header>
       <div
         v-if="store.lastError"
-        class="select-text whitespace-pre-wrap border-b border-red-500/20 bg-red-500/10 p-3 text-xs text-red-500"
+        class="select-text whitespace-pre-wrap border-b border-accent-red/25 bg-accent-red-tint p-3 text-xs text-accent-red"
       >
         Error al cargar: {{ store.lastError }}
       </div>

@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { reactive } from 'vue'
 import PomodoroWidget from './PomodoroWidget.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockPrepareAudio = vi.fn().mockResolvedValue(undefined)
 const mockStart = vi.fn().mockResolvedValue(undefined)
@@ -162,5 +163,10 @@ describe('PomodoroWidget', () => {
     expect(mockPrepareAudio).toHaveBeenCalledOnce()
     await new Promise((r) => setTimeout(r, 0))
     expect(mockStart).toHaveBeenCalledOnce()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(PomodoroWidget)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

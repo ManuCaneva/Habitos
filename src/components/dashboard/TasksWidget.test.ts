@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import TasksWidget from './TasksWidget.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 describe('TasksWidget', () => {
   beforeEach(() => {
@@ -31,5 +32,10 @@ describe('TasksWidget', () => {
     const wrapper = mount(TasksWidget)
     const listView = wrapper.findComponent({ name: 'TasksListView' })
     expect(listView.exists()).toBe(true)
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(TasksWidget)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })
