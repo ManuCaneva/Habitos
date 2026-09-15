@@ -55,7 +55,7 @@ function onMainClick() {
       v-if="target > 1 && count > 0"
       type="button"
       data-testid="decrement-button"
-      class="flex h-5 w-5 items-center justify-center rounded-full text-ink-muted opacity-0 transition-opacity hover:text-ink group-hover:opacity-100"
+      class="flex h-5 w-5 items-center justify-center rounded-full text-ink-muted opacity-0 transition-opacity hover:text-ink focus-visible:text-ink focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
       aria-label="Quitar una repetición"
       title="Quitar una repetición"
       @click.stop="emit('decrement')"
@@ -66,7 +66,7 @@ function onMainClick() {
       type="button"
       data-testid="checkin-button"
       :class="[
-        'relative flex h-7 w-7 items-center justify-center rounded-full transition-all active:scale-95',
+        'relative flex h-7 w-7 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas active:scale-95',
         !full && target === 1 && 'border-2 bg-surface-3/30',
         !full && target > 1 && 'bg-surface-3/30',
       ]"
@@ -108,14 +108,14 @@ function onMainClick() {
         data-testid="circle-check"
         :size="16"
         :stroke-width="3"
-        class="text-white"
+        class="text-on-primary"
       />
       <Plus
         v-else-if="!full"
         data-testid="circle-plus"
         :size="16"
         :stroke-width="2"
-        class="text-white"
+        class="text-on-primary"
       />
     </button>
   </div>

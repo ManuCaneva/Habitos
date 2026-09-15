@@ -20,7 +20,7 @@ describe('FrequencySelector', () => {
     })
     const buttons = wrapper.findAll('button')
     expect(buttons[1].classes()).toContain('bg-primary')
-    expect(buttons[1].classes()).toContain('text-white')
+    expect(buttons[1].classes()).toContain('text-on-primary')
   })
 
   it('should emit daily on click', async () => {

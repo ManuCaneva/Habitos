@@ -29,6 +29,7 @@ const config: Config = {
           hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
           focus: 'rgb(var(--color-primary-focus) / <alpha-value>)',
         },
+        'on-primary': 'rgb(var(--color-on-primary) / <alpha-value>)',
         'brand-secure': 'rgb(var(--color-brand-secure) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
         overlay: 'rgb(var(--color-overlay) / <alpha-value>)',

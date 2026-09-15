@@ -216,11 +216,11 @@ function makeGrabScrollable(el: HTMLElement, onScrollFn: () => void, onScrollEnd
 
 <template>
   <div
-    class="relative mx-auto flex h-40 w-full max-w-[140px] select-none items-center justify-center gap-2 overflow-hidden rounded-md border border-hairline bg-surface-2 px-4 py-2"
+    class="relative mx-auto flex h-40 w-full max-w-[140px] select-none items-center justify-center gap-2 overflow-hidden rounded-lg border border-hairline bg-surface-2 px-4 py-2"
   >
     <!-- Highlight overlay in the middle -->
     <div
-      class="pointer-events-none absolute left-0 right-0 top-[64px] z-0 h-8 border-y border-primary/20 bg-primary/5"
+      class="pointer-events-none absolute left-0 right-0 top-[64px] z-0 h-8 rounded-sm border-y border-primary/20 bg-primary/5"
     />
 
     <!-- Hours Column -->
@@ -236,10 +236,10 @@ function makeGrabScrollable(el: HTMLElement, onScrollFn: () => void, onScrollEnd
         :key="h"
         type="button"
         :class="[
-          'flex h-8 w-full snap-center items-center justify-center text-sm font-semibold outline-none transition-colors duration-150',
+          'flex h-8 w-full snap-center items-center justify-center rounded-sm text-body-sm font-semibold transition-colors duration-150 focus-visible:bg-surface-3 focus-visible:outline-none active:bg-surface-3',
           selectedHour === h - 1
             ? 'scale-110 font-bold text-primary'
-            : 'text-ink-subtle hover:text-ink',
+            : 'text-ink-subtle hover:bg-surface-3 hover:text-ink',
         ]"
         @click="selectHour(h - 1)"
       >
@@ -265,10 +265,10 @@ function makeGrabScrollable(el: HTMLElement, onScrollFn: () => void, onScrollEnd
         :key="m"
         type="button"
         :class="[
-          'flex h-8 w-full snap-center items-center justify-center text-sm font-semibold outline-none transition-colors duration-150',
+          'flex h-8 w-full snap-center items-center justify-center rounded-sm text-body-sm font-semibold transition-colors duration-150 focus-visible:bg-surface-3 focus-visible:outline-none active:bg-surface-3',
           selectedMinute === m - 1
             ? 'scale-110 font-bold text-primary'
-            : 'text-ink-subtle hover:text-ink',
+            : 'text-ink-subtle hover:bg-surface-3 hover:text-ink',
         ]"
         @click="selectMinute(m - 1)"
       >

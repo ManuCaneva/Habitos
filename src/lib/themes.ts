@@ -14,6 +14,7 @@ export interface ThemeColors {
   primary: string
   primaryHover: string
   primaryFocus: string
+  onPrimary: string
   brandSecure: string
   success: string
   overlay: string
@@ -106,9 +107,10 @@ export const themes: readonly ThemeDefinition[] = [
       primary: '110 86 207',
       primaryHover: '128 106 224',
       primaryFocus: '96 74 189',
+      onPrimary: '250 248 245',
       brandSecure: '146 132 191',
       success: '82 184 122',
-      overlay: '0 0 0',
+      overlay: '20 16 12',
     },
     blockColors: sharedBlockColors,
     accents: darkAccents,
@@ -134,9 +136,10 @@ export const themes: readonly ThemeDefinition[] = [
       primary: '110 86 207',
       primaryHover: '92 70 184',
       primaryFocus: '102 80 192',
+      onPrimary: '255 255 255',
       brandSecure: '110 98 158',
       success: '31 138 76',
-      overlay: '0 0 0',
+      overlay: '24 18 12',
     },
     blockColors: sharedBlockColors,
     accents: lightAccents,
@@ -162,6 +165,7 @@ export const themes: readonly ThemeDefinition[] = [
       primary: '89 169 106',
       primaryHover: '155 222 172',
       primaryFocus: '89 169 106',
+      onPrimary: '24 40 28',
       brandSecure: '99 105 64',
       success: '155 222 172',
       overlay: '0 0 0',
@@ -198,6 +202,7 @@ export function applyTheme(theme: ThemeDefinition): void {
   root.style.setProperty('--color-primary', c.primary)
   root.style.setProperty('--color-primary-hover', c.primaryHover)
   root.style.setProperty('--color-primary-focus', c.primaryFocus)
+  root.style.setProperty('--color-on-primary', c.onPrimary)
   root.style.setProperty('--color-brand-secure', c.brandSecure)
   root.style.setProperty('--color-success', c.success)
   root.style.setProperty('--color-overlay', c.overlay)

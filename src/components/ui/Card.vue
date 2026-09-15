@@ -33,11 +33,11 @@ const paddingClass = computed(() => {
 const variantClass = computed(() => {
   switch (props.variant) {
     case 'featured':
-      return 'bg-surface-2 border border-hairline-strong'
+      return 'bg-surface-2 border border-hairline-strong shadow-sm'
     case 'flat':
       return 'bg-transparent'
     default:
-      return 'bg-surface-1 border border-hairline'
+      return 'bg-surface-1 border border-hairline shadow-sm'
   }
 })
 </script>

@@ -54,12 +54,12 @@ const thumbPosition = computed(() =>
           'block rounded-full transition-colors duration-200 ease-out',
           trackSize,
           modelValue ? 'bg-primary' : 'bg-surface-3',
-          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-focus/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
         ]"
       />
       <span
         :class="[
-          'absolute left-0 top-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out',
+          'absolute left-0 top-0.5 rounded-full bg-on-primary shadow-sm transition-transform duration-200 ease-out',
           thumbSize,
           thumbPosition,
         ]"

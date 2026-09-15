@@ -52,7 +52,7 @@ describe('HabitsWidget', () => {
     const el = wrapper.find("[data-testid='habits-widget']")
     expect(el.classes()).toContain('bg-surface-1')
     expect(el.classes()).toContain('border-hairline')
-    expect(el.classes()).toContain('rounded-sm')
+    expect(el.classes()).toContain('rounded-lg')
     expect(el.classes()).toContain('h-full')
   })
 

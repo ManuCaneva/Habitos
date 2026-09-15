@@ -11,7 +11,7 @@ describe('Container', () => {
     expect(wrapper.classes()).toContain('bg-surface-1')
     expect(wrapper.classes()).toContain('border')
     expect(wrapper.classes()).toContain('border-hairline')
-    expect(wrapper.classes()).toContain('rounded-sm')
+    expect(wrapper.classes()).toContain('rounded-lg')
     expect(wrapper.classes()).toContain('p-3')
   })
 

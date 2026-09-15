@@ -25,20 +25,20 @@ const sizeClass = computed(() => {
 const variantClass = computed(() => {
   switch (props.variant) {
     case 'success':
-      return 'bg-success/10 text-success border border-success/20'
+      return 'bg-accent-green-tint text-accent-green'
     case 'primary':
-      return 'bg-primary/10 text-primary border border-primary/20'
+      return 'bg-accent-purple-tint text-accent-purple'
     default:
-      return 'bg-surface-2 text-ink-muted border border-hairline'
+      return 'bg-surface-2 text-ink-muted'
   }
 })
 
 const dotClass = computed(() => {
   switch (props.variant) {
     case 'success':
-      return 'bg-success'
+      return 'bg-accent-green'
     case 'primary':
-      return 'bg-primary'
+      return 'bg-accent-purple'
     default:
       return 'bg-ink-subtle'
   }

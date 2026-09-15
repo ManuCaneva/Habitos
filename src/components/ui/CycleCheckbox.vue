@@ -21,7 +21,7 @@ function next(): CycleState {
 
 const boxClasses = computed(() => {
   const base =
-    'h-4 w-4 rounded border transition-colors duration-150 flex items-center justify-center'
+    'h-4 w-4 rounded-xs border transition-colors duration-150 flex items-center justify-center'
   if (props.modelValue === 'todo') {
     return `${base} bg-surface-1 border-hairline-strong`
   }
@@ -51,10 +51,10 @@ const boxClasses = computed(() => {
         data-testid="cycle-box"
         :class="[
           boxClasses,
-          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-focus/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
         ]"
       >
-        <Check v-if="modelValue === 'done'" :size="12" class="text-white" stroke-width="3" />
+        <Check v-if="modelValue === 'done'" :size="12" class="text-on-primary" stroke-width="3" />
       </span>
     </span>
   </label>

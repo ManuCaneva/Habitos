@@ -35,5 +35,5 @@ const style = computed(() => {
 </script>
 
 <template>
-  <span :class="['inline-block bg-surface-2', sizeClass]" :style="style" />
+  <span :class="['inline-block animate-pulse bg-surface-2', sizeClass]" :style="style" />
 </template>

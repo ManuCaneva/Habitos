@@ -66,12 +66,13 @@ describe('themes', () => {
       'primary',
       'primaryHover',
       'primaryFocus',
+      'onPrimary',
       'brandSecure',
       'success',
       'overlay',
     ] as const
 
-    it('cada tema tiene los 18 colores requeridos', () => {
+    it('cada tema tiene los 19 colores requeridos', () => {
       for (const theme of themes) {
         for (const color of requiredColors) {
           expect(theme.colors).toHaveProperty(color)
@@ -169,6 +170,7 @@ describe('themes', () => {
         primary: '89 169 106',
         primaryHover: '155 222 172',
         primaryFocus: '89 169 106',
+        onPrimary: '24 40 28',
         brandSecure: '99 105 64',
         success: '155 222 172',
         overlay: '0 0 0',
@@ -340,6 +342,7 @@ describe('themes', () => {
       expect(root.style.getPropertyValue('--color-primary')).toBe(theme.colors.primary)
       expect(root.style.getPropertyValue('--color-primary-hover')).toBe(theme.colors.primaryHover)
       expect(root.style.getPropertyValue('--color-primary-focus')).toBe(theme.colors.primaryFocus)
+      expect(root.style.getPropertyValue('--color-on-primary')).toBe(theme.colors.onPrimary)
       expect(root.style.getPropertyValue('--color-brand-secure')).toBe(theme.colors.brandSecure)
       expect(root.style.getPropertyValue('--color-success')).toBe(theme.colors.success)
       expect(root.style.getPropertyValue('--color-overlay')).toBe(theme.colors.overlay)

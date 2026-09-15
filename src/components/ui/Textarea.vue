@@ -48,9 +48,9 @@ const stateClass = computed(() => {
     return 'bg-surface-1 border-hairline text-ink-tertiary cursor-not-allowed'
   }
   if (props.error) {
-    return 'bg-surface-1 border-red-500/50 text-ink focus-within:border-red-500'
+    return 'bg-surface-1 border-accent-red/60 text-ink focus:border-accent-red focus:ring-2 focus:ring-accent-red/25'
   }
-  return 'bg-surface-1 border-hairline text-ink focus-within:border-hairline-strong hover:border-hairline-strong'
+  return 'bg-surface-1 border-hairline text-ink focus:border-primary/50 focus:ring-2 focus:ring-primary/20 hover:border-hairline-strong'
 })
 </script>
 
@@ -75,7 +75,10 @@ const stateClass = computed(() => {
       @blur="(e) => $emit('blur', e)"
       @focus="(e) => $emit('focus', e)"
     />
-    <p v-if="error || helper" :class="['text-caption', error ? 'text-red-400' : 'text-ink-subtle']">
+    <p
+      v-if="error || helper"
+      :class="['text-caption', error ? 'text-accent-red' : 'text-ink-subtle']"
+    >
       {{ error || helper }}
     </p>
   </div>
