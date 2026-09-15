@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PomodoroSettingsPanel from './PomodoroSettingsPanel.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const settings = {
   focusMinutes: 25,
@@ -55,5 +56,10 @@ describe('PomodoroSettingsPanel', () => {
     await inputs[1].setValue('1.5')
 
     expect(wrapper.emitted('update:settings')).toBeUndefined()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(PomodoroSettingsPanel, { props: { settings } })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

@@ -87,8 +87,7 @@ function overflowCount(date: string | null): number {
             'day-cell',
             {
               'day-cell--empty': !cell.date,
-              'cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-primary/50':
-                cell.date,
+              'cursor-pointer transition-colors duration-150': cell.date,
             },
           ]"
           :title="cell.date ? formatTooltipDate(cell.date) : undefined"
@@ -173,13 +172,17 @@ function overflowCount(date: string | null): number {
   gap: calc(var(--cell-size) * 0.06);
   overflow: hidden;
   background: rgb(var(--color-surface-3));
-  border-radius: 1px;
+  border-radius: 2px;
   padding: calc(var(--cell-size) * 0.06);
   box-sizing: border-box;
 }
 
 .day-cell--empty {
   background: transparent;
+}
+
+.month-mini__grid .day-cell:not(.day-cell--empty):hover {
+  background: rgb(var(--color-surface-4));
 }
 
 .event-dot {

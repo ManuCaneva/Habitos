@@ -29,12 +29,13 @@ function saveVolume(value: string) {
 </script>
 
 <template>
-  <Card data-testid="pomodoro-settings" padding="md">
+  <Card data-testid="pomodoro-settings" variant="featured" padding="md">
     <div class="mb-5">
       <Text variant="card-title" as="h2">Configuración</Text>
       <Text variant="body-sm" color="muted">Ajustá la duración y los avisos del temporizador.</Text>
     </div>
 
+    <Text variant="eyebrow" color="subtle" class="mb-3">Duraciones</Text>
     <div class="grid gap-4 sm:grid-cols-2">
       <Input
         :model-value="String(settings.focusMinutes)"
@@ -70,7 +71,10 @@ function saveVolume(value: string) {
       />
     </div>
 
-    <div class="mt-5 flex flex-col gap-4 border-t border-hairline pt-5">
+    <Text variant="eyebrow" color="subtle" class="mb-3 mt-5 border-t border-hairline pt-5">
+      Automatización
+    </Text>
+    <div class="flex flex-col gap-4">
       <Switch
         :model-value="settings.autoStartBreak"
         label="Iniciar descansos automáticamente"
@@ -85,7 +89,10 @@ function saveVolume(value: string) {
       />
     </div>
 
-    <div class="mt-5 grid gap-4 border-t border-hairline pt-5 sm:grid-cols-[1fr_auto] sm:items-end">
+    <Text variant="eyebrow" color="subtle" class="mb-3 mt-5 border-t border-hairline pt-5">
+      Sonido
+    </Text>
+    <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
       <div>
         <label for="pomodoro-volume" class="mb-1.5 block text-body-sm text-ink-muted">
           Volumen ({{ Math.round(settings.volume * 100) }}%)
