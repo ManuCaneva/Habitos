@@ -47,11 +47,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-canvas text-ink">
+  <div class="flex h-screen gap-3 overflow-hidden bg-canvas p-3 text-ink">
     <Sidebar />
 
-    <div class="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-      <div class="min-h-0 flex-1 overflow-hidden px-3 py-4">
+    <div
+      class="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-hairline bg-canvas"
+    >
+      <div class="min-h-0 flex-1 overflow-hidden p-4">
         <DashboardView v-if="ui.viewMode === 'dashboard'" />
         <ArchivedView v-else-if="ui.viewMode === 'archived'" />
         <SettingsView v-else-if="ui.viewMode === 'settings'" />

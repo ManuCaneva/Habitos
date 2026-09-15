@@ -101,7 +101,7 @@ describe('App layout', () => {
   it('view container has min-h-0 and overflow-hidden', () => {
     const wrapper = mount(App)
     const root = wrapper.element as HTMLElement
-    const viewContainer = root.querySelector('.flex-1.px-3.py-4') as HTMLElement
+    const viewContainer = root.querySelector('.flex-1.p-4') as HTMLElement
     expect(viewContainer).toBeTruthy()
     expect(viewContainer.classList.contains('min-h-0')).toBe(true)
     expect(viewContainer.classList.contains('overflow-hidden')).toBe(true)
