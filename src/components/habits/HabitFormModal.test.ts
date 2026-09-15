@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import type { HabitFrequency } from '@/schemas/habits'
 import HabitFormModal from './HabitFormModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const habitsState = ref<
   {
@@ -468,6 +469,12 @@ describe('HabitFormModal', () => {
       await flushPromises()
       expect(uiState.createHabitOpen.value).toBe(false)
       expect(uiState.editingHabitId.value).toBe(null)
+    })
+
+    it('no usa colores de paleta cruda de Tailwind', async () => {
+      mountModal()
+      await flushPromises()
+      expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
     })
   })
 })

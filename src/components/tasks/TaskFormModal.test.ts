@@ -3,6 +3,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import TaskFormModal from './TaskFormModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const tasksState = ref<
   {
@@ -220,5 +221,10 @@ describe('TaskFormModal', () => {
 
     const modal = document.body.querySelector("[role='dialog']")
     expect(modal?.textContent).toContain('El título no puede estar vacío')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', async () => {
+    await flushPromises()
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
   })
 })

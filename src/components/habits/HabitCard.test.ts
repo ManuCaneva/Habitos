@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import HabitCard from './HabitCard.vue'
 import type { Habit } from '@/schemas/habits'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const habitsMock = {
   completedToday: new Map<string, number>(),
@@ -191,5 +192,10 @@ describe('HabitCard (binary)', () => {
       await w.findComponent({ name: 'SegmentedCheckCircle' }).vm.$emit('decrement')
       expect(habitsMock.decrementCheckIn).toHaveBeenCalledWith('h1')
     })
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const w = mount(HabitCard, { props: { habit: base, logs: [] } })
+    expect(hasRawPaletteColor(w.html())).toBe(false)
   })
 })

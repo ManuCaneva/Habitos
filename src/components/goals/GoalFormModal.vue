@@ -129,23 +129,23 @@ async function handleSubmit(e: Event) {
 
         <div class="flex gap-3">
           <div class="flex-1">
-            <label class="mb-1 block text-sm font-medium">Meta</label>
+            <label class="mb-1 block select-none text-body-sm text-ink-muted">Meta</label>
             <input
               v-model.number="target"
               type="number"
               min="1"
               required
-              class="w-full rounded-md border border-hairline bg-surface-1 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              class="w-full rounded-md border border-hairline bg-surface-1 px-3 py-2 text-ink transition-colors duration-150 hover:border-hairline-strong focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <div class="flex-1">
-            <label class="mb-1 block text-sm font-medium">Unidad</label>
+            <label class="mb-1 block select-none text-body-sm text-ink-muted">Unidad</label>
             <input
               v-model="unit"
               type="text"
               placeholder="Ej: páginas, minutos"
               maxlength="20"
-              class="w-full rounded-md border border-hairline bg-surface-1 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              class="w-full rounded-md border border-hairline bg-surface-1 px-3 py-2 text-ink transition-colors duration-150 placeholder:text-ink-tertiary hover:border-hairline-strong focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
         </div>
@@ -170,7 +170,7 @@ async function handleSubmit(e: Event) {
               :class="[
                 'h-8 w-8 rounded-full transition-all duration-150',
                 'hover:scale-110 active:scale-95',
-                color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-surface-1' : '',
+                color === c.value ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface-1' : '',
               ]"
               @click="color = c.value"
             />

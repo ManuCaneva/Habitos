@@ -5,6 +5,7 @@ import HabitRow from './HabitRow.vue'
 import type { Habit } from '@/schemas/habits'
 import { ref } from 'vue'
 import { shadeFor } from '@/lib/habitColors'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const completedToday = ref<Map<string, number>>(new Map())
 const habitsMock = {
@@ -163,5 +164,19 @@ describe('HabitRow', () => {
       expect(w.find("[data-testid='check-button']").exists()).toBe(false)
       expect(w.findComponent({ name: 'SegmentedCheckCircle' }).exists()).toBe(true)
     })
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const w = mount(HabitRow, { props: { habit: base } })
+    expect(hasRawPaletteColor(w.html())).toBe(false)
+  })
+
+  it('la racha se muestra en un badge tintado con el número', () => {
+    habitsMock.currentStreak = vi.fn(() => 5)
+    const w = mount(HabitRow, { props: { habit: base } })
+    const badge = w.find("[data-testid='habit-streak']")
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toBe('5')
+    expect(hasRawPaletteColor(badge.html())).toBe(false)
   })
 })

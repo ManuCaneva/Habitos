@@ -6,6 +6,7 @@ import { useUiStore } from '@/stores/ui'
 import type { Goal } from '@/schemas/goals'
 import Container from '@/components/ui/Container.vue'
 import Text from '@/components/ui/Text.vue'
+import Badge from '@/components/ui/Badge.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import GoalContextMenu from './GoalContextMenu.vue'
 
@@ -119,14 +120,14 @@ async function handleIncrement() {
 
         <div class="mt-2 flex items-center gap-3">
           <div class="flex-1">
-            <div class="mb-1 flex items-center justify-between">
-              <Text variant="body-sm" :color="isComplete ? 'success' : 'default'">
+            <div class="mb-1 flex items-center justify-between gap-2">
+              <Text variant="body-sm" weight="500">
                 {{ currentProgress }}/{{ goal.target }}
                 <span v-if="goal.unit" class="text-ink-muted">{{ goal.unit }}</span>
               </Text>
-              <Text variant="caption" color="muted">
+              <Badge :variant="isComplete ? 'success' : 'default'" dot>
                 {{ frequencyLabel() }}
-              </Text>
+              </Badge>
             </div>
             <div
               data-testid="goal-progress-bar"
@@ -135,9 +136,12 @@ async function handleIncrement() {
               <div
                 :style="{
                   width: `${progressPercent}%`,
-                  backgroundColor: goal.color,
+                  backgroundColor: isComplete ? undefined : goal.color,
                 }"
-                class="h-full transition-all duration-300"
+                :class="[
+                  'h-full rounded-full transition-all duration-300',
+                  isComplete && 'bg-accent-green',
+                ]"
               />
             </div>
           </div>
@@ -146,10 +150,10 @@ async function handleIncrement() {
             data-testid="goal-increment-button"
             :disabled="isComplete"
             :class="[
-              'flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
               isComplete
-                ? 'cursor-not-allowed bg-success/20 text-success'
-                : 'bg-surface-2 text-ink hover:bg-surface-3',
+                ? 'cursor-not-allowed border-transparent bg-accent-green-tint text-accent-green'
+                : 'border-hairline bg-surface-2 text-ink hover:bg-surface-3',
             ]"
             @click="handleIncrement"
           >

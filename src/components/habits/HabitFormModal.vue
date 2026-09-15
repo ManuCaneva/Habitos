@@ -154,8 +154,10 @@ async function handleSubmit(e: Event) {
               :aria-label="i.name"
               :aria-pressed="icon === i.value"
               :class="[
-                'flex items-center justify-center rounded-md p-2',
-                icon === i.value ? 'selected bg-primary text-white' : 'bg-surface-1 text-ink',
+                'flex items-center justify-center rounded-md p-2 transition-colors duration-150',
+                icon === i.value
+                  ? 'selected bg-primary text-on-primary'
+                  : 'bg-surface-1 text-ink hover:bg-surface-2',
               ]"
               @click="icon = i.value"
             >
@@ -178,7 +180,7 @@ async function handleSubmit(e: Event) {
               :class="[
                 'h-8 w-8 rounded-full transition-all duration-150',
                 'hover:scale-110 active:scale-95',
-                color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-surface-1' : '',
+                color === c.value ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface-1' : '',
               ]"
               @click="color = c.value"
             />

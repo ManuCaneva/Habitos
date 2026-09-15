@@ -3,6 +3,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import GoalFormModal from './GoalFormModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const goalsState = ref<
   {
@@ -225,5 +226,10 @@ describe('GoalFormModal', () => {
 
     const modal = document.body.querySelector("[role='dialog']")
     expect(modal?.textContent).toContain('El objetivo debe ser al menos 1')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', async () => {
+    await flushPromises()
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
   })
 })

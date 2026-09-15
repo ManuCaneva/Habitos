@@ -7,6 +7,7 @@ import { iconFor } from '@/lib/icons'
 import { shadeFor } from '@/lib/habitColors'
 import type { Habit } from '@/schemas/habits'
 import Text from '@/components/ui/Text.vue'
+import Badge from '@/components/ui/Badge.vue'
 import HabitContextMenu from './HabitContextMenu.vue'
 import SegmentedCheckCircle from '@/components/ui/SegmentedCheckCircle.vue'
 
@@ -58,14 +59,18 @@ const archivedLabel = computed(() => {
   >
     <div
       :class="[
-        'flex items-center gap-3 px-6 py-3 transition-colors duration-150',
+        'flex items-center gap-3 px-4 py-3 transition-colors duration-150',
         'border-b border-hairline last:border-b-0',
-        !checked && 'hover:bg-surface-1',
-        isMenuOpen && 'bg-surface-1',
+        !checked && 'hover:bg-surface-2',
+        isMenuOpen && 'bg-surface-2',
       ]"
     >
-      <span data-testid="habit-icon" class="shrink-0 text-white">
-        <component :is="icon.icon" :size="18" :stroke-width="2" />
+      <span
+        data-testid="habit-icon"
+        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+        :style="{ backgroundColor: shadeFor(habit.color, 0.16), color: habit.color }"
+      >
+        <component :is="icon.icon" :size="16" :stroke-width="2" />
       </span>
       <button type="button" class="min-w-0 flex-1 text-left" @click="ui.openEdit(habit.id)">
         <Text
@@ -83,8 +88,8 @@ const archivedLabel = computed(() => {
         type="button"
         :class="[
           'flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
-          'text-ink-tertiary hover:bg-surface-2 hover:text-ink',
-          isMenuOpen ? 'bg-surface-2 text-ink' : '',
+          'text-ink-tertiary transition-colors duration-150 hover:bg-surface-3 hover:text-ink',
+          isMenuOpen ? 'bg-surface-3 text-ink' : '',
         ]"
         data-testid="menu-button"
         :data-habit-menu-trigger="habit.id"
@@ -103,9 +108,9 @@ const archivedLabel = computed(() => {
         @reset="onReset"
       />
       <div class="w-10 shrink-0 text-right">
-        <Text variant="body-sm" color="subtle" mono>
-          {{ streak }}
-        </Text>
+        <Badge data-testid="habit-streak" variant="default">
+          <Text variant="body-sm" color="subtle" mono>{{ streak }}</Text>
+        </Badge>
       </div>
     </div>
     <HabitContextMenu v-if="isMenuOpen" :habit="habit" />
