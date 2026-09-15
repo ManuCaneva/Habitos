@@ -12,7 +12,12 @@ const list = computed(() => tasks.pendingTasks)
 </script>
 
 <template>
-  <EntityListing title="Tareas" panel-test-id="tasks-panel" entity-class="tasks">
+  <EntityListing
+    title="Tareas"
+    eyebrow="Pendientes"
+    panel-test-id="tasks-panel"
+    entity-class="tasks"
+  >
     <EmptyState v-if="list.length === 0" />
     <div v-else class="flex flex-col gap-2">
       <TaskCard v-for="task in list" :key="task.id" :task="task" />

@@ -14,7 +14,7 @@ const logs = computed(() => habits.logs)
 </script>
 
 <template>
-  <EntityListing title="Hábitos" panel-test-id="habits-panel" entity-class="habits">
+  <EntityListing title="Hábitos" eyebrow="Hoy" panel-test-id="habits-panel" entity-class="habits">
     <HabitSection variant="flat">
       <EmptyState v-if="list.length === 0" />
       <div v-else class="flex flex-col gap-1">

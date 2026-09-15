@@ -84,21 +84,23 @@ describe('TodayView', () => {
     expect(wrapper.text()).not.toContain('·')
   })
 
-  it('header usa bg-surface-2 y card-title (vía EntityListing)', () => {
+  it('header usa bg-surface-2, eyebrow y card-title (vía EntityListing)', () => {
     const wrapper = mount(TodayView)
     const listing = wrapper.findComponent({ name: 'EntityListing' })
     const header = listing.find('.bg-surface-2')
     expect(header.exists()).toBe(true)
     expect(header.classes()).toContain('border-b')
     expect(header.classes()).toContain('border-hairline')
+    expect(header.find('.text-eyebrow').text()).toBe('Hoy')
+    expect(header.find('.text-card-title').exists()).toBe(true)
   })
 
-  it('scroll container tiene overflow-auto, p-1.5 y scrollbar-gutter-stable', () => {
+  it('scroll container tiene overflow-auto, p-2 y scrollbar-gutter-stable', () => {
     const wrapper = mount(TodayView)
     const listing = wrapper.findComponent({ name: 'EntityListing' })
     const scroll = listing.find('.scrollbar-gutter-stable')
     expect(scroll.exists()).toBe(true)
     expect(scroll.classes()).toContain('overflow-auto')
-    expect(scroll.classes()).toContain('p-1.5')
+    expect(scroll.classes()).toContain('p-2')
   })
 })

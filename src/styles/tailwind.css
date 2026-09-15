@@ -311,4 +311,7 @@
   .habits-header-responsive .habits-header-title {
     font-size: 0.625rem;
   }
+  .entity-header-eyebrow {
+    display: none;
+  }
 }

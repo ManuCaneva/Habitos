@@ -64,6 +64,14 @@ describe('TasksListView', () => {
     expect(wrapper.text()).toContain('Tareas')
   })
 
+  it('header tiene eyebrow y título con jerarquía', () => {
+    const wrapper = mount(TasksListView)
+    expect(wrapper.find('.text-eyebrow').text()).toBe('Pendientes')
+    const header = wrapper.find('.bg-surface-2')
+    expect(header.classes()).toContain('flex-col')
+    expect(wrapper.find("[data-testid='tasks-panel']").exists()).toBe(true)
+  })
+
   it('no muestra contador', () => {
     tasksState.value = [
       {

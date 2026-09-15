@@ -52,6 +52,13 @@ describe('GoalsListView', () => {
     expect(wrapper.text()).toContain('Objetivos')
   })
 
+  it('header tiene eyebrow y título con jerarquía', () => {
+    const wrapper = mount(GoalsListView)
+    expect(wrapper.find('.text-eyebrow').text()).toBe('Seguimiento')
+    const header = wrapper.find('.bg-surface-2')
+    expect(header.classes()).toContain('flex-col')
+  })
+
   it('no muestra contador', () => {
     goalsState.value = [
       {

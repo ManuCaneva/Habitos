@@ -12,7 +12,12 @@ const list = computed(() => goals.goals)
 </script>
 
 <template>
-  <EntityListing title="Objetivos" panel-test-id="goals-panel" entity-class="goals">
+  <EntityListing
+    title="Objetivos"
+    eyebrow="Seguimiento"
+    panel-test-id="goals-panel"
+    entity-class="goals"
+  >
     <EmptyState v-if="list.length === 0" />
     <div v-else class="flex flex-col gap-2">
       <GoalCard v-for="goal in list" :key="goal.id" :goal="goal" />
