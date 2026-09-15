@@ -259,7 +259,7 @@ describe('HabitFormModal', () => {
         {
           id: 'h1',
           name: 'Meditar',
-          color: '#5e6ad2',
+          color: '#6e56cf',
           icon: 'footprints',
           frequency: { type: 'daily', target_per_period: 1 },
         },
@@ -387,7 +387,7 @@ describe('HabitFormModal', () => {
         'h1',
         expect.objectContaining({
           name: 'Otro nombre',
-          color: '#eb5757',
+          color: '#e55e54',
           icon: expect.any(String),
         })
       )

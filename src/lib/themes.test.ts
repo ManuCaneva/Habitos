@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { themes, DEFAULT_THEME, applyTheme, getThemeById } from './themes'
+import {
+  themes,
+  DEFAULT_THEME,
+  applyTheme,
+  getThemeById,
+  ACCENT_NAMES,
+  type AccentName,
+} from './themes'
 
 describe('themes', () => {
   describe('themes array', () => {
@@ -84,6 +91,115 @@ describe('themes', () => {
     })
   })
 
+  describe('paleta cálida (Oscuro y Claro)', () => {
+    it('Oscuro es warm-dark: canvas casi negro con tinte marrón/oliva', () => {
+      const dark = getThemeById('dark')!.colors
+      const [r, g, b] = dark.canvas.split(' ').map(Number)
+      expect(r).toBeLessThanOrEqual(20)
+      expect(r).toBeGreaterThanOrEqual(g)
+      expect(b).toBeLessThan(g)
+    })
+
+    it('Oscuro usa la ladder de surfaces cálidas ascendente', () => {
+      const c = getThemeById('dark')!.colors
+      const luma = (s: string) =>
+        s
+          .split(' ')
+          .slice(0, 3)
+          .reduce((a, v) => a + Number(v), 0)
+      expect(luma(c.canvas)).toBeLessThan(luma(c.surface1))
+      expect(luma(c.surface1)).toBeLessThan(luma(c.surface2))
+      expect(luma(c.surface2)).toBeLessThan(luma(c.surface3))
+      expect(luma(c.surface3)).toBeLessThan(luma(c.surface4))
+    })
+
+    it('Claro es hueso/beige cálido (no blanco frío puro)', () => {
+      const light = getThemeById('light')!.colors
+      const [r, g, b] = light.canvas.split(' ').map(Number)
+      expect(r).toBeGreaterThanOrEqual(240)
+      expect(r).toBeGreaterThan(b)
+      expect(g).toBeGreaterThanOrEqual(b)
+    })
+
+    it('el primario es violeta estilo Attio (#6E56CF ≈ 110 86 207)', () => {
+      const [r, g, b] = getThemeById('dark')!.colors.primary.split(' ').map(Number)
+      expect(Math.abs(r - 110)).toBeLessThanOrEqual(6)
+      expect(Math.abs(g - 86)).toBeLessThanOrEqual(6)
+      expect(Math.abs(b - 207)).toBeLessThanOrEqual(6)
+    })
+
+    it('primaryHover y primaryFocus derivan del primario (no lo repiten)', () => {
+      for (const id of ['dark', 'light']) {
+        const c = getThemeById(id)!.colors
+        expect(c.primaryHover).not.toBe(c.primary)
+        expect(c.primaryFocus).not.toBe(c.primary)
+      }
+    })
+
+    it('las hairlines cálidas acompañan al canvas (r >= b en Oscuro)', () => {
+      const c = getThemeById('dark')!.colors
+      const warm = (s: string) => {
+        const [r, , b] = s.split(' ').map(Number)
+        return r >= b
+      }
+      expect(warm(c.hairline)).toBe(true)
+      expect(warm(c.hairlineStrong)).toBe(true)
+      expect(warm(c.hairlineTertiary)).toBe(true)
+    })
+  })
+
+  describe('Popi queda intacto', () => {
+    it('conserva exactamente sus colores actuales', () => {
+      const popi = getThemeById('popi')!
+      expect(popi.name).toBe('Popi')
+      expect(popi.isDark).toBe(true)
+      expect(popi.colors).toEqual({
+        canvas: '71 74 44',
+        surface1: '80 84 52',
+        surface2: '99 105 64',
+        surface3: '89 169 106',
+        surface4: '155 222 172',
+        hairline: '90 96 56',
+        hairlineStrong: '99 105 64',
+        hairlineTertiary: '120 140 90',
+        ink: '180 231 206',
+        inkMuted: '155 222 172',
+        inkSubtle: '120 170 120',
+        inkTertiary: '100 130 85',
+        primary: '89 169 106',
+        primaryHover: '155 222 172',
+        primaryFocus: '89 169 106',
+        brandSecure: '99 105 64',
+        success: '155 222 172',
+        overlay: '0 0 0',
+      })
+    })
+
+    it('comparte la paleta de bloques por diseño (los 8 bloques son globales)', () => {
+      expect(getThemeById('popi')!.blockColors).toBe(getThemeById('dark')!.blockColors)
+    })
+  })
+
+  describe('accents (escala de acentos semánticos)', () => {
+    const required: readonly AccentName[] = ['green', 'orange', 'red', 'purple']
+
+    it('ACCENT_NAMES expone green, orange, red y purple', () => {
+      expect(ACCENT_NAMES).toEqual(required)
+    })
+
+    it('cada tema define cada acento con variantes solid y tint (formato RGB)', () => {
+      const rgbPattern = /^\d{1,3}\s\d{1,3}\s\d{1,3}$/
+      for (const theme of themes) {
+        for (const name of required) {
+          expect(theme.accents).toHaveProperty(name)
+          expect(theme.accents[name].solid).toMatch(rgbPattern)
+          expect(theme.accents[name].tint).toMatch(rgbPattern)
+          expect(theme.accents[name].solid).not.toBe(theme.accents[name].tint)
+        }
+      }
+    })
+  })
+
   describe('ThemeBlockColors', () => {
     const requiredBlockColors = [
       'lavender',
@@ -119,8 +235,19 @@ describe('themes', () => {
       const lavenderDark = themes.find((t) => t.id === 'dark')!.blockColors.lavender
       for (const theme of themes) {
         expect(theme.blockColors.lavender).toBe(lavenderDark)
-        expect(theme.blockColors.cyan).toBe('86 182 194')
-        expect(theme.blockColors.bone).toBe('212 212 212')
+      }
+    })
+
+    it('los bloques están re-tuneados a la familia cálida', () => {
+      const blocks = getThemeById('dark')!.blockColors
+      expect(blocks.lavender).toBe('110 86 207')
+      expect(blocks.cyan).toBe('94 174 176')
+      expect(blocks.bone).toBe('214 209 197')
+    })
+
+    it('lavender del bloque coincide con el primario violeta Attio', () => {
+      for (const id of ['dark', 'light']) {
+        expect(getThemeById(id)!.blockColors.lavender).toBe(getThemeById(id)!.colors.primary)
       }
     })
   })
@@ -218,6 +345,20 @@ describe('themes', () => {
       expect(root.style.getPropertyValue('--color-overlay')).toBe(theme.colors.overlay)
       expect(root.style.getPropertyValue('--color-block-lavender')).toBe(theme.blockColors.lavender)
       expect(root.style.getPropertyValue('--color-block-cyan')).toBe(theme.blockColors.cyan)
+    })
+
+    it('setea las CSS vars de los acentos semánticos (solid + tinted)', () => {
+      const theme = getThemeById('dark')!
+      applyTheme(theme)
+
+      for (const name of ['green', 'orange', 'red', 'purple'] as const) {
+        expect(root.style.getPropertyValue(`--color-accent-${name}`)).toBe(
+          theme.accents[name].solid
+        )
+        expect(root.style.getPropertyValue(`--color-accent-${name}-tint`)).toBe(
+          theme.accents[name].tint
+        )
+      }
     })
 
     it('setea las CSS vars de fuentes en documentElement', () => {

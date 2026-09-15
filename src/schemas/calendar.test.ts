@@ -5,6 +5,7 @@ import {
   GcalVisibleCalendarsSchema,
   DEFAULT_GCAL_VISIBLE_CALENDARS,
   parseGcalVisibleCalendarsJson,
+  resolveEventColor,
   type CalendarEvent,
 } from './calendar'
 
@@ -122,5 +123,19 @@ describe('GcalEventApiResponseSchema', () => {
     const result = GcalEventApiResponseSchema.parse(apiResponse)
     expect(result.items[0].colorId).toBe('1')
     expect(result.items[1].colorId).toBeUndefined()
+  })
+})
+
+describe('resolveEventColor', () => {
+  it('prioriza el colorId sobre el color del calendario', () => {
+    expect(resolveEventColor('1', '#123456')).toBe('#7986cb')
+  })
+
+  it('usa el color del calendario cuando no hay colorId', () => {
+    expect(resolveEventColor(undefined, '#abcdef')).toBe('#abcdef')
+  })
+
+  it('cae al violeta Attio cuando no hay colorId ni color de calendario', () => {
+    expect(resolveEventColor(undefined, undefined)).toBe('#6e56cf')
   })
 })

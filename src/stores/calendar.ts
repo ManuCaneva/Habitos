@@ -19,7 +19,12 @@ import {
   mapGcalEventsToDomain,
   mapCalendarListToColors,
 } from '@/lib/googleCalendar'
-import { GcalEventApiResponseSchema, type CalendarEvent, CALENDAR_COLORS } from '@/schemas/calendar'
+import {
+  GcalEventApiResponseSchema,
+  type CalendarEvent,
+  CALENDAR_COLORS,
+  DEFAULT_EVENT_COLOR,
+} from '@/schemas/calendar'
 import { yearBounds } from '@/lib/calendarDates'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { fetch } from '@tauri-apps/plugin-http'
@@ -388,7 +393,7 @@ export const useCalendarStore = defineStore('calendar', () => {
             if (!evRes.ok) throw new Error(`Calendar ${cid} returned ${evRes.status}`)
             const raw = await evRes.json()
             const evData = GcalEventApiResponseSchema.parse(raw)
-            const calColor = calendarColors.get(cid) ?? '#5e6ad2'
+            const calColor = calendarColors.get(cid) ?? DEFAULT_EVENT_COLOR
             const mapped = mapGcalEventsToDomain(evData.items, cid, calColor)
             allEvents.push(...mapped)
           } catch {
@@ -530,8 +535,8 @@ export const useCalendarStore = defineStore('calendar', () => {
       if (calendarId === 'local' || !connected.value) {
         const eventId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
         const calendarColor = eventData.colorId
-          ? (CALENDAR_COLORS[eventData.colorId] ?? '#5e6ad2')
-          : '#5e6ad2'
+          ? (CALENDAR_COLORS[eventData.colorId] ?? DEFAULT_EVENT_COLOR)
+          : DEFAULT_EVENT_COLOR
 
         const newEvent: CalendarEvent = {
           id: eventId,
@@ -577,7 +582,7 @@ export const useCalendarStore = defineStore('calendar', () => {
       }
 
       const calendarColor =
-        calendars.value.find((c) => c.id === calendarId)?.backgroundColor ?? '#5e6ad2'
+        calendars.value.find((c) => c.id === calendarId)?.backgroundColor ?? DEFAULT_EVENT_COLOR
       const mapped = mapGcalEventsToDomain([data], calendarId, calendarColor)[0]
       events.value = [...events.value, mapped].sort((a, b) => a.date.localeCompare(b.date))
     } catch (e: unknown) {
@@ -598,8 +603,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     try {
       if (calendarId === 'local' || eventId.startsWith('local_')) {
         const calendarColor = eventData.colorId
-          ? (CALENDAR_COLORS[eventData.colorId] ?? '#5e6ad2')
-          : '#5e6ad2'
+          ? (CALENDAR_COLORS[eventData.colorId] ?? DEFAULT_EVENT_COLOR)
+          : DEFAULT_EVENT_COLOR
         localEvents.value = localEvents.value.map((evt) => {
           if (evt.id === eventId) {
             return {
@@ -661,7 +666,7 @@ export const useCalendarStore = defineStore('calendar', () => {
       }
 
       const calendarColor =
-        calendars.value.find((c) => c.id === calendarId)?.backgroundColor ?? '#5e6ad2'
+        calendars.value.find((c) => c.id === calendarId)?.backgroundColor ?? DEFAULT_EVENT_COLOR
       const mapped = mapGcalEventsToDomain([data], calendarId, calendarColor)[0]
       events.value = events.value
         .map((evt) => (evt.id === eventId ? mapped : evt))

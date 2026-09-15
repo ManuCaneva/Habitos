@@ -400,7 +400,7 @@ watch(
 
 .ycw__error {
   font-size: 0.75rem;
-  color: #e67c73;
+  color: rgb(var(--color-accent-red));
   padding: 4px 8px;
   line-height: 1.2;
 }
