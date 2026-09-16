@@ -23,9 +23,10 @@ function onRemoveWidget(id: string) {
 </script>
 
 <template>
-  <div data-testid="dashboard-view" class="h-full overflow-hidden">
+  <div data-testid="dashboard-view" class="h-full overflow-hidden" :class="ui.editMode && 'p-3'">
     <div
       class="dashboard-grid relative h-full"
+      :class="ui.editMode && 'isolate'"
       style="
         display: grid;
         grid-template-columns: repeat(12, minmax(0, 1fr));

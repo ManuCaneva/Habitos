@@ -101,11 +101,37 @@ describe('DashboardView', () => {
     expect(wrapper.find("[data-testid='widget-picker']").exists()).toBe(true)
   })
 
+  it('en modo edición aísla los z-index de los items dentro de la grilla', () => {
+    editModeValue = true
+    const wrapper = mount(DashboardView)
+    expect(wrapper.find('.dashboard-grid').classes()).toContain('isolate')
+  })
+
+  it('en reposo la grilla no crea stacking context', () => {
+    editModeValue = false
+    const wrapper = mount(DashboardView)
+    expect(wrapper.find('.dashboard-grid').classes()).not.toContain('isolate')
+  })
+
   it('renderiza WidgetRemoveButton en cada widget si editMode es true', () => {
     editModeValue = true
     const wrapper = mount(DashboardView)
     const removeButtons = wrapper.findAllComponents({ name: 'WidgetRemoveButton' })
     expect(removeButtons.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('en modo edición deja aire en los bordes de la grilla para que la cruz sobresalga sin recortarse', () => {
+    editModeValue = true
+    const wrapper = mount(DashboardView)
+    const root = wrapper.find("[data-testid='dashboard-view']")
+    expect(root.classes()).toContain('p-3')
+  })
+
+  it('en reposo la vista no agrega padding', () => {
+    editModeValue = false
+    const wrapper = mount(DashboardView)
+    const root = wrapper.find("[data-testid='dashboard-view']")
+    expect(root.classes()).not.toContain('p-3')
   })
 
   it('no renderiza WidgetRemoveButton si editMode es false', () => {

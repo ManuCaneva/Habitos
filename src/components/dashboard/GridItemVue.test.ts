@@ -69,6 +69,47 @@ describe('GridItemVue', () => {
     expect(wrapper.classes()).toContain('min-h-0')
   })
 
+  it('en modo edición apila por encima del vecino de su derecha para que la cruz no se recorte', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 3, y: 2, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    const z = Number(el.style.zIndex)
+    expect(z).toBeGreaterThan(0)
+    const right = mount(GridItemVue, {
+      props: { item: makeItem({ i: 'tasks', x: 9, y: 2, w: 3, h: 4 }), editMode: true },
+    })
+    expect(z).toBeGreaterThan(Number((right.element as HTMLElement).style.zIndex))
+  })
+
+  it('en reposo no crea stacking context por z-index ni cambia el flujo de la grilla', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 3, y: 2, w: 6, h: 4 }), editMode: false },
+    })
+    const el = wrapper.element as HTMLElement
+    expect(el.style.zIndex).toBe('')
+    expect(el.style.position).toBe('')
+  })
+
+  it('eleva el z-index mientras se arrastra para quedar por encima de los vecinos', async () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem({ x: 3, y: 2, w: 6, h: 4 }), editMode: true },
+    })
+    const el = wrapper.element as HTMLElement
+    const restingZ = Number(el.style.zIndex)
+
+    dragCallbacks.onDragStart()
+    await wrapper.vm.$nextTick()
+
+    expect(Number(el.style.zIndex)).toBeGreaterThan(restingZ)
+    expect(wrapper.classes()).toContain('grid-item--dragging')
+
+    dragCallbacks.onDragEnd()
+    await wrapper.vm.$nextTick()
+
+    expect(Number(el.style.zIndex)).toBe(restingZ)
+  })
+
   it('emite moved en enteros tras un drag con snap', async () => {
     const wrapper = mount(GridItemVue, {
       props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },

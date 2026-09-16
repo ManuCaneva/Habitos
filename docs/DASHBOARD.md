@@ -43,7 +43,7 @@ El contenedor es `display: grid` con `grid-template-columns: repeat(12, minmax(0
 - `interactjs` entrega posición y tamaño en píxeles durante el gesto (el widget se mueve con `transform` / se redimensiona con px absolutos).
 - Al soltar, `gridSnap` (`pxToCells`) convierte a celdas enteras y el widget vuelve a la grilla nativa.
 - La animación FLIP (transform-only, ~180ms, `cubic-bezier(0.16,1,0.3,1)`) suaviza el snap final (ver `src/composables/flip.ts`).
-- Los ítems de la grilla usan `contain: layout paint` para acotar el costo de layout/paint.
+- Los ítems de la grilla usan `contain: layout` para aislar el costo de layout sin recortar la pintura: la cruz del modo edición sobresale por arriba a la derecha (ver «Modo edición»).
 - El store valida, clampa y rechaza colisiones reales (acepta bordes tocándose), y persiste cada cambio.
 - El botón de reset restaura las posiciones declaradas por cada widget.
 - `WidgetPicker` controla qué widgets están visibles.
@@ -77,18 +77,26 @@ Los widgets se adaptan al tamaño de su celda sin desbordar el panel:
 - `GoalsWidget` declara `container-type: size` (no solo `inline-size`) para habilitar container queries de altura. Con poca altura disponible (`@container (max-height: 240px)` en `src/styles/tailwind.css`), el header y el footer del listado compactan y el cuerpo absorbe el espacio restante, de modo que una fila de objetivo completa (incluido el botón de incrementar) queda visible en HD (1280×720).
 - El resto de los widgets mantiene `container-type: inline-size` y su compactación por ancho (`@container (max-width: 350px)` / `250px`).
 
+## Modo edición
+
+- Cada widget muestra una cruz para quitarlo, anclada a su esquina superior derecha pero **desbordando hacia afuera** (`-right-2 -top-2`): por eso el ítem de grilla usa `contain: layout` (sin `paint`) y no la recorta.
+- La cruz tiene contorno y fondo propios (`border-hairline-strong`, `bg-surface-2`, `rounded-full`) y `shadow-sm` por ser un control flotante.
+- Para que la cruz quede pintada por encima de los widgets vecinos que invade, cada ítem recibe un `z-index` derivado de su celda (`itemZIndex`: crece hacia abajo y hacia la izquierda, de modo que el overhang superior derecho gana sobre el vecino de la derecha). Solo aplica en modo edición.
+- Mientras se arrastra o redimensiona, el ítem activo sube al tope de la grilla (`DRAGGING_Z_INDEX`) para no quedar debajo de un vecino con mayor `z` de celda.
+- La grilla lleva `isolate` en modo edición: los `z-index` de los ítems quedan contenidos bajo el `WidgetPicker` y los modales, que siguen por encima (`z-50`).
+- El panel del dashboard agrega `p-3` en modo edición para que la cruz de los widgets del borde no se recorte contra el `overflow-hidden` de la vista. En reposo no hay padding extra.
+
 ## Archivos relacionados
 
 - `src/components/dashboard/DashboardView.vue`: composición y render del dashboard (contenedor CSS Grid).
 - `src/components/dashboard/GridItemVue.vue`: item de la grilla, gestos (drag/resize) y animación FLIP.
 - `src/composables/gridSnap.ts`: conversión px → celdas enteras al soltar un gesto.
 - `src/composables/flip.ts`: animación FLIP transform-only.
-- `src/lib/grid.ts`: constantes `COLS` (12) y `ROWS` (10).
-- `src/stores/dashboard.ts`: estado, validación, migración y persistencia del layout.
+- `src/lib/grid.ts`: constantes `COLS` (12) y `ROWS` (10) y `itemZIndex` (orden de apilado en modo edición).- `src/stores/dashboard.ts`: estado, validación, migración y persistencia del layout.
 - `src/stores/dashboard.test.ts`: comportamiento del store.
 - `src/lib/dashboardWidgets.ts`: registro y metadatos de widgets.
 - `src/components/dashboard/`: contenedores y controles de widgets.
 - `tests/perf/`: harness de rendimiento (fixture, métricas, presupuesto) y verificación de visibilidad en HD (`hd.spec.ts`).
 - `tests/perf/harness.ts`: inyección compartida del stub de Tauri y espera del dashboard para los specs de Playwright.
-- `tests/perf/hd.spec.ts`: en 1280×720, botón de incrementar visible, sin desborde horizontal y layout persistido intacto.
+- `tests/perf/hd.spec.ts`: en 1280×720, botón de incrementar visible, sin desborde horizontal, layout persistido intacto y cruz de edición sin recortar (rojo antes, verde después).
 - `scripts/perf-resize.mjs`: driver de diagnóstico del resize (no es el test).

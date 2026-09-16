@@ -13,6 +13,29 @@ describe('WidgetRemoveButton', () => {
     expect(btn.attributes('aria-label')).toBeTruthy()
   })
 
+  it('sobresale por arriba a la derecha del widget (offset hacia afuera)', () => {
+    const wrapper = mount(WidgetRemoveButton, {
+      props: { widgetId: 'habits' },
+    })
+    const btn = wrapper.find('button')
+    expect(btn.classes()).toContain('absolute')
+    expect(btn.classes()).toContain('-right-2')
+    expect(btn.classes()).toContain('-top-2')
+    expect(btn.classes()).not.toContain('right-1')
+    expect(btn.classes()).not.toContain('top-1')
+  })
+
+  it('tiene contorno y fondo propios, sin fundirse con la esquina del widget', () => {
+    const wrapper = mount(WidgetRemoveButton, {
+      props: { widgetId: 'habits' },
+    })
+    const classes = wrapper.find('button').classes()
+    expect(classes).toContain('border')
+    expect(classes).toContain('border-hairline-strong')
+    expect(classes).toContain('bg-surface-2')
+    expect(classes).toContain('rounded-full')
+  })
+
   it('emite remove con el widgetId al hacer click', async () => {
     const wrapper = mount(WidgetRemoveButton, {
       props: { widgetId: 'tasks' },

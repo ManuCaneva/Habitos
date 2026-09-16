@@ -109,4 +109,142 @@ test.describe('HD (1280×720)', () => {
     })
     expect(persisted).toEqual(layout)
   })
+
+  test('la cruz de quitar widget sobresale del widget sin recortarse y queda encima del vecino', async ({
+    page,
+  }) => {
+    const layout = [
+      { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'tasks', x: 6, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'goals', x: 0, y: 4, w: 12, h: 3, minW: 1, minH: 1 },
+    ]
+    await openDashboard(page, layout)
+    await page.click('[data-testid="nav-edit-mode"]')
+    await page.waitForSelector('.grid-item--editable')
+
+    const cross = page.locator(
+      '.grid-item:has([data-testid="habits-widget"]) [data-testid="widget-remove-button"]'
+    )
+    const item = page.locator('.grid-item:has([data-testid="habits-widget"])')
+    const crossBox = await cross.boundingBox()
+    const itemBox = await item.boundingBox()
+    expect(crossBox, 'cruz renderizada').not.toBeNull()
+    expect(itemBox, 'widget renderizado').not.toBeNull()
+
+    // Sobresale por arriba a la derecha (offset hacia afuera).
+    expect(crossBox!.y).toBeLessThan(itemBox!.y)
+    expect(crossBox!.x + crossBox!.width).toBeGreaterThan(itemBox!.x + itemBox!.width)
+
+    const hit = await cross.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      const targets = {
+        center: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2),
+        topOverhang: document.elementFromPoint(r.left + r.width / 2, r.top + 2),
+        rightOverhang: document.elementFromPoint(r.right - 2, r.top + r.height / 2),
+      }
+      const owns = (target: Element | null) =>
+        target !== null && (el === target || el.contains(target))
+      const style = getComputedStyle(el)
+      return {
+        centerOwned: owns(targets.center),
+        topOverhangOwned: owns(targets.topOverhang),
+        rightOverhangOwned: owns(targets.rightOverhang),
+        borderTopWidth: style.borderTopWidth,
+        backgroundColor: style.backgroundColor,
+      }
+    })
+
+    // Sin recorte en la zona que sobresale del widget.
+    expect(hit.centerOwned, 'centro de la cruz sin recorte').toBe(true)
+    expect(hit.topOverhangOwned, 'overhang superior sin recorte').toBe(true)
+    expect(hit.rightOverhangOwned, 'overhang derecho sin recorte (sobre el vecino)').toBe(true)
+
+    // Contorno y fondo propios.
+    expect(parseFloat(hit.borderTopWidth)).toBeGreaterThan(0)
+    expect(hit.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+
+    // Quita el widget correcto: solo desaparece hábitos, tareas queda.
+    await cross.click()
+    await expect(page.locator('[data-testid="habits-widget"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="tasks-widget"]')).toHaveCount(1)
+  })
+
+  test('la cruz de un widget pegado al borde derecho no se recorta contra la vista', async ({
+    page,
+  }) => {
+    const layout = [
+      { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'tasks', x: 6, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'goals', x: 0, y: 4, w: 12, h: 3, minW: 1, minH: 1 },
+    ]
+    await openDashboard(page, layout)
+    await page.click('[data-testid="nav-edit-mode"]')
+    await page.waitForSelector('.grid-item--editable')
+
+    // tasks ocupa la última columna: su cruz desborda sobre el aire de la
+    // vista (p-3), fuera de la grilla pero dentro del root con overflow-hidden.
+    const probe = await page.evaluate(() => {
+      const grid = document.querySelector('.dashboard-grid') as HTMLElement
+      const gridRect = grid.getBoundingClientRect()
+      const cross = document.querySelector(
+        '.grid-item:has([data-testid="tasks-widget"]) [data-testid="widget-remove-button"]'
+      ) as HTMLElement
+      const r = cross.getBoundingClientRect()
+      const rightOverhang = document.elementFromPoint(r.right - 2, r.top + r.height / 2)
+      const topOverhang = document.elementFromPoint(r.left + r.width / 2, r.top + 2)
+      return {
+        rightOverhangOwned:
+          rightOverhang !== null && (rightOverhang === cross || cross.contains(rightOverhang)),
+        topOverhangOwned:
+          topOverhang !== null && (topOverhang === cross || cross.contains(topOverhang)),
+        beyondGrid: r.right > gridRect.right,
+      }
+    })
+
+    // El overhang derecho cae fuera de la grilla (sobre el padding de la vista)
+    // y sigue siendo de la cruz: no lo recorta el overflow-hidden del root.
+    expect(probe.beyondGrid, 'la cruz desborda el borde derecho de la grilla').toBe(true)
+    expect(probe.rightOverhangOwned, 'overhang derecho visible y hitteable').toBe(true)
+    expect(probe.topOverhangOwned, 'overhang superior visible y hitteable').toBe(true)
+  })
+
+  test('la cruz de goals se apila por encima del widget vecino que invade hacia arriba', async ({
+    page,
+  }) => {
+    const layout = [
+      { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'tasks', x: 6, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'goals', x: 0, y: 4, w: 12, h: 3, minW: 1, minH: 1 },
+    ]
+    await openDashboard(page, layout)
+    await page.click('[data-testid="nav-edit-mode"]')
+    await page.waitForSelector('.grid-item--editable')
+
+    // La cruz de goals (fila 4) sobresale hacia arriba sobre la fila 3, que
+    // ocupa tasks: debe quedar pintada por encima y ganar el hit-test.
+    const probe = await page.evaluate(() => {
+      const cross = document.querySelector(
+        '.grid-item:has([data-testid="goals-widget"]) [data-testid="widget-remove-button"]'
+      ) as HTMLElement
+      const tasks = document.querySelector(
+        '.grid-item:has([data-testid="tasks-widget"])'
+      ) as HTMLElement
+      const r = cross.getBoundingClientRect()
+      const tasksRect = tasks.getBoundingClientRect()
+      const topOverhang = document.elementFromPoint(r.left + r.width / 2, r.top + 2)
+      return {
+        overhangInsideNeighbor: r.top + 2 < tasksRect.bottom && r.top + 2 > tasksRect.top,
+        topOverhangOwned:
+          topOverhang !== null && (topOverhang === cross || cross.contains(topOverhang)),
+        crossZ: Number(getComputedStyle(cross.parentElement as Element).zIndex),
+        tasksZ: Number(getComputedStyle(tasks).zIndex),
+      }
+    })
+
+    expect(probe.overhangInsideNeighbor, 'el overhang cae dentro del vecino de arriba').toBe(true)
+    expect(probe.topOverhangOwned, 'la cruz gana el hit-test sobre el vecino').toBe(true)
+    expect(probe.crossZ, 'el item de goals apila por encima del de tasks').toBeGreaterThan(
+      probe.tasksZ
+    )
+  })
 })
