@@ -15,20 +15,27 @@ const dayGridStyle = computed(() => ({
 }))
 
 const containerRef = ref<HTMLElement | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
 const containerHeight = ref(400)
 const containerWidth = ref(800)
+const headerHeight = ref(0)
 
 let rafId: number | null = null
+
+function readRects() {
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect()
+    containerHeight.value = rect.height
+    containerWidth.value = rect.width
+  }
+  headerHeight.value = headerRef.value?.getBoundingClientRect().height ?? 0
+}
 
 function measure() {
   if (rafId !== null) return
   rafId = requestAnimationFrame(() => {
     rafId = null
-    if (containerRef.value) {
-      const rect = containerRef.value.getBoundingClientRect()
-      containerHeight.value = rect.height
-      containerWidth.value = rect.width
-    }
+    readRects()
   })
 }
 
@@ -37,11 +44,7 @@ function flushMeasure() {
     cancelAnimationFrame(rafId)
     rafId = null
   }
-  if (containerRef.value) {
-    const rect = containerRef.value.getBoundingClientRect()
-    containerHeight.value = rect.height
-    containerWidth.value = rect.width
-  }
+  readRects()
 }
 
 const labelWidthPx = computed(() => {
@@ -74,11 +77,8 @@ const visibleRows = computed(() => {
 })
 
 const rowHeightPx = computed(() => {
-  const headerHeight = Math.max(24, Math.min(40, containerHeight.value * 0.06))
-  const avail = containerHeight.value - headerHeight
-  const calculated = avail / visibleRows.value
-  const minHeight = Math.max(20, Math.min(36, containerHeight.value * 0.045))
-  return Math.max(minHeight, calculated)
+  const avail = Math.max(0, containerHeight.value - headerHeight.value)
+  return avail / visibleRows.value
 })
 
 const minuteHeightPx = computed(() => rowHeightPx.value / store.settings.granularity_minutes)
@@ -136,8 +136,11 @@ function slotsForDay(day: number): VisibleSlot[] {
 
 <template>
   <div ref="containerRef" class="relative flex h-full min-h-0 w-full select-none flex-col">
-    <div class="scrollbar-gutter-stable relative min-h-0 flex-1 overflow-y-auto bg-canvas">
-      <div class="sticky top-0 z-20 flex flex-shrink-0 border-b border-hairline bg-surface-2">
+    <div class="relative min-h-0 flex-1 overflow-hidden bg-canvas">
+      <div
+        ref="headerRef"
+        class="schedule-header flex flex-shrink-0 border-b border-hairline bg-surface-2"
+      >
         <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 bg-surface-2" />
         <div class="grid flex-1 border-l border-hairline bg-surface-2" :style="dayGridStyle">
           <div
@@ -159,9 +162,9 @@ function slotsForDay(day: number): VisibleSlot[] {
             v-for="hl in hourLabels"
             :key="hl.minute"
             :style="{ height: rowHeightStyle }"
-            class="schedule-hour-label flex items-center justify-end border-b border-hairline/30 px-1 pr-2 font-mono text-[10px] text-ink-subtle"
+            class="schedule-hour-label flex items-start justify-end border-b border-hairline/30 px-1 pr-2 font-mono text-[10px] text-ink-subtle"
           >
-            {{ hl.label }}
+            <span class="-translate-y-1/2 leading-3">{{ hl.label }}</span>
           </div>
         </div>
 
