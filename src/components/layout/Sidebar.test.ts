@@ -75,4 +75,44 @@ describe('Sidebar', () => {
       false
     )
   })
+
+  it('renders AEON without a decorative logo in the header', () => {
+    const wrapper = mountSidebar()
+    const header = wrapper.get('[data-testid="sidebar-header"]')
+    expect(header.text()).toBe('AEON')
+    expect(header.findAll('svg')).toHaveLength(1)
+    expect(header.get('[data-testid="sidebar-toggle"]').find('svg').exists()).toBe(true)
+  })
+
+  it('anchors the collapse toggle to the right when expanded', async () => {
+    const wrapper = mountSidebar()
+    const header = wrapper.get('[data-testid="sidebar-header"]')
+    const toggle = header.get('[data-testid="sidebar-toggle"]')
+    expect(header.element.lastElementChild).toBe(toggle.element)
+    await toggle.trigger('click')
+    expect(toggleSidebar).toHaveBeenCalled()
+  })
+
+  it('collapsed: keeps only the collapse toggle inside the panel', async () => {
+    uiState.sidebarCollapsed = true
+    const wrapper = mountSidebar()
+    expect(wrapper.text()).not.toContain('AEON')
+
+    const header = wrapper.get('[data-testid="sidebar-header"]')
+    expect(header.findAll('button')).toHaveLength(1)
+    expect(header.text()).toBe('')
+    await header.get('[data-testid="sidebar-toggle"]').trigger('click')
+    expect(toggleSidebar).toHaveBeenCalled()
+  })
+
+  it('keeps the collapsed and expanded widths unchanged', () => {
+    const expanded = mountSidebar()
+    expect(expanded.get('aside').classes()).toContain('w-56')
+    expect(expanded.get('aside').classes()).not.toContain('w-14')
+
+    uiState.sidebarCollapsed = true
+    const collapsed = mountSidebar()
+    expect(collapsed.get('aside').classes()).toContain('w-14')
+    expect(collapsed.get('aside').classes()).not.toContain('w-56')
+  })
 })

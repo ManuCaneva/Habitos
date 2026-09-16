@@ -75,13 +75,7 @@ const rowActive = 'bg-surface-3 text-ink'
       ui.sidebarCollapsed ? 'w-14' : 'w-56',
     ]"
   >
-    <div class="flex items-center gap-2 px-2 py-2.5">
-      <span
-        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-body-sm font-semibold text-on-primary"
-        aria-hidden="true"
-      >
-        ◉
-      </span>
+    <div data-testid="sidebar-header" class="flex items-center gap-2 px-2 py-2.5">
       <Text
         v-if="!ui.sidebarCollapsed"
         variant="body-sm"
@@ -92,6 +86,7 @@ const rowActive = 'bg-surface-3 text-ink'
       </Text>
       <button
         type="button"
+        data-testid="sidebar-toggle"
         class="flex shrink-0 items-center justify-center rounded-md px-1.5 py-1.5 text-ink-muted transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
         aria-label="Colapsar sidebar"
         title="Colapsar sidebar"

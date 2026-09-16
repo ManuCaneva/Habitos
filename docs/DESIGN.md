@@ -268,7 +268,7 @@ Todos los componentes consumen tokens y acentos; ninguno hardcodea color. Los pr
 
 ### Sidebar & Shell
 
-**`Sidebar`** (`Sidebar.vue`) — panel flotante `rounded-xl border-hairline bg-surface-1`, ancho `w-56` (colapsado `w-14`). Marca en cuadrado `rounded-lg bg-primary text-on-primary`. Secciones con **eyebrow** ("Navegación", "Sistema") y filas `rounded-md px-2 py-1.5 text-caption font-medium`: idle `text-ink-muted hover:bg-surface-2 hover:text-ink`, activa `bg-surface-3 text-ink`; cada fila lleva un **dot** semántico (primary/orange/green/purple, o `ink-tertiary` cuando está off).
+**`Sidebar`** (`Sidebar.vue`) — panel flotante `rounded-xl border-hairline bg-surface-1`, ancho `w-56` (colapsado `w-14`). Header solo con el texto **AEON** y el botón de colapsar anclado a la derecha; colapsado queda únicamente el botón, dentro del panel. Secciones con **eyebrow** ("Navegación", "Sistema") y filas `rounded-md px-2 py-1.5 text-caption font-medium`: idle `text-ink-muted hover:bg-surface-2 hover:text-ink`, activa `bg-surface-3 text-ink`; cada fila lleva un **dot** semántico (primary/orange/green/purple, o `ink-tertiary` cuando está off).
 
 **Shell** (`App.vue`) — `flex h-screen gap-3 overflow-hidden bg-canvas p-3`: sidebar + panel de contenido `rounded-xl border-hairline bg-canvas` con `p-4`. Nada toca el borde de la ventana.
 
