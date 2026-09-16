@@ -61,9 +61,9 @@ onBeforeUnmount(() => {
   >
     <header
       data-testid="pomodoro-widget-header"
-      class="flex shrink-0 items-center justify-center border-b border-hairline bg-surface-2 px-2 py-1"
+      class="flex shrink-0 items-center justify-start border-b border-hairline bg-surface-2 px-2 py-1"
     >
-      <Text variant="card-title" weight="600" class="text-center">Pomodoro</Text>
+      <Text variant="card-title" weight="600" class="text-left">Pomodoro</Text>
     </header>
 
     <div class="flex min-h-0 flex-1 items-center justify-center p-4">

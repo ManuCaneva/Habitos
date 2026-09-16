@@ -179,6 +179,20 @@ describe('YearCalendarWidget', () => {
     expect(wrapper.text()).toContain('Calendario Anual')
   })
 
+  it('tiene el título alineado a la izquierda y conserva el spinner (ALINEACIÓN)', () => {
+    mockStore.syncing = true
+    const wrapper = mount(YearCalendarWidget)
+    const header = wrapper.get('.ycw__header')
+    const title = header.get('.ycw__title')
+
+    expect(header.classes()).not.toContain('justify-center')
+    expect(header.classes()).toContain('justify-start')
+    expect(title.classes()).not.toContain('text-center')
+    expect(title.classes()).toContain('text-left')
+    expect(header.element.firstElementChild?.textContent).toContain('Calendario Anual')
+    expect(header.find("[data-testid='sync-spinner']").exists()).toBe(true)
+  })
+
   it('no muestra flechas de paginación cuando caben los 12 meses', () => {
     const wrapper = mount(YearCalendarWidget)
     expect(wrapper.find("[data-testid='month-up']").exists()).toBe(false)

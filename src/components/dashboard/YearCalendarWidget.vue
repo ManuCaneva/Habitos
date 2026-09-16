@@ -176,10 +176,10 @@ watch(
   >
     <div class="ycw" :class="layout ? `cols-${layout.cols}` : ''" :style="layoutStyle">
       <header
-        class="ycw__header"
+        class="ycw__header justify-start"
         :style="{ '--title-font-size': 'var(--title-font-size, 0.75rem)' }"
       >
-        <Text variant="caption" weight="600" class="ycw__title">Calendario Anual</Text>
+        <Text variant="caption" weight="600" class="ycw__title text-left">Calendario Anual</Text>
         <Loader2
           v-if="store.syncing"
           :size="12"
@@ -308,7 +308,6 @@ watch(
 .ycw__header {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   padding: 6px 8px;
   border-bottom: 1px solid rgb(var(--color-hairline));
@@ -317,7 +316,6 @@ watch(
 }
 
 .ycw__title {
-  text-align: center;
   color: rgb(var(--color-ink));
   font-size: var(--title-font-size, 0.75rem);
   line-height: 1.2;

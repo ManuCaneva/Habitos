@@ -49,6 +49,20 @@ describe('WeeklyScheduleWidget', () => {
     expect(wrapper.text()).toContain('Cronograma Semanal')
   })
 
+  it('tiene el título alineado a la izquierda y conserva los controles (ALINEACIÓN)', () => {
+    const wrapper = mount(WeeklyScheduleWidget)
+    const header = wrapper.get('.schedule-widget-header')
+    const title = header.get('.text-card-title')
+
+    expect(header.classes()).not.toContain('justify-center')
+    expect(header.classes()).toContain('justify-between')
+    expect(title.classes()).not.toContain('text-center')
+    expect(title.classes()).toContain('text-left')
+    expect(header.element.firstElementChild?.textContent).toContain('Cronograma Semanal')
+    expect(header.find('[aria-label="Ajustes"]').exists()).toBe(true)
+    expect(header.find('[aria-label="Nuevo bloque"]').exists()).toBe(true)
+  })
+
   it('no usa colores de paleta cruda de Tailwind', () => {
     const wrapper = mount(WeeklyScheduleWidget)
     expect(hasRawPaletteColor(wrapper.html())).toBe(false)

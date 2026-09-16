@@ -32,10 +32,9 @@ function openEdit(b: ScheduleBlockWithSlots) {
   >
     <div class="flex h-full min-h-0 flex-col">
       <header
-        class="schedule-widget-header grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-hairline bg-surface-2 px-2 py-1"
+        class="schedule-widget-header flex flex-shrink-0 items-center justify-between border-b border-hairline bg-surface-2 px-2 py-1"
       >
-        <div></div>
-        <Text variant="card-title" weight="600" class="min-w-0 truncate text-center"
+        <Text variant="card-title" weight="600" class="min-w-0 truncate text-left"
           >Cronograma Semanal</Text
         >
         <div class="flex items-center justify-end gap-1">

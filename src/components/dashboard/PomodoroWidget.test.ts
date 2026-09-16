@@ -108,6 +108,18 @@ describe('PomodoroWidget', () => {
     expect(wrapper.find('[data-testid="pomodoro-widget-progress"]').exists()).toBe(true)
   })
 
+  it('tiene el título alineado a la izquierda, como el estándar de listing (ALINEACIÓN)', () => {
+    const wrapper = mount(PomodoroWidget)
+    const header = wrapper.get('[data-testid="pomodoro-widget-header"]')
+    const title = header.get('.text-card-title')
+
+    expect(header.classes()).not.toContain('justify-center')
+    expect(header.classes()).toContain('justify-start')
+    expect(title.classes()).not.toContain('text-center')
+    expect(title.classes()).toContain('text-left')
+    expect(header.element.firstElementChild?.textContent).toContain('Pomodoro')
+  })
+
   it('el anillo usa token primario en enfoque y success en descansos', async () => {
     const wrapper = mount(PomodoroWidget)
     const progress = wrapper.get('[data-testid="pomodoro-widget-progress"]')

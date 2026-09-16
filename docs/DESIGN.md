@@ -232,7 +232,7 @@ Todos los componentes consumen tokens y acentos; ninguno hardcodea color. Los pr
 
 **`Container`** (`Container.vue`) — variant `default` `border-hairline bg-surface-1`, `ghost` transparente, `dashed`; padding `none/sm:8px/md:12px/lg:16px`; `rounded-lg`.
 
-**`EntityListing`** (`EntityListing.vue`) — panel de lista: header `border-b bg-surface-2 px-4 py-3` con eyebrow + card-title (`showEyebrow=false` lo oculta, para widgets del dashboard); body scrollable `p-2`; footer `border-t p-2`; escalado responsive por container queries.
+**`EntityListing`** (`EntityListing.vue`) — panel de lista: header `border-b bg-surface-2 px-4 py-3` con eyebrow + card-title (`showEyebrow=false` lo oculta, para widgets del dashboard); body scrollable `p-2`; footer `border-t p-2`; escalado responsive por container queries. Es la referencia de alineación de los headers de widget: el título va a la izquierda, con los controles (spinner de sync, botones) a la derecha del header.
 
 ### Inputs & Forms
 
