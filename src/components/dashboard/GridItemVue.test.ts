@@ -61,6 +61,14 @@ describe('GridItemVue', () => {
     expect(style).not.toContain('position: absolute')
   })
 
+  it('permite encoger el item para que el contenido se ajuste a lo disponible', () => {
+    const wrapper = mount(GridItemVue, {
+      props: { item: makeItem(), editMode: false },
+    })
+    expect(wrapper.classes()).toContain('min-w-0')
+    expect(wrapper.classes()).toContain('min-h-0')
+  })
+
   it('emite moved en enteros tras un drag con snap', async () => {
     const wrapper = mount(GridItemVue, {
       props: { item: makeItem({ x: 0, y: 0, w: 6, h: 4 }), editMode: true },

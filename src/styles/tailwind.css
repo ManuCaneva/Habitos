@@ -262,6 +262,46 @@
 
 /* ===== Progressive collapse breakpoints ===== */
 
+/* Altura disponible corta (widget de objetivos en HD): el header y el footer
+   compactan para que el cuerpo absorba el espacio y una fila de objetivo
+   quepa completa. Solo aplica a contenedores size (GoalsWidget). */
+@container (max-height: 240px) {
+  .container-widget .goals-header-responsive {
+    padding: 0.125rem 0.375rem;
+  }
+  .container-widget .goals-header-responsive .text-card-title {
+    font-size: 0.75rem;
+  }
+  .container-widget .entity-footer-responsive {
+    padding: 0.125rem;
+  }
+  .container-widget .new-goal-card {
+    min-height: 0;
+    padding: 0.125rem;
+  }
+  .container-widget .new-goal-card .text-body-sm {
+    display: none;
+  }
+  .container-widget .new-goal-card svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+  .container-widget .goal-card-responsive {
+    padding: 0.25rem;
+  }
+  .container-widget .goal-card-responsive .w-8,
+  .container-widget .goal-card-responsive .h-8 {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .container-widget .goal-card-responsive .goal-card-description {
+    display: none;
+  }
+  .container-widget .goal-card-progress {
+    margin-top: 0.25rem;
+  }
+}
+
 @container (max-width: 350px) {
   .habit-card-responsive .habit-card-subtitle {
     display: none;

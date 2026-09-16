@@ -100,7 +100,7 @@ async function handleIncrement() {
               data-testid="goal-description"
               variant="body-sm"
               color="muted"
-              class="block truncate"
+              class="goal-card-description block truncate"
             >
               {{ goal.description }}
             </Text>
@@ -118,10 +118,10 @@ async function handleIncrement() {
           </IconButton>
         </div>
 
-        <div class="mt-2 flex items-center gap-3">
-          <div class="flex-1">
+        <div class="goal-card-progress mt-2 flex items-center gap-3">
+          <div class="min-w-0 flex-1">
             <div class="mb-1 flex items-center justify-between gap-2">
-              <Text variant="body-sm" weight="500">
+              <Text variant="body-sm" weight="500" class="min-w-0 truncate">
                 {{ currentProgress }}/{{ goal.target }}
                 <span v-if="goal.unit" class="text-ink-muted">{{ goal.unit }}</span>
               </Text>

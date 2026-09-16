@@ -46,8 +46,10 @@ const dotClass = computed(() => {
 </script>
 
 <template>
-  <span :class="['inline-flex items-center rounded-full font-medium', sizeClass, variantClass]">
-    <span v-if="dot" :class="['h-1.5 w-1.5 rounded-full', dotClass]" />
-    <slot />
+  <span
+    :class="['inline-flex min-w-0 items-center rounded-full font-medium', sizeClass, variantClass]"
+  >
+    <span v-if="dot" :class="['h-1.5 w-1.5 shrink-0 rounded-full', dotClass]" />
+    <span class="min-w-0 truncate"><slot /></span>
   </span>
 </template>

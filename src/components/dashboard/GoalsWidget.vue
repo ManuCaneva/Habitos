@@ -9,7 +9,7 @@ import GoalsListView from '@/views/GoalsListView.vue'
     variant="default"
     padding="none"
     class="container-widget h-full overflow-hidden"
-    style="container-type: inline-size"
+    style="container-type: size"
   >
     <GoalsListView :show-eyebrow="false" />
   </Container>

@@ -22,10 +22,10 @@ describe('GoalsWidget', () => {
     expect(widget.classes()).toContain('border')
   })
 
-  it('should have container-type: inline-size style', () => {
+  it('should have container-type: size style to allow height compaction', () => {
     const wrapper = mount(GoalsWidget)
     const widget = wrapper.find("[data-testid='goals-widget']")
-    expect(widget.attributes('style')).toContain('container-type: inline-size')
+    expect(widget.attributes('style')).toContain('container-type: size')
   })
 
   it('should render GoalsListView', () => {

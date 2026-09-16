@@ -191,6 +191,7 @@ useDashDrag(elRef, editModeRef, {
     :style="gridStyle"
     :class="[
       'grid-item',
+      'min-h-0 min-w-0',
       editMode && 'grid-item--editable',
       isDragging && 'grid-item--dragging',
       isFlipping && 'grid-item--flip',

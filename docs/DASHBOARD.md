@@ -4,7 +4,7 @@
 
 El dashboard de AEON es una grilla nativa de CSS de 12×10 con widgets independientes. El usuario puede activar el modo edición desde la sidebar, mover y redimensionar widgets, ocultarlos o restaurar el layout por defecto.
 
-El layout no usa JS en el loop de resize: cada widget se posiciona con `grid-column` / `grid-row` en enteros sobre un contenedor `display: grid` (`repeat(12, 1fr)` / `repeat(10, 1fr)`, `gap: 4px`). El navegador reparte el espacio; JS solo interviene al soltar un gesto (snap a celda + animación FLIP transform-only). Ver `docs/adr/0004-dashboard-css-grid-nativo-presupuesto-ci.md`.
+El layout no usa JS en el loop de resize: cada widget se posiciona con `grid-column` / `grid-row` en enteros sobre un contenedor `display: grid` (`repeat(12, minmax(0, 1fr))` / `repeat(10, minmax(0, 1fr))`, `gap: 4px`). El mínimo explícito `0` evita que los tracks se inflen por min-content y que el contenido desborde el panel en viewports chicos (HD). El navegador reparte el espacio; JS solo interviene al soltar un gesto (snap a celda + animación FLIP transform-only). Ver `docs/adr/0004-dashboard-css-grid-nativo-presupuesto-ci.md`.
 
 ## Arquitectura
 
@@ -35,7 +35,7 @@ interface LayoutItem {
 }
 ```
 
-El contenedor es `display: grid` con `grid-template-columns: repeat(12, 1fr)`, `grid-template-rows: repeat(10, 1fr)` y `gap: 4px`. Cada widget se posiciona con `grid-column: x+1 / span w` y `grid-row: y+1 / span h` (via `GridItemVue`). La migración desde el modelo viejo en porcentajes redondea (`round(xPercent*12)`, etc.), limita al rango y resuelve colisiones post-redondeo con `findFreePosition` (ver `migratePercentToInteger` en el store).
+El contenedor es `display: grid` con `grid-template-columns: repeat(12, minmax(0, 1fr))`, `grid-template-rows: repeat(10, minmax(0, 1fr))` y `gap: 4px`. Cada widget se posiciona con `grid-column: x+1 / span w` y `grid-row: y+1 / span h` (via `GridItemVue`). La migración desde el modelo viejo en porcentajes redondea (`round(xPercent*12)`, etc.), limita al rango y resuelve colisiones post-redondeo con `findFreePosition` (ver `migratePercentToInteger` en el store).
 
 ## Interacción
 
@@ -69,6 +69,14 @@ Las instalaciones anteriores guardan la clave `habitos-dashboard-layout`. La mig
 
 Los estilos usan los tokens definidos en `docs/DESIGN.md` y las clases de Tailwind existentes. No agregar otra librería de grid ni colores arbitrarios para modificar este sistema.
 
+### Ajuste al espacio disponible
+
+Los widgets se adaptan al tamaño de su celda sin desbordar el panel:
+
+- Los items de la grilla (`GridItemVue`) y los contenedores (`Container`) declaran `min-width: 0` / `min-height: 0` para poder encoger por debajo de su min-content; los textos truncan y los badges dejan encoger su etiqueta.
+- `GoalsWidget` declara `container-type: size` (no solo `inline-size`) para habilitar container queries de altura. Con poca altura disponible (`@container (max-height: 240px)` en `src/styles/tailwind.css`), el header y el footer del listado compactan y el cuerpo absorbe el espacio restante, de modo que una fila de objetivo completa (incluido el botón de incrementar) queda visible en HD (1280×720).
+- El resto de los widgets mantiene `container-type: inline-size` y su compactación por ancho (`@container (max-width: 350px)` / `250px`).
+
 ## Archivos relacionados
 
 - `src/components/dashboard/DashboardView.vue`: composición y render del dashboard (contenedor CSS Grid).
@@ -80,5 +88,7 @@ Los estilos usan los tokens definidos en `docs/DESIGN.md` y las clases de Tailwi
 - `src/stores/dashboard.test.ts`: comportamiento del store.
 - `src/lib/dashboardWidgets.ts`: registro y metadatos de widgets.
 - `src/components/dashboard/`: contenedores y controles de widgets.
-- `tests/perf/`: harness de rendimiento (fixture, métricas, presupuesto).
+- `tests/perf/`: harness de rendimiento (fixture, métricas, presupuesto) y verificación de visibilidad en HD (`hd.spec.ts`).
+- `tests/perf/harness.ts`: inyección compartida del stub de Tauri y espera del dashboard para los specs de Playwright.
+- `tests/perf/hd.spec.ts`: en 1280×720, botón de incrementar visible, sin desborde horizontal y layout persistido intacto.
 - `scripts/perf-resize.mjs`: driver de diagnóstico del resize (no es el test).
