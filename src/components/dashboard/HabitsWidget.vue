@@ -11,6 +11,6 @@ import TodayView from '@/views/TodayView.vue'
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
   >
-    <TodayView />
+    <TodayView :show-eyebrow="false" />
   </Container>
 </template>

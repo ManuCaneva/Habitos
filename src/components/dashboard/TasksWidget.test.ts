@@ -34,6 +34,17 @@ describe('TasksWidget', () => {
     expect(listView.exists()).toBe(true)
   })
 
+  it('no muestra el eyebrow «Pendientes»', () => {
+    const wrapper = mount(TasksWidget)
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Pendientes')
+  })
+
+  it('sigue mostrando el título «Tareas»', () => {
+    const wrapper = mount(TasksWidget)
+    expect(wrapper.find('.text-card-title').text()).toBe('Tareas')
+  })
+
   it('no usa colores de paleta cruda de Tailwind', () => {
     const wrapper = mount(TasksWidget)
     expect(hasRawPaletteColor(wrapper.html())).toBe(false)

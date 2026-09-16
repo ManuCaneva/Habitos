@@ -34,6 +34,17 @@ describe('GoalsWidget', () => {
     expect(listView.exists()).toBe(true)
   })
 
+  it('no muestra el eyebrow «Seguimiento»', () => {
+    const wrapper = mount(GoalsWidget)
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Seguimiento')
+  })
+
+  it('sigue mostrando el título «Objetivos»', () => {
+    const wrapper = mount(GoalsWidget)
+    expect(wrapper.find('.text-card-title').text()).toBe('Objetivos')
+  })
+
   it('no usa colores de paleta cruda de Tailwind', () => {
     const wrapper = mount(GoalsWidget)
     expect(hasRawPaletteColor(wrapper.html())).toBe(false)

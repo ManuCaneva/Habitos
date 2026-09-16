@@ -11,6 +11,6 @@ import GoalsListView from '@/views/GoalsListView.vue'
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
   >
-    <GoalsListView />
+    <GoalsListView :show-eyebrow="false" />
   </Container>
 </template>

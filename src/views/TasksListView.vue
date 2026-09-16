@@ -6,6 +6,15 @@ import NewTaskCard from '@/components/tasks/NewTaskCard.vue'
 import EmptyState from '@/components/tasks/EmptyState.vue'
 import EntityListing from '@/components/ui/EntityListing.vue'
 
+withDefaults(
+  defineProps<{
+    showEyebrow?: boolean
+  }>(),
+  {
+    showEyebrow: true,
+  }
+)
+
 const tasks = useTasksStore()
 
 const list = computed(() => tasks.pendingTasks)
@@ -15,6 +24,7 @@ const list = computed(() => tasks.pendingTasks)
   <EntityListing
     title="Tareas"
     eyebrow="Pendientes"
+    :show-eyebrow="showEyebrow"
     panel-test-id="tasks-panel"
     entity-class="tasks"
   >

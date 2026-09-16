@@ -7,6 +7,15 @@ import EmptyState from '@/components/habits/EmptyState.vue'
 import HabitSection from '@/components/habits/HabitSection.vue'
 import EntityListing from '@/components/ui/EntityListing.vue'
 
+withDefaults(
+  defineProps<{
+    showEyebrow?: boolean
+  }>(),
+  {
+    showEyebrow: true,
+  }
+)
+
 const habits = useHabitsStore()
 
 const list = computed(() => habits.activeHabits)
@@ -14,7 +23,13 @@ const logs = computed(() => habits.logs)
 </script>
 
 <template>
-  <EntityListing title="Hábitos" eyebrow="Hoy" panel-test-id="habits-panel" entity-class="habits">
+  <EntityListing
+    title="Hábitos"
+    eyebrow="Hoy"
+    :show-eyebrow="showEyebrow"
+    panel-test-id="habits-panel"
+    entity-class="habits"
+  >
     <HabitSection variant="flat">
       <EmptyState v-if="list.length === 0" />
       <div v-else class="flex flex-col gap-1">

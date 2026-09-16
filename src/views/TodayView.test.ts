@@ -95,6 +95,12 @@ describe('TodayView', () => {
     expect(header.find('.text-card-title').exists()).toBe(true)
   })
 
+  it('con showEyebrow=false no muestra el eyebrow pero sí el título', () => {
+    const wrapper = mount(TodayView, { props: { showEyebrow: false } })
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.find('.text-card-title').text()).toBe('Hábitos')
+  })
+
   it('scroll container tiene overflow-auto, p-2 y scrollbar-gutter-stable', () => {
     const wrapper = mount(TodayView)
     const listing = wrapper.findComponent({ name: 'EntityListing' })

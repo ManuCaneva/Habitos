@@ -72,6 +72,12 @@ describe('TasksListView', () => {
     expect(wrapper.find("[data-testid='tasks-panel']").exists()).toBe(true)
   })
 
+  it('con showEyebrow=false no muestra el eyebrow pero sí el título', () => {
+    const wrapper = mount(TasksListView, { props: { showEyebrow: false } })
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.find('.text-card-title').text()).toBe('Tareas')
+  })
+
   it('no muestra contador', () => {
     tasksState.value = [
       {

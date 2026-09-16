@@ -6,6 +6,15 @@ import NewGoalCard from '@/components/goals/NewGoalCard.vue'
 import EmptyState from '@/components/goals/EmptyState.vue'
 import EntityListing from '@/components/ui/EntityListing.vue'
 
+withDefaults(
+  defineProps<{
+    showEyebrow?: boolean
+  }>(),
+  {
+    showEyebrow: true,
+  }
+)
+
 const goals = useGoalsStore()
 
 const list = computed(() => goals.goals)
@@ -15,6 +24,7 @@ const list = computed(() => goals.goals)
   <EntityListing
     title="Objetivos"
     eyebrow="Seguimiento"
+    :show-eyebrow="showEyebrow"
     panel-test-id="goals-panel"
     entity-class="goals"
   >

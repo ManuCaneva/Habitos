@@ -48,6 +48,17 @@ describe('HabitsWidget', () => {
     expect(wrapper.find("[data-testid='habits-panel']").exists()).toBe(true)
   })
 
+  it('no muestra el eyebrow «Hoy»', () => {
+    const wrapper = mount(HabitsWidget)
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Hoy')
+  })
+
+  it('sigue mostrando el título «Hábitos»', () => {
+    const wrapper = mount(HabitsWidget)
+    expect(wrapper.find('.text-card-title').text()).toBe('Hábitos')
+  })
+
   it('usa los estilos de superficie del design system', () => {
     const wrapper = mount(HabitsWidget)
     const el = wrapper.find("[data-testid='habits-widget']")

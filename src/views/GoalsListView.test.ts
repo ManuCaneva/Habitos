@@ -59,6 +59,12 @@ describe('GoalsListView', () => {
     expect(header.classes()).toContain('flex-col')
   })
 
+  it('con showEyebrow=false no muestra el eyebrow pero sí el título', () => {
+    const wrapper = mount(GoalsListView, { props: { showEyebrow: false } })
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.find('.text-card-title').text()).toBe('Objetivos')
+  })
+
   it('no muestra contador', () => {
     goalsState.value = [
       {
