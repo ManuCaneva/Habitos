@@ -98,28 +98,24 @@ describe('TaskCard', () => {
     expect(wrapper.find("[data-testid='task-complete-btn']").exists()).toBe(true)
   })
 
-  it('should render complete checkbox when task has steps (disabled if not all done)', () => {
+  it('should keep complete button enabled without disabled visuals when task has pending steps', () => {
     const wrapper = mount(TaskCard, {
       props: { task: mockTaskWithSteps },
     })
     const btn = wrapper.find("[data-testid='task-complete-btn']")
     expect(btn.exists()).toBe(true)
-    expect(btn.attributes('disabled')).toBeDefined()
+    expect(btn.attributes('disabled')).toBeUndefined()
+    expect(btn.classes()).not.toContain('cursor-not-allowed')
+    expect(btn.classes()).not.toContain('opacity-40')
   })
 
-  it('should enable complete button when all steps are done', () => {
-    const task = {
-      ...mockTaskWithSteps,
-      steps: [
-        { id: 'step-1', title: 'Step 1', done: true },
-        { id: 'step-2', title: 'Step 2', done: true },
-      ],
-    }
+  it('should complete task with pending steps when complete button is clicked', async () => {
     const wrapper = mount(TaskCard, {
-      props: { task },
+      props: { task: mockTaskWithSteps },
     })
     const btn = wrapper.find("[data-testid='task-complete-btn']")
-    expect(btn.attributes('disabled')).toBeUndefined()
+    await btn.trigger('click')
+    expect(tasksMock.completeTask).toHaveBeenCalledWith('task-1')
   })
 
   it('should render steps count', () => {

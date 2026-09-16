@@ -22,8 +22,6 @@ const expanded = ref(false)
 const completedSteps = computed(() => props.task.steps.filter((s) => s.done).length)
 const totalSteps = computed(() => props.task.steps.length)
 const hasSteps = computed(() => totalSteps.value > 0)
-const allStepsDone = computed(() => hasSteps.value && props.task.steps.every((s) => s.done))
-const canComplete = computed(() => !hasSteps.value || allStepsDone.value)
 const hasDeadline = computed(() => props.task.due_date !== null)
 
 const urgency = computed(() => urgencyLevel(props.task.due_date))
@@ -188,13 +186,7 @@ function handleComplete() {
       <div class="flex shrink-0 items-center">
         <button
           data-testid="task-complete-btn"
-          :disabled="!canComplete"
-          :class="[
-            'flex h-5 w-5 items-center justify-center rounded-md border text-transparent transition-all duration-150',
-            canComplete
-              ? 'cursor-pointer border-hairline-strong bg-surface-1 hover:border-accent-green hover:bg-accent-green-tint hover:text-accent-green'
-              : 'cursor-not-allowed border-hairline bg-surface-1/50 opacity-40',
-          ]"
+          class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border border-hairline-strong bg-surface-1 text-transparent transition-all duration-150 hover:border-accent-green hover:bg-accent-green-tint hover:text-accent-green"
           @click.stop="handleComplete"
         >
           <Check :size="14" stroke-width="3" />

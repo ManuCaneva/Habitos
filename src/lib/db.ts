@@ -218,7 +218,7 @@ export async function updateTask(
       color: row.color,
       status: row.status,
       due_date: row.due_date ?? undefined,
-      steps: row.steps,
+      steps: validated.steps !== undefined ? row.steps : undefined,
       sort_order: row.sort_order,
       updated_at,
     },

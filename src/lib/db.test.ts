@@ -180,6 +180,28 @@ describe('db.updateTask - shape hacia Rust', () => {
       }),
     })
   })
+
+  it('omite steps cuando el patch no los incluye (preserva los pasos persistidos)', async () => {
+    await updateTask(
+      '123e4567-e89b-12d3-a456-426614174000',
+      { status: 'done' },
+      '2026-07-05T00:00:00.000Z'
+    )
+    const payload = vi.mocked(invoke).mock.calls[0][1] as { input: Record<string, unknown> }
+    expect(payload.input.steps).toBeUndefined()
+  })
+
+  it('envía steps cuando el patch los incluye', async () => {
+    await updateTask(
+      '123e4567-e89b-12d3-a456-426614174000',
+      { steps: [{ id: '660e8400-e29b-41d4-a716-446655440000', title: 'Paso', done: true }] },
+      '2026-07-05T00:00:00.000Z'
+    )
+    const payload = vi.mocked(invoke).mock.calls[0][1] as { input: Record<string, unknown> }
+    expect(payload.input.steps).toBe(
+      JSON.stringify([{ id: '660e8400-e29b-41d4-a716-446655440000', title: 'Paso', done: true }])
+    )
+  })
 })
 
 describe('db.deleteTask', () => {
