@@ -28,6 +28,15 @@ import {
   taskToRow,
 } from '../schemas/tasks'
 import {
+  CreateNoteDraftSchema,
+  type CreateNoteDraft,
+  type UpdateNoteDraft,
+  UpdateNoteDraftSchema,
+  NoteRowSchema,
+  type NoteRow,
+  noteToRow,
+} from '../schemas/notes'
+import {
   CreateGoalDraftSchema,
   type CreateGoalDraft,
   type UpdateGoalDraft,
@@ -236,6 +245,61 @@ export async function archiveTask(id: string, archived_at: string): Promise<void
 
 export async function restoreTask(id: string, updated_at: string): Promise<void> {
   await invoke('restore_task', { id, updatedAt: updated_at })
+}
+
+// ───────────────────────────────────────────────────────────────
+// Notes
+// ───────────────────────────────────────────────────────────────
+
+export async function createNote(
+  draft: CreateNoteDraft,
+  id: string,
+  created_at: string,
+  updated_at: string
+): Promise<NoteRow> {
+  const validated = CreateNoteDraftSchema.parse(draft)
+  const row = noteToRow(validated)
+  const raw = await invoke<unknown>('create_note', {
+    input: {
+      id,
+      title: row.title,
+      description: row.description,
+      color: row.color,
+      created_at,
+      updated_at,
+    },
+  })
+  return NoteRowSchema.parse(raw)
+}
+
+export async function listNotes(): Promise<NoteRow[]> {
+  const raw = await invoke<unknown>('list_notes')
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((r) => NoteRowSchema.parse(r))
+}
+
+export async function updateNote(
+  id: string,
+  patch: UpdateNoteDraft,
+  updated_at: string
+): Promise<NoteRow> {
+  const validated = UpdateNoteDraftSchema.parse(patch)
+  const raw = await invoke<unknown>('update_note', {
+    input: {
+      id,
+      // Double-Option: undefined se omite al serializar (no toca),
+      // null llega a Rust como Some(None) (limpia el campo).
+      title: validated.title,
+      description: validated.description,
+      color: validated.color,
+      updated_at,
+    },
+  })
+  return NoteRowSchema.parse(raw)
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  await invoke('delete_note', { id })
 }
 
 // ───────────────────────────────────────────────────────────────

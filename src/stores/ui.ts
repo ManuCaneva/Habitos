@@ -87,12 +87,14 @@ export const useUiStore = defineStore('ui', () => {
   const habits = createEntityUi()
   const tasks = createEntityUi()
   const goals = createEntityUi()
+  const notes = createEntityUi()
 
   function setViewMode(mode: ViewMode) {
     viewMode.value = mode
     habits.closeMenu()
     tasks.closeMenu()
     goals.closeMenu()
+    notes.closeMenu()
   }
 
   function toggleSidebar() {
@@ -119,6 +121,10 @@ export const useUiStore = defineStore('ui', () => {
     createGoalOpen: goals.createOpen,
     editingGoalId: goals.editingId,
     menuOpenForGoalId: goals.menuOpenForId,
+    isEditingNote: notes.isEditing,
+    createNoteOpen: notes.createOpen,
+    editingNoteId: notes.editingId,
+    menuOpenForNoteId: notes.menuOpenForId,
     setViewMode,
     toggleSidebar,
     toggleEditMode,
@@ -137,5 +143,10 @@ export const useUiStore = defineStore('ui', () => {
     closeGoalModal: goals.closeModal,
     toggleGoalMenu: goals.toggleMenu,
     closeGoalMenu: goals.closeMenu,
+    openCreateNote: notes.openCreate,
+    openEditNote: notes.openEdit,
+    closeNoteModal: notes.closeModal,
+    toggleNoteMenu: notes.toggleMenu,
+    closeNoteMenu: notes.closeMenu,
   }
 })

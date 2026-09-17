@@ -28,12 +28,16 @@ _Avoid_: meta, target, goal
 Un ítem de trabajo con estados (todo / doing / done), pasos internos, color y vencimiento opcional. Puede archivarse al dejar de ser relevante.
 _Avoid_: item, to-do, pendiente
 
+**Nota**:
+Una anotación de texto libre sin fecha, estados ni vencimiento: título opcional, descripción y color. La última creada aparece primero; editarla no cambia su posición. Se elimina de forma definitiva (no participa del archivado).
+_Avoid_: apunte, memo, recordatorio, sticky
+
 **Pasos**:
 Sub-tareas internas de una tarea, cada una con su propio estado de completado.
 _Avoid_: sub-tarea, checklist
 
 **Widget**:
-Un bloque configurable del dashboard (hábitos, tareas, objetivos, calendario anual, cronograma semanal). El usuario puede moverlos, redimensionarlos, ocultarlos o restaurarlos.
+Un bloque configurable del dashboard (hábitos, tareas, objetivos, notas, calendario anual, cronograma semanal). El usuario puede moverlos, redimensionarlos, ocultarlos o restaurarlos.
 _Avoid_: contenedor, módulo, tarjeta
 
 **Cronograma semanal**:

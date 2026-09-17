@@ -15,6 +15,10 @@ import {
   upsertHabitLog,
   loadGcalVisibleCalendars,
   saveGcalVisibleCalendars,
+  createNote,
+  listNotes,
+  updateNote,
+  deleteNote,
 } from './db'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -536,5 +540,139 @@ describe('db gcal visible calendars', () => {
     })
     await saveGcalVisibleCalendars({ hiddenCalendarIds: ['work'] })
     expect(await loadGcalVisibleCalendars()).toEqual({ hiddenCalendarIds: ['work'] })
+  })
+})
+
+const mockNoteRow = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  title: 'Lo que dijo el profesor',
+  description: 'Repasar capítulo 3',
+  color: '#6e56cf',
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-07-05T00:00:00.000Z',
+}
+
+describe('db.createNote - shape hacia Rust', () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset()
+    vi.mocked(invoke).mockResolvedValue(mockNoteRow)
+  })
+
+  it('envía input plano con id y timestamps generados en el store', async () => {
+    await createNote(
+      { title: 'Título', description: 'Desc', color: '#6e56cf' },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-01-01T00:00:00.000Z',
+      '2026-01-01T00:00:00.000Z'
+    )
+    expect(invoke).toHaveBeenCalledWith('create_note', {
+      input: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Título',
+        description: 'Desc',
+        color: '#6e56cf',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+    })
+  })
+
+  it('convierte título ausente a null para Rust', async () => {
+    await createNote(
+      { title: null, description: 'Solo desc', color: '#6e56cf' },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-01-01T00:00:00.000Z',
+      '2026-01-01T00:00:00.000Z'
+    )
+    const call = vi.mocked(invoke).mock.calls[0]
+    const input = (call[1] as { input: Record<string, unknown> }).input
+    expect(input.title).toBeNull()
+  })
+
+  it('rechaza draft sin contenido antes de invocar', async () => {
+    await expect(
+      createNote(
+        { title: null, description: null, color: '#6e56cf' },
+        '123e4567-e89b-12d3-a456-426614174000',
+        '2026-01-01T00:00:00.000Z',
+        '2026-01-01T00:00:00.000Z'
+      )
+    ).rejects.toThrow()
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('valida la fila devuelta con NoteRowSchema', async () => {
+    const result = await createNote(
+      { title: 'Título', description: null, color: '#6e56cf' },
+      '123e4567-e89b-12d3-a456-426614174000',
+      '2026-01-01T00:00:00.000Z',
+      '2026-01-01T00:00:00.000Z'
+    )
+    expect(result.title).toBe('Lo que dijo el profesor')
+  })
+})
+
+describe('db.listNotes', () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset()
+    vi.mocked(invoke).mockResolvedValue([mockNoteRow])
+  })
+
+  it('invoca list_notes sin args y parsea cada row', async () => {
+    const result = await listNotes()
+    expect(invoke).toHaveBeenCalledWith('list_notes')
+    expect(result).toHaveLength(1)
+    expect(result[0].description).toBe('Repasar capítulo 3')
+  })
+
+  it('tolera respuesta no-array devolviendo vacío', async () => {
+    vi.mocked(invoke).mockResolvedValue(null)
+    expect(await listNotes()).toEqual([])
+  })
+})
+
+describe('db.updateNote - shape hacia Rust', () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset()
+    vi.mocked(invoke).mockResolvedValue(mockNoteRow)
+  })
+
+  it('envía double-Option: title null limpia, ausente no toca', async () => {
+    await updateNote(
+      '123e4567-e89b-12d3-a456-426614174000',
+      { title: null, description: 'Nueva desc' },
+      '2026-07-05T00:00:00.000Z'
+    )
+    expect(invoke).toHaveBeenCalledWith('update_note', {
+      input: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: null,
+        description: 'Nueva desc',
+        color: undefined,
+        updated_at: '2026-07-05T00:00:00.000Z',
+      },
+    })
+  })
+
+  it('convierte título vacío a null (limpia título)', async () => {
+    await updateNote(
+      '123e4567-e89b-12d3-a456-426614174000',
+      { title: '   ' },
+      '2026-07-05T00:00:00.000Z'
+    )
+    const call = vi.mocked(invoke).mock.calls[0]
+    const input = (call[1] as { input: Record<string, unknown> }).input
+    expect(input.title).toBeNull()
+  })
+})
+
+describe('db.deleteNote', () => {
+  it('invoca delete_note con el id', async () => {
+    vi.mocked(invoke).mockReset()
+    vi.mocked(invoke).mockResolvedValue(undefined)
+    await deleteNote('123e4567-e89b-12d3-a456-426614174000')
+    expect(invoke).toHaveBeenCalledWith('delete_note', {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+    })
   })
 })

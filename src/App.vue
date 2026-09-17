@@ -13,6 +13,7 @@ import { useTheme } from '@/composables/useTheme'
 import HabitFormModal from '@/components/habits/HabitFormModal.vue'
 import TaskFormModal from '@/components/tasks/TaskFormModal.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
+import NoteFormModal from '@/components/notes/NoteFormModal.vue'
 import { usePomodoroStore } from '@/stores/pomodoro'
 
 const habits = useHabitsStore()
@@ -64,5 +65,6 @@ onBeforeUnmount(() => {
     <HabitFormModal />
     <TaskFormModal />
     <GoalFormModal />
+    <NoteFormModal />
   </div>
 </template>

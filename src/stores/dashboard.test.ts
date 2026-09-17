@@ -22,7 +22,7 @@ describe('dashboard store (grilla entera)', () => {
   it('carga el layout por defecto en enteros', async () => {
     const store = useDashboardStore()
     await flush()
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
     expect(store.layout[0].i).toBe('habits')
     expect(store.layout[0].x).toBe(0)
     expect(store.layout[0].y).toBe(0)
@@ -115,7 +115,7 @@ describe('dashboard store (grilla entera)', () => {
     vi.mocked(loadConfig).mockResolvedValue(JSON.stringify('not-an-array'))
     const store = useDashboardStore()
     await flush()
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
     expect(store.layout[0].i).toBe('habits')
   })
 
@@ -248,14 +248,14 @@ describe('dashboard store (grilla entera)', () => {
     const store = useDashboardStore()
     await flush()
     store.addWidget('habits')
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
   })
 
   it('elimina un widget del layout', async () => {
     const store = useDashboardStore()
     await flush()
     store.removeWidget('habits')
-    expect(store.layout).toHaveLength(4)
+    expect(store.layout).toHaveLength(5)
   })
 
   it('resetea al layout por defecto', async () => {

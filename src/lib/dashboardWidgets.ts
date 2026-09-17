@@ -4,6 +4,7 @@ import TasksWidget from '@/components/dashboard/TasksWidget.vue'
 import GoalsWidget from '@/components/dashboard/GoalsWidget.vue'
 import YearCalendarWidget from '@/components/dashboard/YearCalendarWidget.vue'
 import WeeklyScheduleWidget from '@/components/dashboard/WeeklyScheduleWidget.vue'
+import NotesWidget from '@/components/dashboard/NotesWidget.vue'
 import PomodoroWidget from '@/components/dashboard/PomodoroWidget.vue'
 
 export interface DashboardWidget {
@@ -93,6 +94,18 @@ export const widgets: DashboardWidget[] = [
     defaultY: 7,
     defaultW: 12,
     defaultH: 5,
+  },
+  {
+    id: 'notes',
+    title: 'Notas',
+    icon: 'sticky-note',
+    component: NotesWidget,
+    minW: 1,
+    minH: 2,
+    defaultX: 8,
+    defaultY: 7,
+    defaultW: 4,
+    defaultH: 3,
   },
 ]
 

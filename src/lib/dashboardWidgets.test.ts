@@ -25,6 +25,15 @@ describe('dashboardWidgets', () => {
     expect(widget?.defaultEnabled).toBe(false)
   })
 
+  it('expone el widget de Notas habilitado por defecto', () => {
+    const widget = getWidgetById('notes')
+    expect(widget).toBeDefined()
+    expect(widget?.title).toBe('Notas')
+    expect(widget?.defaultW).toBe(4)
+    expect(widget?.defaultH).toBe(3)
+    expect(widget?.defaultEnabled).not.toBe(false)
+  })
+
   it('cada widget tiene dimensiones por defecto válidas (celdas enteras)', () => {
     widgets.forEach((w) => {
       expect(w.minW).toBeGreaterThan(0)
