@@ -228,7 +228,7 @@ describe('dashboard store (grilla entera)', () => {
     expect(item!.x).toBe(0)
     expect(item!.y).toBe(4)
     expect(item!.w).toBe(12)
-    expect(item!.h).toBe(3)
+    expect(item!.h).toBe(2)
   })
 
   it("addWidget('tasks') con layout parcial: solo habits", async () => {
@@ -351,7 +351,7 @@ describe('dashboard store (grilla entera)', () => {
   it('addWidget coloca con tamaño mínimo cuando default size no cabe en ningún lado', async () => {
     const store = useDashboardStore()
     await flush()
-    store.updateLayout([{ i: 'habits', x: 0, y: 0, w: 12, h: 8 }])
+    store.updateLayout([{ i: 'habits', x: 0, y: 0, w: 12, h: 9 }])
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     store.addWidget('goals')
     const item = store.layout.find((i) => i.i === 'goals')
