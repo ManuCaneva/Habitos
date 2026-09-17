@@ -150,7 +150,8 @@
   padding: max(0.25rem, 0.6cqw) max(0.5rem, 1.2cqw);
 }
 .container-widget .tasks-header-responsive,
-.container-widget .goals-header-responsive {
+.container-widget .goals-header-responsive,
+.container-widget .notes-header-responsive {
   padding: max(0.25rem, 0.6cqw) max(0.5rem, 1.2cqw);
 }
 
@@ -219,14 +220,16 @@
 /* New-entity cards */
 .container-widget .new-habit-card,
 .container-widget .new-task-card,
-.container-widget .new-goal-card {
+.container-widget .new-goal-card,
+.container-widget .new-note-card {
   min-height: max(2rem, 5cqw);
   padding: max(0.25rem, 0.6cqw);
   gap: max(0.125rem, 0.4cqw);
 }
 .container-widget .new-habit-card .new-habit-card-icon,
 .container-widget .new-task-card .new-task-card-icon,
-.container-widget .new-goal-card .new-goal-card-icon {
+.container-widget .new-goal-card .new-goal-card-icon,
+.container-widget .new-note-card .new-note-card-icon {
   width: max(0.625rem, 2.2cqw);
   height: max(0.625rem, 2.2cqw);
 }
