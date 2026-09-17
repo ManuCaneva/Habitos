@@ -108,24 +108,27 @@
 
 /* ===== Widget-responsive scaling (cqw = % of container width) ===== */
 
-/* Typography: scales with widget width, clamped to minimum for legibility */
+/* Typography: scales with widget width, clamped to the design system
+   range — the ceiling of each variant is its default size in
+   tailwind.config.ts, so scaling only shrinks on small widgets and
+   never grows past the normal size on wide ones. */
 .container-widget .text-card-title {
-  font-size: max(0.875rem, 2.3cqw);
+  font-size: clamp(0.875rem, 2.3cqw, 1.375rem);
 }
 .container-widget .text-body {
-  font-size: max(0.75rem, 2.5cqw);
+  font-size: clamp(0.75rem, 2.5cqw, 1rem);
 }
 .container-widget .text-body-sm {
-  font-size: max(0.6875rem, 2.2cqw);
+  font-size: clamp(0.6875rem, 2.2cqw, 0.875rem);
 }
 .container-widget .text-body-lg {
-  font-size: max(0.8125rem, 2.5cqw);
+  font-size: clamp(0.8125rem, 2.5cqw, 1.125rem);
 }
 .container-widget .text-caption {
-  font-size: max(0.625rem, 2cqw);
+  font-size: clamp(0.625rem, 2cqw, 0.75rem);
 }
 .container-widget .text-subhead {
-  font-size: max(0.8125rem, 2.3cqw);
+  font-size: clamp(0.8125rem, 2.3cqw, 1.25rem);
 }
 
 /* Card spacing */
@@ -265,7 +268,7 @@
   padding: max(0.25rem, 0.5cqw) max(0.5rem, 1cqw);
 }
 .container-widget .schedule-widget-header .text-card-title {
-  font-size: max(0.75rem, 2cqw);
+  font-size: clamp(0.75rem, 2cqw, 1.375rem);
 }
 .container-widget .schedule-widget-header .h-3\.5 {
   width: max(0.75rem, 2cqw);
