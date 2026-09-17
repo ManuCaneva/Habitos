@@ -1,9 +1,21 @@
 <div align="center">
-  <h1>AEON</h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="src/assets/logo/logo-wordmark-white-1024.png">
+    <img src="src/assets/logo/logo-wordmark-dark-1024.png" width="300" alt="AEON">
+  </picture>
   <p>Dashboard de productividad <strong>local-first</strong> para escritorio.</p>
 </div>
 
 AEON reúne hábitos, tareas, objetivos, cronograma semanal, calendario anual y pomodoro en un solo dashboard configurable. Tus datos viven en tu máquina: sin cuentas, sin servidores y sin suscripción.
+
+## Descargar
+
+[![Release](https://img.shields.io/github/v/release/ManuCaneva/Habitos)](https://github.com/ManuCaneva/Habitos/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-Download-0078D4?logo=windows)](https://github.com/ManuCaneva/Habitos/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-Download-000000?logo=apple)](https://github.com/ManuCaneva/Habitos/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-Download-FCC624?logo=linux)](https://github.com/ManuCaneva/Habitos/releases/latest)
+
+Los instaladores de cada sistema operativo están en la [página de releases](https://github.com/ManuCaneva/Habitos/releases/latest). La app no está firmada: Windows puede mostrar un aviso de SmartScreen y macOS puede pedir clic derecho → **Abrir** la primera vez.
 
 ## Qué incluye
 
@@ -63,16 +75,20 @@ npm run build         # typecheck + build de producción
 npm run test:perf     # presupuesto de rendimiento del dashboard
 ```
 
+### Releases
+
+Pushear un tag dispara el workflow de GitHub Actions que compila y publica los instaladores (Windows, macOS Intel y Apple Silicon, Linux) en [releases](https://github.com/ManuCaneva/Habitos/releases):
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+La versión del tag tiene que matchear `version` en `src-tauri/tauri.conf.json`.
+
 ## Roadmap
 
-**Hoy**
-
-- [x] Dashboard configurable con drag, resize y widgets
-- [x] Hábitos con rachas, heatmap y multi-check-in progresivo
-- [x] Tareas y objetivos con persistencia local
-- [x] Cronograma semanal y calendario anual
-- [x] Pomodoro
-- [x] Temas claro, oscuro y Popi
+La v1.0.0 incluye todo lo listado en **Qué incluye**, estable en `main`.
 
 **Próximo**
 
