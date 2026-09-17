@@ -192,6 +192,7 @@ watch(
 <template>
   <Container
     variant="default"
+    glass
     padding="none"
     class="h-full overflow-hidden"
     data-testid="year-calendar-widget"

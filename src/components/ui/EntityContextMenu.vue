@@ -56,7 +56,7 @@ onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
         left: `${position.left}px`,
         zIndex: 50,
       }"
-      class="w-44 animate-fade-in rounded-lg border border-hairline-strong bg-surface-2 py-1 shadow-xl"
+      class="glass-overlay w-44 animate-fade-in rounded-lg py-1 shadow-xl"
       role="menu"
     >
       <button

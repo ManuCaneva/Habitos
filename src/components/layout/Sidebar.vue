@@ -114,7 +114,7 @@ const rowActive = 'bg-surface-3 text-ink'
 <template>
   <aside
     :class="[
-      'flex h-full flex-col rounded-xl border border-hairline bg-surface-1 transition-[width] duration-150 ease-out',
+      'glass-strong flex h-full flex-col rounded-xl transition-[width] duration-150 ease-out',
       ui.sidebarCollapsed ? 'w-14' : 'w-44',
     ]"
     @transitionend="handleTransitionEnd"

@@ -55,6 +55,55 @@
     @apply rounded-sm border border-hairline bg-surface-2/60 backdrop-blur-sm;
   }
 
+  /* ── Glassmorphism (issue #72) ─────────────────────────────
+     Paneles translúcidos sobre la capa de wallpaper. El fondo
+     llega pre-desenfocado (blur en WallpaperLayer), así que los
+     widgets del dashboard NO usan backdrop-filter (ADR 0004).
+     Los overlays sí: son chicos y flotan sobre contenido. */
+
+  /* Shell: sidebar, panel contenedor de contenido */
+  .glass-strong {
+    @apply border border-hairline bg-surface-1/65;
+  }
+
+  /* Widgets del dashboard: translucidez sutil, sin blur */
+  .glass-soft {
+    @apply border border-hairline bg-surface-1/90;
+  }
+
+  /* Overlays flotantes (modales, context menus, dropdowns):
+     translucidez intermedia + blur real */
+  .glass-overlay {
+    @apply border border-hairline bg-surface-1/80 backdrop-blur-md;
+  }
+
+  /* Gradiente de fábrica del wallpaper: primario/accent a baja
+     alpha sobre canvas, estático (costo de GPU ~cero). */
+  .wallpaper-fallback {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgb(var(--color-primary) / 0.1), transparent 60%),
+      radial-gradient(
+        ellipse 70% 50% at 85% 100%,
+        rgb(var(--color-accent-green) / 0.08),
+        transparent 55%
+      ),
+      linear-gradient(rgb(var(--color-canvas)), rgb(var(--color-canvas)));
+  }
+
+  /* Scrim del color del canvas sobre el wallpaper (contraste).
+     El alpha via opacity para ser testeable en happy-dom. */
+  .wallpaper-scrim {
+    background-color: rgb(var(--color-canvas));
+    opacity: 0.55;
+  }
+
+  /* Blur de la imagen de fondo: pre-desenfoque en la capa de
+     wallpaper, nunca backdrop-filter sobre paneles de contenido. */
+  .wallpaper-image-blur {
+    filter: blur(24px);
+    transform: scale(1.1);
+  }
+
   .display-xl,
   .display-lg,
   .display-md,

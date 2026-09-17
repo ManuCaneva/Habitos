@@ -15,6 +15,7 @@ import TaskFormModal from '@/components/tasks/TaskFormModal.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
 import NoteFormModal from '@/components/notes/NoteFormModal.vue'
 import { usePomodoroStore } from '@/stores/pomodoro'
+import WallpaperLayer from '@/components/layout/WallpaperLayer.vue'
 
 const habits = useHabitsStore()
 const tasks = useTasksStore()
@@ -27,6 +28,7 @@ useTheme()
 let pomodoroTicker: ReturnType<typeof setInterval> | undefined
 
 onMounted(async () => {
+  ui.loadWallpaper()
   await habits.loadInitialData()
   await tasks.loadTasks()
   await goals.loadGoals()
@@ -48,12 +50,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-screen gap-3 overflow-hidden bg-canvas p-3 text-ink">
+  <div class="relative isolate flex h-screen gap-3 overflow-hidden bg-canvas p-3 text-ink">
+    <WallpaperLayer :url="ui.wallpaperUrl" />
+
     <Sidebar />
 
-    <div
-      class="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-hairline bg-canvas"
-    >
+    <div class="glass-strong flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl">
       <div class="min-h-0 flex-1 overflow-hidden p-4">
         <DashboardView v-if="ui.viewMode === 'dashboard'" />
         <ArchivedView v-else-if="ui.viewMode === 'archived'" />

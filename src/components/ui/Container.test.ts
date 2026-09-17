@@ -15,6 +15,16 @@ describe('Container', () => {
     expect(wrapper.classes()).toContain('p-3')
   })
 
+  it('glass=true: usa la clase glass-soft en vez de bg-surface-1 (sin blur)', () => {
+    const wrapper = mount(Container, {
+      props: { glass: true },
+      slots: { default: 'x' },
+    })
+    expect(wrapper.classes()).toContain('glass-soft')
+    expect(wrapper.classes()).not.toContain('bg-surface-1')
+    expect(wrapper.classes()).not.toContain('backdrop-blur')
+  })
+
   it('variant=ghost: fondo transparente, sin border', () => {
     const wrapper = mount(Container, {
       props: { variant: 'ghost' },

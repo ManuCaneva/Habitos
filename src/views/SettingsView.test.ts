@@ -93,6 +93,10 @@ vi.mock('@/stores/calendar', () => ({
   useCalendarStore: () => mockCalendarStore,
 }))
 
+vi.mock('@/components/settings/WallpaperCard.vue', () => ({
+  default: { template: '<div data-testid="mock-wallpaper-card" />' },
+}))
+
 describe('SettingsView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -218,6 +222,11 @@ describe('SettingsView', () => {
       'Integraciones',
       'Datos',
     ])
+  })
+
+  it('la sección Apariencia incluye la card de Fondo', () => {
+    const wrapper = mount(SettingsView)
+    expect(wrapper.find("[data-testid='mock-wallpaper-card']").exists()).toBe(true)
   })
 
   it('no usa colores de paleta crudos de Tailwind', () => {

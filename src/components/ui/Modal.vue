@@ -36,7 +36,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
       >
         <div
           :class="[
-            'w-full overflow-hidden rounded-xl border border-hairline bg-surface-1 shadow-2xl ring-1 ring-hairline-strong/20',
+            'glass-overlay w-full overflow-hidden rounded-xl shadow-2xl ring-1 ring-hairline-strong/20',
             size === 'sm' ? 'max-w-sm' : size === 'lg' ? 'max-w-2xl' : 'max-w-md',
           ]"
           role="dialog"

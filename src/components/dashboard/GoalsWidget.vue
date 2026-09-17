@@ -7,6 +7,7 @@ import GoalsListView from '@/views/GoalsListView.vue'
   <Container
     data-testid="goals-widget"
     variant="default"
+    glass
     padding="none"
     class="container-widget h-full overflow-hidden"
     style="container-type: size"

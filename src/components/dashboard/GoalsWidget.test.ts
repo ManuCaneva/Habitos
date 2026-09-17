@@ -18,7 +18,7 @@ describe('GoalsWidget', () => {
   it("should use Container with variant='default' and padding='none'", () => {
     const wrapper = mount(GoalsWidget)
     const widget = wrapper.find("[data-testid='goals-widget']")
-    expect(widget.classes()).toContain('bg-surface-1')
+    expect(widget.classes()).toContain('glass-soft')
     expect(widget.classes()).toContain('border')
   })
 

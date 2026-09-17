@@ -37,6 +37,8 @@ vi.mock('@/stores/ui', () => ({
     viewMode: 'dashboard',
     editMode: false,
     sidebarCollapsed: false,
+    wallpaperUrl: null,
+    loadWallpaper: vi.fn(),
   }),
 }))
 

@@ -137,7 +137,7 @@ describe('YearCalendarWidget', () => {
     const wrapper = mount(YearCalendarWidget)
     const container = wrapper.find("[data-testid='year-calendar-widget']")
     expect(container.exists()).toBe(true)
-    expect(container.classes()).toContain('bg-surface-1')
+    expect(container.classes()).toContain('glass-soft')
     expect(container.classes()).toContain('border-hairline')
   })
 

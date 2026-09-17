@@ -55,6 +55,7 @@ onBeforeUnmount(() => {
   <Container
     data-testid="pomodoro-widget"
     variant="default"
+    glass
     padding="none"
     class="container-widget flex h-full flex-col overflow-hidden"
     style="container-type: inline-size"

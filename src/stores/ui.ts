@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { migrateStorageKey } from '@/lib/storageKey'
+import * as db from '@/lib/db'
+import { WallpaperSettingsSchema, parseWallpaperSettingsJson } from '@/schemas/wallpaper'
+
+export const WALLPAPER_SETTINGS_KEY = 'wallpaper-settings'
 
 export type ViewMode = 'dashboard' | 'archived' | 'pomodoro' | 'settings'
 
@@ -105,6 +109,25 @@ export const useUiStore = defineStore('ui', () => {
     editMode.value = !editMode.value
   }
 
+  const wallpaperUrl = ref<string | null>(null)
+
+  async function loadWallpaper(): Promise<void> {
+    const raw = await db.loadConfig(WALLPAPER_SETTINGS_KEY)
+    wallpaperUrl.value = parseWallpaperSettingsJson(raw).dataUrl
+  }
+
+  async function setWallpaper(dataUrl: string): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({ dataUrl })
+    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+    wallpaperUrl.value = settings.dataUrl
+  }
+
+  async function removeWallpaper(): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({ dataUrl: null })
+    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+    wallpaperUrl.value = settings.dataUrl
+  }
+
   return {
     viewMode,
     sidebarCollapsed,
@@ -128,6 +151,10 @@ export const useUiStore = defineStore('ui', () => {
     setViewMode,
     toggleSidebar,
     toggleEditMode,
+    wallpaperUrl,
+    loadWallpaper,
+    setWallpaper,
+    removeWallpaper,
     openCreate: habits.openCreate,
     openEdit: habits.openEdit,
     closeModal: habits.closeModal,

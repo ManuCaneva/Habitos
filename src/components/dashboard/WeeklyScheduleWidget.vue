@@ -25,6 +25,7 @@ function openEdit(b: ScheduleBlockWithSlots) {
 <template>
   <Container
     variant="default"
+    glass
     padding="none"
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"

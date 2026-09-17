@@ -4,6 +4,7 @@ import { Check, ChevronDown } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
 import { useCalendarStore } from '@/stores/calendar'
 import GcalVisibilityCard from '@/components/calendar/GcalVisibilityCard.vue'
+import WallpaperCard from '@/components/settings/WallpaperCard.vue'
 import Card from '@/components/ui/Card.vue'
 import Text from '@/components/ui/Text.vue'
 import Heading from '@/components/ui/Heading.vue'
@@ -83,7 +84,7 @@ async function handleDisconnect() {
             </button>
             <div
               v-if="dropdownOpen"
-              class="absolute right-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-lg border border-hairline-strong bg-surface-2 py-1 shadow-xl"
+              class="glass-overlay absolute right-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-lg py-1 shadow-xl"
             >
               <button
                 v-for="t in themes"
@@ -103,6 +104,7 @@ async function handleDisconnect() {
           </div>
         </div>
       </Card>
+      <WallpaperCard />
     </section>
 
     <section class="flex flex-col gap-3">

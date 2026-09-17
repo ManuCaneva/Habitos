@@ -62,7 +62,7 @@ describe('HabitsWidget', () => {
   it('usa los estilos de superficie del design system', () => {
     const wrapper = mount(HabitsWidget)
     const el = wrapper.find("[data-testid='habits-widget']")
-    expect(el.classes()).toContain('bg-surface-1')
+    expect(el.classes()).toContain('glass-soft')
     expect(el.classes()).toContain('border-hairline')
     expect(el.classes()).toContain('rounded-lg')
     expect(el.classes()).toContain('h-full')

@@ -7,6 +7,7 @@ import NotesListView from '@/views/NotesListView.vue'
   <Container
     data-testid="notes-widget"
     variant="default"
+    glass
     padding="none"
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"

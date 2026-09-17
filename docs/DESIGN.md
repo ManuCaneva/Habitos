@@ -163,6 +163,23 @@ El canvas cálido es el espacio en blanco. Las secciones se separan por elevaci�
 
 La profundidad se lleva con **escalera de surfaces + hairlines**, no con sombras. Las sombras (`shadow-sm`, `shadow-xl`, `shadow-2xl`) se usan solo en elementos genuinamente flotantes sobre otros (modales, menús, dropdowns, thumbs) y son sutiles.
 
+### Glass & Wallpaper (excepción controlada al whitespace)
+
+La app soporta un fondo configurable en dos capas que se monta detrás del shell (`WallpaperLayer` en `App.vue`):
+
+1. **Wallpaper del usuario**: imagen elegida desde Settings ("Fondo"), persistida como data URL en el KV (`wallpaper-settings`). Se muestra estática, pre-desenfocada (`filter: blur(24px)` **en la capa de fondo**, nunca `backdrop-filter` sobre paneles de contenido: el dashboard repinta la grilla y el blur en cascada es carísimo) y con un **scrim** `bg-canvas` al 55% de alpha para contraste.
+2. **Fallback de fábrica**: sin imagen, el gradiente `.wallpaper-fallback` (primario/accent a baja alpha sobre canvas) da el efecto glass desde el primer arranque. Estático, costo de GPU ~cero.
+
+Sobre ese fondo, los paneles ganan translucidez con tres clases en `src/styles/tailwind.css`:
+
+| Clase | Tratamiento | Uso |
+|---|---|---|
+| `.glass-strong` | `bg-surface-1/65` + hairline | Sidebar, panel contenedor de contenido |
+| `.glass-soft` | `bg-surface-1/90` + hairline, **sin blur** | Widgets del dashboard (Container `glass`) |
+| `.glass-overlay` | `bg-surface-1/80` + `backdrop-blur-md` | Overlays: modales, context menus, dropdown de temas |
+
+Los overlays usan blur real porque son chicos y flotan sobre contenido; los widgets no (el fondo ya llega pre-borroso). Todo el color sale de tokens CSS vars, así el glass se adapta a los tres temas sin tocar valores. El usuario puede quitar el wallpaper desde Settings y vuelve al gradiente.
+
 ## Motion
 
 El movimiento sigue las reglas del ADR 0004 (`docs/adr/0004-dashboard-css-grid-nativo-presupuesto-ci.md`) y **no cambia** en el rediseño:
