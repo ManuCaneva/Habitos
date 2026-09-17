@@ -44,12 +44,44 @@ describe('WallpaperSettingsSchema', () => {
     expect(() => WallpaperSettingsSchema.parse({ dataUrl: 42 })).toThrow()
     expect(() => WallpaperSettingsSchema.parse(null)).toThrow()
   })
+
+  it('widgetGlassAlpha tiene 0.8 por defecto', () => {
+    const result = WallpaperSettingsSchema.parse({})
+    expect(result.widgetGlassAlpha).toBe(0.8)
+    expect(defaultWallpaperSettings.widgetGlassAlpha).toBe(0.8)
+  })
+
+  it('acepta widgetGlassAlpha en el rango 0.5-1', () => {
+    expect(WallpaperSettingsSchema.parse({ widgetGlassAlpha: 0.5 }).widgetGlassAlpha).toBe(0.5)
+    expect(WallpaperSettingsSchema.parse({ widgetGlassAlpha: 1 }).widgetGlassAlpha).toBe(1)
+    expect(WallpaperSettingsSchema.parse({ widgetGlassAlpha: 0.65 }).widgetGlassAlpha).toBe(0.65)
+  })
+
+  it('rechaza widgetGlassAlpha fuera del rango o no numérico', () => {
+    expect(() => WallpaperSettingsSchema.parse({ widgetGlassAlpha: 0.49 })).toThrow()
+    expect(() => WallpaperSettingsSchema.parse({ widgetGlassAlpha: 1.01 })).toThrow()
+    expect(() => WallpaperSettingsSchema.parse({ widgetGlassAlpha: '0.8' })).toThrow()
+  })
+
+  it('completa widgetGlassAlpha al parsear configs viejas que solo tienen dataUrl', () => {
+    const result = WallpaperSettingsSchema.parse({ dataUrl: pngDataUrl })
+    expect(result.widgetGlassAlpha).toBe(0.8)
+    expect(result.dataUrl).toBe(pngDataUrl)
+  })
 })
 
 describe('parseWallpaperSettingsJson', () => {
   it('parsea JSON válido con data URL de imagen', () => {
     const json = JSON.stringify({ dataUrl: pngDataUrl })
-    expect(parseWallpaperSettingsJson(json)).toEqual({ dataUrl: pngDataUrl })
+    expect(parseWallpaperSettingsJson(json)).toEqual({
+      dataUrl: pngDataUrl,
+      widgetGlassAlpha: 0.8,
+    })
+  })
+
+  it('parsea JSON con alpha persistido', () => {
+    const json = JSON.stringify({ dataUrl: null, widgetGlassAlpha: 0.6 })
+    expect(parseWallpaperSettingsJson(json)).toEqual({ dataUrl: null, widgetGlassAlpha: 0.6 })
   })
 
   it('devuelve el default con JSON null', () => {
@@ -62,6 +94,9 @@ describe('parseWallpaperSettingsJson', () => {
       defaultWallpaperSettings
     )
     expect(parseWallpaperSettingsJson(JSON.stringify({ dataUrl: 123 }))).toEqual(
+      defaultWallpaperSettings
+    )
+    expect(parseWallpaperSettingsJson(JSON.stringify({ widgetGlassAlpha: 2 }))).toEqual(
       defaultWallpaperSettings
     )
   })

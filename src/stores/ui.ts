@@ -3,7 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { migrateStorageKey } from '@/lib/storageKey'
 import * as db from '@/lib/db'
-import { WallpaperSettingsSchema, parseWallpaperSettingsJson } from '@/schemas/wallpaper'
+import {
+  WallpaperSettingsSchema,
+  parseWallpaperSettingsJson,
+  defaultWallpaperSettings,
+  type WallpaperSettings,
+} from '@/schemas/wallpaper'
 
 export const WALLPAPER_SETTINGS_KEY = 'wallpaper-settings'
 
@@ -110,22 +115,50 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   const wallpaperUrl = ref<string | null>(null)
+  const widgetGlassAlpha = ref(defaultWallpaperSettings.widgetGlassAlpha)
+
+  function applyGlassAlphaVar(alpha: number): void {
+    document.documentElement.style.setProperty('--glass-widget-alpha', String(alpha))
+  }
+
+  async function persistWallpaperSettings(settings: WallpaperSettings): Promise<void> {
+    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+  }
 
   async function loadWallpaper(): Promise<void> {
     const raw = await db.loadConfig(WALLPAPER_SETTINGS_KEY)
-    wallpaperUrl.value = parseWallpaperSettingsJson(raw).dataUrl
+    const settings = parseWallpaperSettingsJson(raw)
+    wallpaperUrl.value = settings.dataUrl
+    widgetGlassAlpha.value = settings.widgetGlassAlpha
+    applyGlassAlphaVar(settings.widgetGlassAlpha)
   }
 
   async function setWallpaper(dataUrl: string): Promise<void> {
-    const settings = WallpaperSettingsSchema.parse({ dataUrl })
-    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl,
+      widgetGlassAlpha: widgetGlassAlpha.value,
+    })
+    await persistWallpaperSettings(settings)
     wallpaperUrl.value = settings.dataUrl
   }
 
   async function removeWallpaper(): Promise<void> {
-    const settings = WallpaperSettingsSchema.parse({ dataUrl: null })
-    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl: null,
+      widgetGlassAlpha: widgetGlassAlpha.value,
+    })
+    await persistWallpaperSettings(settings)
     wallpaperUrl.value = settings.dataUrl
+  }
+
+  async function setWidgetGlassAlpha(alpha: number): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl: wallpaperUrl.value,
+      widgetGlassAlpha: alpha,
+    })
+    await persistWallpaperSettings(settings)
+    widgetGlassAlpha.value = settings.widgetGlassAlpha
+    applyGlassAlphaVar(settings.widgetGlassAlpha)
   }
 
   return {
@@ -152,9 +185,11 @@ export const useUiStore = defineStore('ui', () => {
     toggleSidebar,
     toggleEditMode,
     wallpaperUrl,
+    widgetGlassAlpha,
     loadWallpaper,
     setWallpaper,
     removeWallpaper,
+    setWidgetGlassAlpha,
     openCreate: habits.openCreate,
     openEdit: habits.openEdit,
     closeModal: habits.closeModal,

@@ -9,6 +9,8 @@ const imageDataUrl = z
 
 export const WallpaperSettingsSchema = z.object({
   dataUrl: imageDataUrl.nullable().default(null),
+  // Translucidez de los widgets del dashboard (glass-soft): 1 = opaco.
+  widgetGlassAlpha: z.number().min(0.5).max(1).default(0.8),
 })
 export type WallpaperSettings = z.infer<typeof WallpaperSettingsSchema>
 
@@ -19,7 +21,7 @@ export function parseWallpaperSettingsJson(raw: string | null | undefined): Wall
   try {
     const parsed = WallpaperSettingsSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) return defaultWallpaperSettings
-    return { dataUrl: parsed.data.dataUrl }
+    return { dataUrl: parsed.data.dataUrl, widgetGlassAlpha: parsed.data.widgetGlassAlpha }
   } catch {
     return defaultWallpaperSettings
   }

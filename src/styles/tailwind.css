@@ -66,9 +66,12 @@
     @apply border border-hairline bg-surface-1/65;
   }
 
-  /* Widgets del dashboard: translucidez sutil, sin blur */
+  /* Widgets del dashboard: translucidez sutil, sin blur.
+     El alpha lo controla el usuario desde Settings (ui store
+     setea --glass-widget-alpha en :root); default 0.8. */
   .glass-soft {
-    @apply border border-hairline bg-surface-1/80;
+    border-color: rgb(var(--color-hairline));
+    background-color: rgb(var(--color-surface-1) / var(--glass-widget-alpha, 0.8));
   }
 
   /* Overlays flotantes (modales, context menus, dropdowns):

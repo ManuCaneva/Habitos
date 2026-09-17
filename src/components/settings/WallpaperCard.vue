@@ -43,6 +43,14 @@ async function onRemove() {
   error.value = null
   await ui.removeWallpaper()
 }
+
+function onAlphaChange(event: Event) {
+  const value = Number((event.target as HTMLInputElement).value)
+  if (Number.isNaN(value)) return
+  ui.setWidgetGlassAlpha(value).catch(() => {
+    error.value = 'No se pudo guardar la translucidez. Intentá de nuevo.'
+  })
+}
 </script>
 
 <template>
@@ -79,6 +87,25 @@ async function onRemove() {
         >
           Quitar
         </Button>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label class="flex items-center justify-between gap-2" for="glass-alpha">
+          <Text variant="body-sm" color="muted">Translucidez de los widgets</Text>
+          <Text variant="body-sm" color="muted" class="tabular-nums">
+            {{ Math.round(ui.widgetGlassAlpha * 100) }}%
+          </Text>
+        </label>
+        <input
+          id="glass-alpha"
+          type="range"
+          min="0.5"
+          max="1"
+          step="0.05"
+          :value="ui.widgetGlassAlpha"
+          data-testid="glass-alpha-slider"
+          @change="onAlphaChange"
+        />
       </div>
 
       <Text v-if="error" variant="caption" color="subtle" data-testid="wallpaper-error">

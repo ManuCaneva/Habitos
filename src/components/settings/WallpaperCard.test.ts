@@ -19,8 +19,10 @@ const PNG_DATA_URL =
 
 const uiMock = {
   wallpaperUrl: null as string | null,
+  widgetGlassAlpha: 0.8,
   setWallpaper: vi.fn().mockResolvedValue(undefined),
   removeWallpaper: vi.fn().mockResolvedValue(undefined),
+  setWidgetGlassAlpha: vi.fn().mockResolvedValue(undefined),
 }
 
 vi.mock('@/stores/ui', () => ({
@@ -46,8 +48,10 @@ describe('WallpaperCard', () => {
     vi.clearAllMocks()
     vi.mocked(fileToDataUrl).mockResolvedValue(PNG_DATA_URL)
     uiMock.wallpaperUrl = null
+    uiMock.widgetGlassAlpha = 0.8
     uiMock.setWallpaper.mockClear().mockResolvedValue(undefined)
     uiMock.removeWallpaper.mockClear().mockResolvedValue(undefined)
+    uiMock.setWidgetGlassAlpha.mockClear().mockResolvedValue(undefined)
   })
 
   it('muestra botón subir y no muestra quitar sin wallpaper', () => {
@@ -115,6 +119,29 @@ describe('WallpaperCard', () => {
     await w.vm.$nextTick()
     expect(w.text()).toContain('guardar')
     expect(w.text()).not.toContain('leer')
+  })
+
+  it('muestra el slider de translucidez con el valor del store', () => {
+    uiMock.widgetGlassAlpha = 0.7
+    const w = mount(WallpaperCard)
+    const slider = w.find("[data-testid='glass-alpha-slider']")
+    expect(slider.exists()).toBe(true)
+    expect((slider.element as HTMLInputElement).value).toBe('0.7')
+    expect((slider.element as HTMLInputElement).min).toBe('0.5')
+    expect((slider.element as HTMLInputElement).max).toBe('1')
+    expect(w.text()).toContain('70')
+  })
+
+  it('mover el slider llama setWidgetGlassAlpha con el nuevo valor', async () => {
+    const w = mount(WallpaperCard)
+    const slider = w.find("[data-testid='glass-alpha-slider']")
+    await slider.setValue('0.55')
+    expect(uiMock.setWidgetGlassAlpha).toHaveBeenCalledWith(0.55)
+  })
+
+  it('el slider no aparece como input numérico sino de rango', () => {
+    const w = mount(WallpaperCard)
+    expect(w.find("[data-testid='glass-alpha-slider']").attributes('type')).toBe('range')
   })
 
   it('no usa colores de paleta crudos de Tailwind', () => {

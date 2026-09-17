@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import * as db from '@/lib/db'
 import { useUiStore } from './ui'
-import { defaultWallpaperSettings } from '@/schemas/wallpaper'
 
 vi.mock('@/lib/db', () => ({
   loadConfig: vi.fn().mockResolvedValue(null),
@@ -53,9 +52,20 @@ describe('ui store: wallpaper', () => {
     await ui.setWallpaper(PNG_DATA_URL)
     expect(db.saveConfig).toHaveBeenCalledWith(
       'wallpaper-settings',
-      JSON.stringify({ dataUrl: PNG_DATA_URL })
+      JSON.stringify({ dataUrl: PNG_DATA_URL, widgetGlassAlpha: 0.8 })
     )
     expect(ui.wallpaperUrl).toBe(PNG_DATA_URL)
+  })
+
+  it('setWallpaper preserva el alpha de widgets configurado', async () => {
+    const ui = useUiStore()
+    await ui.setWidgetGlassAlpha(0.6)
+    vi.mocked(db.saveConfig).mockClear()
+    await ui.setWallpaper(PNG_DATA_URL)
+    expect(db.saveConfig).toHaveBeenCalledWith(
+      'wallpaper-settings',
+      JSON.stringify({ dataUrl: PNG_DATA_URL, widgetGlassAlpha: 0.6 })
+    )
   })
 
   it('removeWallpaper persiste null y limpia el estado', async () => {
@@ -65,9 +75,50 @@ describe('ui store: wallpaper', () => {
     await ui.removeWallpaper()
     expect(db.saveConfig).toHaveBeenCalledWith(
       'wallpaper-settings',
-      JSON.stringify(defaultWallpaperSettings)
+      JSON.stringify({ dataUrl: null, widgetGlassAlpha: 0.8 })
     )
     expect(ui.wallpaperUrl).toBeNull()
+  })
+
+  it('arranca con widgetGlassAlpha 0.8', () => {
+    const ui = useUiStore()
+    expect(ui.widgetGlassAlpha).toBe(0.8)
+  })
+
+  it('loadWallpaper restaura el alpha persistido y lo aplica como CSS var', async () => {
+    vi.mocked(db.loadConfig).mockResolvedValue(
+      JSON.stringify({ dataUrl: null, widgetGlassAlpha: 0.55 })
+    )
+    const ui = useUiStore()
+    await ui.loadWallpaper()
+    expect(ui.widgetGlassAlpha).toBe(0.55)
+    expect(document.documentElement.style.getPropertyValue('--glass-widget-alpha')).toBe('0.55')
+  })
+
+  it('loadWallpaper aplica el default 0.8 como CSS var cuando no hay config', async () => {
+    document.documentElement.style.removeProperty('--glass-widget-alpha')
+    const ui = useUiStore()
+    await ui.loadWallpaper()
+    expect(ui.widgetGlassAlpha).toBe(0.8)
+    expect(document.documentElement.style.getPropertyValue('--glass-widget-alpha')).toBe('0.8')
+  })
+
+  it('setWidgetGlassAlpha persiste y actualiza la CSS var', async () => {
+    const ui = useUiStore()
+    await ui.setWidgetGlassAlpha(0.7)
+    expect(db.saveConfig).toHaveBeenCalledWith(
+      'wallpaper-settings',
+      JSON.stringify({ dataUrl: null, widgetGlassAlpha: 0.7 })
+    )
+    expect(ui.widgetGlassAlpha).toBe(0.7)
+    expect(document.documentElement.style.getPropertyValue('--glass-widget-alpha')).toBe('0.7')
+  })
+
+  it('setWidgetGlassAlpha rechaza valores fuera de rango y no persiste', async () => {
+    const ui = useUiStore()
+    await expect(ui.setWidgetGlassAlpha(0.3)).rejects.toThrow()
+    expect(db.saveConfig).not.toHaveBeenCalled()
+    expect(ui.widgetGlassAlpha).toBe(0.8)
   })
 
   it('setWallpaper rechaza una data URL no imagen y no persiste', async () => {
