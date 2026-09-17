@@ -10,34 +10,44 @@ import {
   Timer,
 } from 'lucide-vue-next'
 import { useUiStore, type ViewMode } from '@/stores/ui'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 import Text from '@/components/ui/Text.vue'
 import logoWordmark from '@/assets/logo/logo-wordmark-current.svg?raw'
 
 const ui = useUiStore()
+const { transitioning, start, end, onEnd } = useLayoutTransition()
 
-const SETTLE_DELAY_MS = 200
-
+// El layout colapsado final (labels ocultos, filas centradas) se aplica cuando
+// la transición de width termina de verdad: escuchamos transitionend en el
+// panel y, si no llega (pestaña oculta, interrupción), el fallback del
+// composable asienta el estado igual. Toggle rápido cancela el settle previo.
 const settled = ref(ui.sidebarCollapsed)
-let settleTimer: ReturnType<typeof setTimeout> | undefined
+let stopSettle: (() => void) | undefined
 
 watch(
   () => ui.sidebarCollapsed,
   (collapsed) => {
-    if (settleTimer) {
-      clearTimeout(settleTimer)
-      settleTimer = undefined
-    }
+    stopSettle?.()
+    stopSettle = undefined
     settled.value = false
-    if (!collapsed) return
-    settleTimer = setTimeout(() => {
-      settled.value = true
-      settleTimer = undefined
-    }, SETTLE_DELAY_MS)
+    start()
+    stopSettle = onEnd(() => {
+      settled.value = collapsed
+      stopSettle = undefined
+    })
   }
 )
 
+function handleTransitionEnd(event: TransitionEvent) {
+  if (event.propertyName !== 'width') return
+  if (!transitioning.value) return
+  end()
+}
+
 onBeforeUnmount(() => {
-  if (settleTimer) clearTimeout(settleTimer)
+  stopSettle?.()
+  stopSettle = undefined
+  end()
 })
 
 interface NavRow {
@@ -105,6 +115,7 @@ const rowActive = 'bg-surface-3 text-ink'
       'flex h-full flex-col rounded-xl border border-hairline bg-surface-1 transition-[width] duration-150 ease-out',
       ui.sidebarCollapsed ? 'w-14' : 'w-44',
     ]"
+    @transitionend="handleTransitionEnd"
   >
     <div
       data-testid="sidebar-header"

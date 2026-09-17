@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
 import { hasRawPaletteColor } from '@/test/colorGuard'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 
 function defaultBlocksWithSlots() {
   return [
@@ -113,6 +114,9 @@ describe('WeeklyScheduleGrid', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    // El flag de transición de layout es global: si un test lo dejó activo,
+    // lo cerramos para no contaminar el siguiente.
+    useLayoutTransition().end()
   })
 
   it('no usa colores de paleta cruda de Tailwind', () => {
@@ -163,6 +167,59 @@ describe('WeeklyScheduleGrid', () => {
     // Tras el rAF, las filas de hora se recalcularon con la altura real
     const hourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
     expect(hourHeight).not.toBe(defaultHourHeight)
+    wrapper.unmount()
+  })
+
+  it('difiere la medición durante una transición de layout y mide una sola vez al terminar', async () => {
+    const triggerResize = stubResizeObserver()
+    const { start, end } = useLayoutTransition()
+
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const el = wrapper.element
+    const rect = { height: 500, width: 900 }
+    const rectSpy = vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+
+    // Medición inicial sin transición: la grilla se acomoda a 500px
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    const before = wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')
+
+    // Transición activa: resizes no miden (quedan deferidos)
+    start()
+    rectSpy.mockReturnValue({ height: 700, width: 900 } as DOMRect)
+    triggerResize()
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')).toBe(before)
+
+    // Al terminar la transición: una única medición final con el último tamaño
+    end()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    const after = wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')
+    expect(after).not.toBe(before)
+
+    wrapper.unmount()
+  })
+
+  it('no difiere la medición cuando no hay transición de layout', async () => {
+    const triggerResize = stubResizeObserver()
+
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const el = wrapper.element
+    const rect = { height: 500, width: 900 }
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+
+    const hourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
+    expect(hourHeight).not.toContain('height: 400px')
+    expect(hourHeight).toContain('height:')
+
     wrapper.unmount()
   })
 

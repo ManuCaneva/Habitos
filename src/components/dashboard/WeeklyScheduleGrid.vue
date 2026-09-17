@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useWeeklyScheduleStore } from '@/stores/weeklySchedule'
 import { minutesToHHMM } from '@/stores/weeklySchedule'
 import WeeklyScheduleBlock from './WeeklyScheduleBlock.vue'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 import type { ScheduleBlockWithSlots, ScheduleSlot } from '@/schemas/weeklySchedule'
 
 const store = useWeeklyScheduleStore()
@@ -22,6 +23,9 @@ const headerHeight = ref(0)
 
 let rafId: number | null = null
 
+const { transitioning, onEnd: onLayoutTransitionEnd } = useLayoutTransition()
+let stopTransitionListener: (() => void) | null = null
+
 function readRects() {
   if (containerRef.value) {
     const rect = containerRef.value.getBoundingClientRect()
@@ -35,6 +39,17 @@ function measure() {
   if (rafId !== null) return
   rafId = requestAnimationFrame(() => {
     rafId = null
+    if (transitioning.value) {
+      // Durante una transición de layout (ej. colapso de sidebar) no medimos
+      // por frame: getBoundingClientRect fuerza reflow completo por frame.
+      // Una única medición al terminar la transición.
+      stopTransitionListener?.()
+      stopTransitionListener = onLayoutTransitionEnd(() => {
+        stopTransitionListener = null
+        measure()
+      })
+      return
+    }
     readRects()
   })
 }
@@ -67,6 +82,8 @@ onUnmounted(() => {
     cancelAnimationFrame(rafId)
     rafId = null
   }
+  stopTransitionListener?.()
+  stopTransitionListener = null
 })
 
 watch(() => [store.settings, store.visibleWindow], measure, { deep: true })
