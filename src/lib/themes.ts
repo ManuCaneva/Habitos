@@ -14,6 +14,7 @@ export interface ThemeColors {
   primary: string
   primaryHover: string
   primaryFocus: string
+  onPrimary: string
   brandSecure: string
   success: string
   overlay: string
@@ -35,25 +36,50 @@ export interface ThemeFonts {
   mono: string[]
 }
 
+export interface AccentColor {
+  solid: string
+  tint: string
+}
+
+export type AccentName = 'green' | 'orange' | 'red' | 'purple'
+export type AccentScale = Record<AccentName, AccentColor>
+
 export interface ThemeDefinition {
   id: string
   name: string
   isDark: boolean
   colors: ThemeColors
   blockColors: ThemeBlockColors
+  accents: AccentScale
   fonts: ThemeFonts
 }
 
 const sharedBlockColors: ThemeBlockColors = {
-  lavender: '94 106 210',
-  green: '76 183 130',
-  yellow: '242 201 76',
-  red: '235 87 87',
-  pink: '241 120 182',
-  cyan: '86 182 194',
-  orange: '242 153 74',
-  bone: '212 212 212',
+  lavender: '110 86 207',
+  green: '82 184 122',
+  yellow: '233 196 90',
+  red: '229 94 84',
+  pink: '230 130 175',
+  cyan: '94 174 176',
+  orange: '236 150 74',
+  bone: '214 209 197',
 }
+
+const darkAccents: AccentScale = {
+  green: { solid: '82 184 122', tint: '28 51 39' },
+  orange: { solid: '236 150 74', tint: '56 39 24' },
+  red: { solid: '229 94 84', tint: '57 33 31' },
+  purple: { solid: '110 86 207', tint: '40 34 69' },
+}
+
+const lightAccents: AccentScale = {
+  green: { solid: '31 138 76', tint: '222 242 229' },
+  orange: { solid: '193 106 26', tint: '250 235 216' },
+  red: { solid: '199 60 51', tint: '251 228 226' },
+  purple: { solid: '110 86 207', tint: '235 231 250' },
+}
+
+export const ACCENT_NAMES: readonly AccentName[] = ['green', 'orange', 'red', 'purple']
 
 const sharedFonts: ThemeFonts = {
   sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -66,26 +92,28 @@ export const themes: readonly ThemeDefinition[] = [
     name: 'Oscuro',
     isDark: true,
     colors: {
-      canvas: '1 1 2',
-      surface1: '14 15 18',
-      surface2: '24 25 30',
-      surface3: '34 35 42',
-      surface4: '44 45 53',
-      hairline: '35 37 42',
-      hairlineStrong: '57 59 66',
-      hairlineTertiary: '74 77 86',
-      ink: '247 248 248',
-      inkMuted: '208 214 224',
-      inkSubtle: '138 143 152',
-      inkTertiary: '98 102 109',
-      primary: '94 106 210',
-      primaryHover: '130 143 255',
-      primaryFocus: '94 105 209',
-      brandSecure: '122 127 173',
-      success: '39 166 68',
-      overlay: '0 0 0',
+      canvas: '12 11 10',
+      surface1: '22 20 18',
+      surface2: '32 29 26',
+      surface3: '44 40 36',
+      surface4: '58 53 47',
+      hairline: '46 42 37',
+      hairlineStrong: '66 60 53',
+      hairlineTertiary: '88 80 71',
+      ink: '244 241 236',
+      inkMuted: '206 199 189',
+      inkSubtle: '150 142 131',
+      inkTertiary: '108 101 92',
+      primary: '110 86 207',
+      primaryHover: '128 106 224',
+      primaryFocus: '96 74 189',
+      onPrimary: '250 248 245',
+      brandSecure: '146 132 191',
+      success: '82 184 122',
+      overlay: '20 16 12',
     },
     blockColors: sharedBlockColors,
+    accents: darkAccents,
     fonts: sharedFonts,
   },
   {
@@ -93,53 +121,28 @@ export const themes: readonly ThemeDefinition[] = [
     name: 'Claro',
     isDark: false,
     colors: {
-      canvas: '255 255 255',
-      surface1: '247 248 248',
-      surface2: '238 240 242',
-      surface3: '228 230 233',
-      surface4: '216 218 223',
-      hairline: '228 230 233',
-      hairlineStrong: '197 200 206',
-      hairlineTertiary: '168 172 180',
-      ink: '14 15 18',
-      inkMuted: '44 45 53',
-      inkSubtle: '98 102 109',
-      inkTertiary: '138 143 152',
-      primary: '94 106 210',
-      primaryHover: '77 89 192',
-      primaryFocus: '94 105 209',
-      brandSecure: '122 127 173',
-      success: '29 138 54',
-      overlay: '0 0 0',
+      canvas: '243 238 226',
+      surface1: '249 245 236',
+      surface2: '237 231 218',
+      surface3: '226 219 204',
+      surface4: '214 206 191',
+      hairline: '224 217 203',
+      hairlineStrong: '199 190 174',
+      hairlineTertiary: '168 158 141',
+      ink: '28 26 23',
+      inkMuted: '64 59 53',
+      inkSubtle: '112 105 95',
+      inkTertiary: '148 140 128',
+      primary: '110 86 207',
+      primaryHover: '92 70 184',
+      primaryFocus: '102 80 192',
+      onPrimary: '255 255 255',
+      brandSecure: '110 98 158',
+      success: '31 138 76',
+      overlay: '24 18 12',
     },
     blockColors: sharedBlockColors,
-    fonts: sharedFonts,
-  },
-  {
-    id: 'popi',
-    name: 'Popi',
-    isDark: true,
-    colors: {
-      canvas: '71 74 44',
-      surface1: '80 84 52',
-      surface2: '99 105 64',
-      surface3: '89 169 106',
-      surface4: '155 222 172',
-      hairline: '90 96 56',
-      hairlineStrong: '99 105 64',
-      hairlineTertiary: '120 140 90',
-      ink: '180 231 206',
-      inkMuted: '155 222 172',
-      inkSubtle: '120 170 120',
-      inkTertiary: '100 130 85',
-      primary: '89 169 106',
-      primaryHover: '155 222 172',
-      primaryFocus: '89 169 106',
-      brandSecure: '99 105 64',
-      success: '155 222 172',
-      overlay: '0 0 0',
-    },
-    blockColors: sharedBlockColors,
+    accents: lightAccents,
     fonts: sharedFonts,
   },
 ] as const
@@ -170,12 +173,19 @@ export function applyTheme(theme: ThemeDefinition): void {
   root.style.setProperty('--color-primary', c.primary)
   root.style.setProperty('--color-primary-hover', c.primaryHover)
   root.style.setProperty('--color-primary-focus', c.primaryFocus)
+  root.style.setProperty('--color-on-primary', c.onPrimary)
   root.style.setProperty('--color-brand-secure', c.brandSecure)
   root.style.setProperty('--color-success', c.success)
   root.style.setProperty('--color-overlay', c.overlay)
 
   for (const [name, value] of Object.entries(b)) {
     root.style.setProperty(`--color-block-${name}`, value)
+  }
+
+  for (const name of ACCENT_NAMES) {
+    const accent = theme.accents[name]
+    root.style.setProperty(`--color-accent-${name}`, accent.solid)
+    root.style.setProperty(`--color-accent-${name}-tint`, accent.tint)
   }
 
   root.style.setProperty('--font-sans', theme.fonts.sans.join(', '))

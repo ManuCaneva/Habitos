@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MonthMini from './MonthMini.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 import type { CalendarEvent } from '@/schemas/calendar'
 
 const dummyEvents: CalendarEvent[] = [
@@ -137,5 +138,12 @@ describe('MonthMini', () => {
     const dots = wrapper.findAll("[data-testid='event-dot']")
     expect(dots).toHaveLength(4)
     expect(wrapper.text()).toContain('+2')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(MonthMini, {
+      props: { year: 2026, month: 0, eventsByDate, showHeader: true },
+    })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

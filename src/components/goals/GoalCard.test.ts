@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import GoalCard from './GoalCard.vue'
-import type { Goal } from '@/schemas/goals'
+import type { Goal, GoalLog } from '@/schemas/goals'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockGoal: Goal = {
   id: 'goal-1',
@@ -19,7 +20,7 @@ const mockGoal: Goal = {
 }
 
 const goalsMock = {
-  logs: [],
+  logs: [] as GoalLog[],
   incrementLog: vi.fn(),
 }
 const uiMock = {
@@ -174,5 +175,31 @@ describe('GoalCard', () => {
       props: { goal: mockGoal },
     })
     expect(wrapper.find("[data-testid='goal-card']").classes()).toContain('z-10')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(GoalCard, {
+      props: { goal: mockGoal },
+    })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+  })
+
+  it('badge de completado usa acento verde tintado', () => {
+    goalsMock.logs = [
+      {
+        id: 'log-1',
+        goal_id: 'goal-1',
+        log_date: new Date().toISOString().split('T')[0],
+        amount: 10,
+        note: null,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    const wrapper = mount(GoalCard, {
+      props: { goal: mockGoal },
+    })
+    const incrementBtn = wrapper.find("[data-testid='goal-increment-button']")
+    expect(incrementBtn.classes()).toContain('bg-accent-green-tint')
+    expect(incrementBtn.classes()).toContain('text-accent-green')
   })
 })

@@ -65,9 +65,9 @@ async function save() {
           :key="g"
           type="button"
           :class="[
-            'rounded-sm border px-3 py-1.5 text-sm transition-colors',
+            'rounded-md border px-3 py-1.5 text-sm transition-colors',
             granularity === g
-              ? 'border-primary bg-primary text-white'
+              ? 'border-primary bg-primary text-on-primary'
               : 'border-hairline text-ink-muted hover:bg-surface-2',
           ]"
           @click="granularity = g"
@@ -83,9 +83,9 @@ async function save() {
           type="button"
           :aria-pressed="enabledDays.includes(index)"
           :class="[
-            'rounded-sm border px-2 py-1.5 text-sm transition-colors',
+            'rounded-md border px-2 py-1.5 text-sm transition-colors',
             enabledDays.includes(index)
-              ? 'border-primary bg-primary text-white'
+              ? 'border-primary bg-primary text-on-primary'
               : 'border-hairline text-ink-muted hover:bg-surface-2',
           ]"
           @click="toggleDay(index)"
@@ -93,7 +93,7 @@ async function save() {
           {{ day }}
         </button>
       </div>
-      <p v-if="error" class="mt-2 text-body-sm text-sm text-primary">{{ error }}</p>
+      <p v-if="error" class="mt-2 text-body-sm text-sm text-accent-red">{{ error }}</p>
       <div class="mt-5 flex justify-end gap-2">
         <Button variant="ghost" @click="emit('close')">Cancelar</Button>
         <Button @click="save">Guardar</Button>

@@ -4,6 +4,7 @@ import DayDetailsModal from './DayDetailsModal.vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref, reactive } from 'vue'
 import TimePicker from '@/components/ui/TimePicker.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const hiddenCalendarIds = ref(new Set<string>())
 
@@ -207,5 +208,19 @@ describe('DayDetailsModal', () => {
     expect(options).toContain('work')
     // El primario sigue siendo el destino por defecto aunque esté oculto
     expect(calSelect.value).toBe('primary')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    factory()
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
+  })
+
+  it('el aviso de permisos usa el acento rojo, no la paleta cruda', () => {
+    mockStore.syncError.value = 'Error 403: permission denied'
+    factory()
+
+    const dialog = document.body.querySelector("[role='dialog']")
+    expect(dialog!.textContent).toContain('Permisos requeridos')
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
   })
 })

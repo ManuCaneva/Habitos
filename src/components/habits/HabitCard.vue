@@ -6,6 +6,7 @@ import { useHabitsStore } from '@/stores/habits'
 import { useUiStore } from '@/stores/ui'
 import { iconFor } from '@/lib/icons'
 import { frequencyLabel } from '@/lib/frequencyLabel'
+import { shadeFor } from '@/lib/habitColors'
 import HabitContextMenu from './HabitContextMenu.vue'
 import HeatmapGrid from './HeatmapGrid.vue'
 import SegmentedCheckCircle from '@/components/ui/SegmentedCheckCircle.vue'
@@ -41,8 +42,12 @@ async function onReset() {
     padding="sm"
     :class="['habit-card-responsive group relative', isMenuOpen && 'z-10']"
   >
-    <div class="habit-card-row mb-1.5 flex items-center gap-1.5">
-      <span data-testid="habit-icon" class="habit-card-icon shrink-0 text-white">
+    <div class="habit-card-row mb-1.5 flex items-center gap-2">
+      <span
+        data-testid="habit-icon"
+        class="habit-card-icon flex shrink-0 items-center justify-center rounded-md"
+        :style="{ backgroundColor: shadeFor(habit.color, 0.16), color: habit.color }"
+      >
         <component :is="icon.icon" :size="14" :stroke-width="2" />
       </span>
       <button
@@ -61,7 +66,7 @@ async function onReset() {
         <button
           data-testid="menu-button"
           :data-habit-menu-trigger="habit.id"
-          class="habit-card-btn flex h-7 w-7 items-center justify-center"
+          class="habit-card-btn flex h-7 w-7 items-center justify-center rounded-md text-ink-tertiary transition-colors duration-150 hover:bg-surface-3 hover:text-ink"
           aria-label="Más opciones"
           @click="ui.toggleMenu(habit.id)"
         >

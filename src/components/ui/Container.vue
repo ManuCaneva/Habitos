@@ -7,11 +7,13 @@ withDefaults(
     variant?: Variant
     padding?: Padding
     as?: string
+    glass?: boolean
   }>(),
   {
     variant: 'default',
     padding: 'md',
     as: 'div',
+    glass: false,
   }
 )
 </script>
@@ -20,7 +22,8 @@ withDefaults(
   <component
     :is="as"
     :class="[
-      'min-h-0 select-none rounded-sm border border-hairline bg-surface-1',
+      'min-h-0 min-w-0 select-none rounded-lg border border-hairline',
+      glass ? 'glass-soft' : 'bg-surface-1',
       padding === 'sm' && 'p-2',
       padding === 'md' && 'p-3',
       padding === 'lg' && 'p-4',

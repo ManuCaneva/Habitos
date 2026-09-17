@@ -4,17 +4,25 @@ export interface HabitColor {
 }
 
 export const HABIT_COLORS: readonly HabitColor[] = [
-  { value: '#5e6ad2', name: 'Lavanda' },
-  { value: '#4cb782', name: 'Verde' },
-  { value: '#f2c94c', name: 'Amarillo' },
-  { value: '#eb5757', name: 'Rojo' },
-  { value: '#f178b6', name: 'Rosa' },
-  { value: '#56b6c2', name: 'Cyan' },
-  { value: '#f2994a', name: 'Naranja' },
-  { value: '#d4d4d4', name: 'Hueso' },
+  { value: '#6e56cf', name: 'Lavanda' },
+  { value: '#52b87a', name: 'Verde' },
+  { value: '#e9c45a', name: 'Amarillo' },
+  { value: '#e55e54', name: 'Rojo' },
+  { value: '#e682af', name: 'Rosa' },
+  { value: '#5eaeb0', name: 'Cyan' },
+  { value: '#ec964a', name: 'Naranja' },
+  { value: '#d6d1c5', name: 'Hueso' },
 ] as const
 
 export const DEFAULT_HABIT_COLOR = HABIT_COLORS[0].value
+
+export const HEATMAP_BASE_INTENSITY = 0.15
+
+export function intensityFor(count: number, target: number): number {
+  if (count <= 0) return HEATMAP_BASE_INTENSITY
+  const ratio = Math.min(1, count / Math.max(1, target))
+  return HEATMAP_BASE_INTENSITY + (1 - HEATMAP_BASE_INTENSITY) * ratio
+}
 
 export function shadeFor(color: string, intensity: number): string {
   const hex = color.replace('#', '')

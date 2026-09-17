@@ -4,6 +4,7 @@ import TasksWidget from '@/components/dashboard/TasksWidget.vue'
 import GoalsWidget from '@/components/dashboard/GoalsWidget.vue'
 import YearCalendarWidget from '@/components/dashboard/YearCalendarWidget.vue'
 import WeeklyScheduleWidget from '@/components/dashboard/WeeklyScheduleWidget.vue'
+import NotesWidget from '@/components/dashboard/NotesWidget.vue'
 import PomodoroWidget from '@/components/dashboard/PomodoroWidget.vue'
 
 export interface DashboardWidget {
@@ -55,7 +56,7 @@ export const widgets: DashboardWidget[] = [
     defaultX: 0,
     defaultY: 4,
     defaultW: 12,
-    defaultH: 3,
+    defaultH: 2,
   },
   {
     id: 'pomodoro',
@@ -78,9 +79,9 @@ export const widgets: DashboardWidget[] = [
     minW: 1,
     minH: 3,
     defaultX: 0,
-    defaultY: 7,
-    defaultW: 12,
-    defaultH: 5,
+    defaultY: 6,
+    defaultW: 4,
+    defaultH: 4,
   },
   {
     id: 'weekly-schedule',
@@ -89,10 +90,22 @@ export const widgets: DashboardWidget[] = [
     component: WeeklyScheduleWidget,
     minW: 5,
     minH: 4,
-    defaultX: 0,
-    defaultY: 7,
-    defaultW: 12,
-    defaultH: 5,
+    defaultX: 4,
+    defaultY: 6,
+    defaultW: 5,
+    defaultH: 4,
+  },
+  {
+    id: 'notes',
+    title: 'Notas',
+    icon: 'sticky-note',
+    component: NotesWidget,
+    minW: 1,
+    minH: 2,
+    defaultX: 9,
+    defaultY: 6,
+    defaultW: 3,
+    defaultH: 4,
   },
 ]
 

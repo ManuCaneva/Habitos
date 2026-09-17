@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Loader2 } from 'luci
 import { computeLayout, type LayoutResult } from '@/lib/calendarLayout'
 import { significantChange, layoutVars, quantizeLayout } from '@/lib/calendarResize'
 import { DAY_LABELS } from '@/lib/calendarDates'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 import type { LayoutItem } from '@/stores/dashboard'
 
 const props = defineProps<{
@@ -56,6 +57,9 @@ let pendingSize: { w: number; h: number } | null = null
 
 let rafId: number | null = null
 
+const { transitioning, onEnd: onLayoutTransitionEnd } = useLayoutTransition()
+let stopTransitionListener: (() => void) | null = null
+
 function scheduleRecompute(size?: { w: number; h: number }) {
   if (size) pendingSize = size
   if (rafId !== null) return
@@ -66,6 +70,22 @@ function scheduleRecompute(size?: { w: number; h: number }) {
 }
 
 function runRecompute() {
+  // Durante una transición de layout (ej. colapso de sidebar) el panel se
+  // anima por width: cada frame dispara ResizeObserver y re-flow completo.
+  // El recompute se pospone y corre una única vez al terminar la transición;
+  // mientras tanto el contenido se estira por CSS y se acomoda al final.
+  if (transitioning.value) {
+    stopTransitionListener?.()
+    stopTransitionListener = onLayoutTransitionEnd(() => {
+      stopTransitionListener = null
+      flushRecompute()
+    })
+    return
+  }
+  recomputeNow()
+}
+
+function recomputeNow() {
   const el = bodyRef.value
   if (!el) return
 
@@ -126,6 +146,8 @@ onUnmounted(() => {
     cancelAnimationFrame(rafId)
     rafId = null
   }
+  stopTransitionListener?.()
+  stopTransitionListener = null
 })
 
 const viewportRef = ref<HTMLElement | null>(null)
@@ -170,16 +192,17 @@ watch(
 <template>
   <Container
     variant="default"
+    glass
     padding="none"
     class="h-full overflow-hidden"
     data-testid="year-calendar-widget"
   >
     <div class="ycw" :class="layout ? `cols-${layout.cols}` : ''" :style="layoutStyle">
       <header
-        class="ycw__header"
+        class="ycw__header justify-start"
         :style="{ '--title-font-size': 'var(--title-font-size, 0.75rem)' }"
       >
-        <Text variant="caption" weight="600" class="ycw__title">Calendario Anual</Text>
+        <Text variant="caption" weight="600" class="ycw__title text-left">Calendario Anual</Text>
         <Loader2
           v-if="store.syncing"
           :size="12"
@@ -308,7 +331,6 @@ watch(
 .ycw__header {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   padding: 6px 8px;
   border-bottom: 1px solid rgb(var(--color-hairline));
@@ -317,7 +339,6 @@ watch(
 }
 
 .ycw__title {
-  text-align: center;
   color: rgb(var(--color-ink));
   font-size: var(--title-font-size, 0.75rem);
   line-height: 1.2;
@@ -400,7 +421,7 @@ watch(
 
 .ycw__error {
   font-size: 0.75rem;
-  color: #e67c73;
+  color: rgb(var(--color-accent-red));
   padding: 4px 8px;
   line-height: 1.2;
 }

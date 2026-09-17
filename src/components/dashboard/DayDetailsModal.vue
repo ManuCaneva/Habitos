@@ -212,16 +212,16 @@ function cancelEdit() {
         <!-- Error Banner / Permissions warning -->
         <div
           v-if="localError || store.syncError"
-          class="mb-4 flex gap-3 rounded-md border p-3 text-sm"
+          class="mb-4 flex gap-3 rounded-lg border p-3 text-sm"
           :class="
             showPermissionWarning
-              ? 'border-red-800 bg-red-950/20 text-red-400'
+              ? 'border-accent-red/25 bg-accent-red-tint text-accent-red'
               : 'border-hairline bg-surface-2 text-ink-muted'
           "
         >
-          <AlertTriangle :size="18" class="flex-shrink-0 text-red-500" />
+          <AlertTriangle :size="18" class="flex-shrink-0 text-accent-red" />
           <div>
-            <p v-if="showPermissionWarning" class="font-medium text-red-300">
+            <p v-if="showPermissionWarning" class="font-medium text-accent-red">
               Permisos requeridos:
             </p>
             <p>

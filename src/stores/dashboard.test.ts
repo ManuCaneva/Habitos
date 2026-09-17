@@ -22,7 +22,7 @@ describe('dashboard store (grilla entera)', () => {
   it('carga el layout por defecto en enteros', async () => {
     const store = useDashboardStore()
     await flush()
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
     expect(store.layout[0].i).toBe('habits')
     expect(store.layout[0].x).toBe(0)
     expect(store.layout[0].y).toBe(0)
@@ -115,7 +115,7 @@ describe('dashboard store (grilla entera)', () => {
     vi.mocked(loadConfig).mockResolvedValue(JSON.stringify('not-an-array'))
     const store = useDashboardStore()
     await flush()
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
     expect(store.layout[0].i).toBe('habits')
   })
 
@@ -228,7 +228,7 @@ describe('dashboard store (grilla entera)', () => {
     expect(item!.x).toBe(0)
     expect(item!.y).toBe(4)
     expect(item!.w).toBe(12)
-    expect(item!.h).toBe(3)
+    expect(item!.h).toBe(2)
   })
 
   it("addWidget('tasks') con layout parcial: solo habits", async () => {
@@ -248,14 +248,14 @@ describe('dashboard store (grilla entera)', () => {
     const store = useDashboardStore()
     await flush()
     store.addWidget('habits')
-    expect(store.layout).toHaveLength(5)
+    expect(store.layout).toHaveLength(6)
   })
 
   it('elimina un widget del layout', async () => {
     const store = useDashboardStore()
     await flush()
     store.removeWidget('habits')
-    expect(store.layout).toHaveLength(4)
+    expect(store.layout).toHaveLength(5)
   })
 
   it('resetea al layout por defecto', async () => {
@@ -351,7 +351,7 @@ describe('dashboard store (grilla entera)', () => {
   it('addWidget coloca con tamaño mínimo cuando default size no cabe en ningún lado', async () => {
     const store = useDashboardStore()
     await flush()
-    store.updateLayout([{ i: 'habits', x: 0, y: 0, w: 12, h: 8 }])
+    store.updateLayout([{ i: 'habits', x: 0, y: 0, w: 12, h: 9 }])
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     store.addWidget('goals')
     const item = store.layout.find((i) => i.i === 'goals')

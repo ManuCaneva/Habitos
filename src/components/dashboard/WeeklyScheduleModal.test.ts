@@ -3,6 +3,7 @@ import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleModal from './WeeklyScheduleModal.vue'
 import TimePicker from '@/components/ui/TimePicker.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockStore = {
   saveBlock: vi.fn().mockResolvedValue(undefined),
@@ -282,5 +283,10 @@ describe('WeeklyScheduleModal', () => {
     await wrapper.vm.$nextTick()
     expect(mockStore.deleteBlock).toHaveBeenCalledWith(validBlockWithSlots.id)
     expect(wrapper.emitted('close')).toBeTruthy()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    mountModal(validBlockWithSlots)
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
   })
 })

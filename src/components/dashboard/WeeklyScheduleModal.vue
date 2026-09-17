@@ -155,7 +155,7 @@ async function deleteBlock() {
           :key="c"
           type="button"
           :class="[
-            'h-6 w-6 rounded-sm border-2 transition-all',
+            'h-6 w-6 rounded-md border-2 transition-all',
             c === color
               ? 'scale-110 border-ink ring-2 ring-primary/25'
               : 'border-transparent hover:scale-105',
@@ -175,7 +175,7 @@ async function deleteBlock() {
           v-for="(draft, index) in drafts"
           :key="index"
           :class="[
-            'mb-2 flex items-center gap-2 rounded-sm border bg-surface-2 p-2',
+            'mb-2 flex items-center gap-2 rounded-md border bg-surface-2 p-2',
             editingIndex === index ? 'border-primary' : 'border-hairline',
           ]"
         >
@@ -195,7 +195,7 @@ async function deleteBlock() {
           </button>
           <button
             type="button"
-            class="px-2 py-1 text-xs text-red-500 hover:text-red-600"
+            class="px-2 py-1 text-xs text-accent-red transition-colors hover:text-accent-red/80"
             @click="removeDraft(index)"
           >
             Eliminar
@@ -203,14 +203,14 @@ async function deleteBlock() {
         </div>
       </div>
 
-      <div class="mt-4 rounded-sm border border-hairline bg-surface-2 p-3">
+      <div class="mt-4 rounded-lg border border-hairline bg-surface-2 p-3">
         <label class="mb-2 block text-caption text-xs font-medium text-ink-muted">
           {{ editingIndex !== null ? 'Editar horario' : 'Agregar horario' }}
         </label>
         <label class="mb-1 block text-caption text-xs font-medium text-ink-muted">Día</label>
         <select
           v-model="slotDay"
-          class="mb-2 w-full rounded-sm border border-hairline bg-surface-2 px-2 py-1.5 text-body"
+          class="mb-2 w-full rounded-md border border-hairline bg-surface-2 px-2 py-1.5 text-body"
         >
           <option v-for="i in enabledDays" :key="i" :value="i">{{ DAYS[i] }}</option>
         </select>
@@ -238,7 +238,7 @@ async function deleteBlock() {
         </div>
       </div>
 
-      <p v-if="error" class="mt-2 text-body-sm text-sm text-primary">{{ error }}</p>
+      <p v-if="error" class="mt-2 text-body-sm text-sm text-accent-red">{{ error }}</p>
 
       <div class="mt-5 flex justify-between">
         <Button v-if="block" variant="danger" @click="deleteBlock">Eliminar</Button>

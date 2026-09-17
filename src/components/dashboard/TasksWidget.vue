@@ -7,10 +7,11 @@ import TasksListView from '@/views/TasksListView.vue'
   <Container
     data-testid="tasks-widget"
     variant="default"
+    glass
     padding="none"
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
   >
-    <TasksListView />
+    <TasksListView :show-eyebrow="false" />
   </Container>
 </template>

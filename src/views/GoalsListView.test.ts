@@ -10,6 +10,9 @@ const goalsMock = {
   get goals() {
     return goalsState.value
   },
+  get activeGoals() {
+    return goalsState.value.filter((g) => g.archived_at === null)
+  },
   get logs() {
     return logsState.value
   },
@@ -52,6 +55,19 @@ describe('GoalsListView', () => {
     expect(wrapper.text()).toContain('Objetivos')
   })
 
+  it('header tiene eyebrow y título con jerarquía', () => {
+    const wrapper = mount(GoalsListView)
+    expect(wrapper.find('.text-eyebrow').text()).toBe('Seguimiento')
+    const header = wrapper.find('.bg-surface-2')
+    expect(header.classes()).toContain('flex-col')
+  })
+
+  it('con showEyebrow=false no muestra el eyebrow pero sí el título', () => {
+    const wrapper = mount(GoalsListView, { props: { showEyebrow: false } })
+    expect(wrapper.find('.text-eyebrow').exists()).toBe(false)
+    expect(wrapper.find('.text-card-title').text()).toBe('Objetivos')
+  })
+
   it('no muestra contador', () => {
     goalsState.value = [
       {
@@ -62,6 +78,7 @@ describe('GoalsListView', () => {
         target: 10,
         unit: null,
         frequency: { type: 'daily' },
+        archived_at: null,
       },
     ]
     const wrapper = mount(GoalsListView)
@@ -78,6 +95,7 @@ describe('GoalsListView', () => {
         target: 10,
         unit: null,
         frequency: { type: 'daily' },
+        archived_at: null,
       },
       {
         id: 'goal-2',
@@ -87,10 +105,40 @@ describe('GoalsListView', () => {
         target: 20,
         unit: null,
         frequency: { type: 'weekly' },
+        archived_at: null,
       },
     ]
     const wrapper = mount(GoalsListView)
     expect(wrapper.findAllComponents({ name: 'GoalCard' })).toHaveLength(2)
+  })
+
+  it('no renderiza objetivos archivados', () => {
+    goalsState.value = [
+      {
+        id: 'goal-1',
+        title: 'Goal activo',
+        description: null,
+        color: '#00ff00',
+        target: 10,
+        unit: null,
+        frequency: { type: 'daily' },
+        archived_at: null,
+      },
+      {
+        id: 'goal-2',
+        title: 'Goal archivado',
+        description: null,
+        color: '#ff0000',
+        target: 20,
+        unit: null,
+        frequency: { type: 'weekly' },
+        archived_at: '2026-01-01T00:00:00.000Z',
+      },
+    ]
+    const wrapper = mount(GoalsListView)
+    const cards = wrapper.findAllComponents({ name: 'GoalCard' })
+    expect(cards).toHaveLength(1)
+    expect(cards[0].props('goal').id).toBe('goal-1')
   })
 
   it('renderiza NewGoalCard', () => {
@@ -108,6 +156,7 @@ describe('GoalsListView', () => {
         target: 10,
         unit: null,
         frequency: { type: 'daily' },
+        archived_at: null,
       },
     ]
     uiMock.menuOpenForGoalId = 'goal-1'
@@ -125,6 +174,7 @@ describe('GoalsListView', () => {
         target: 10,
         unit: null,
         frequency: { type: 'daily' },
+        archived_at: null,
       },
     ]
     uiMock.menuOpenForGoalId = null

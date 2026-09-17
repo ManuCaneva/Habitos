@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import TaskCard from './TaskCard.vue'
 import type { Task } from '@/schemas/tasks'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 const tasksMock = {
   toggleStep: vi.fn(),
   completeTask: vi.fn(),
@@ -97,28 +98,24 @@ describe('TaskCard', () => {
     expect(wrapper.find("[data-testid='task-complete-btn']").exists()).toBe(true)
   })
 
-  it('should render complete checkbox when task has steps (disabled if not all done)', () => {
+  it('should keep complete button enabled without disabled visuals when task has pending steps', () => {
     const wrapper = mount(TaskCard, {
       props: { task: mockTaskWithSteps },
     })
     const btn = wrapper.find("[data-testid='task-complete-btn']")
     expect(btn.exists()).toBe(true)
-    expect(btn.attributes('disabled')).toBeDefined()
+    expect(btn.attributes('disabled')).toBeUndefined()
+    expect(btn.classes()).not.toContain('cursor-not-allowed')
+    expect(btn.classes()).not.toContain('opacity-40')
   })
 
-  it('should enable complete button when all steps are done', () => {
-    const task = {
-      ...mockTaskWithSteps,
-      steps: [
-        { id: 'step-1', title: 'Step 1', done: true },
-        { id: 'step-2', title: 'Step 2', done: true },
-      ],
-    }
+  it('should complete task with pending steps when complete button is clicked', async () => {
     const wrapper = mount(TaskCard, {
-      props: { task },
+      props: { task: mockTaskWithSteps },
     })
     const btn = wrapper.find("[data-testid='task-complete-btn']")
-    expect(btn.attributes('disabled')).toBeUndefined()
+    await btn.trigger('click')
+    expect(tasksMock.completeTask).toHaveBeenCalledWith('task-1')
   })
 
   it('should render steps count', () => {
@@ -260,5 +257,36 @@ describe('TaskCard', () => {
     const btn = wrapper.find("[data-testid='task-complete-btn']")
     await btn.trigger('click')
     expect(tasksMock.completeTask).toHaveBeenCalledWith('task-1')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(TaskCard, {
+      props: { task: mockTaskWithSteps },
+    })
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+  })
+
+  it('deadline vencida usa pill tintada con acento rojo', () => {
+    const past = new Date()
+    past.setDate(past.getDate() - 2)
+    const task = { ...mockTaskWithSteps, due_date: past.toISOString().split('T')[0] }
+    const wrapper = mount(TaskCard, {
+      props: { task },
+    })
+    const deadline = wrapper.find("[data-testid='task-deadline']")
+    expect(deadline.classes()).toContain('bg-accent-red-tint')
+    expect(deadline.classes()).toContain('text-accent-red')
+  })
+
+  it('deadline próxima usa pill tintada con acento naranja', () => {
+    const soon = new Date()
+    soon.setDate(soon.getDate() + 1)
+    const task = { ...mockTaskWithSteps, due_date: soon.toISOString().split('T')[0] }
+    const wrapper = mount(TaskCard, {
+      props: { task },
+    })
+    const deadline = wrapper.find("[data-testid='task-deadline']")
+    expect(deadline.classes()).toContain('bg-accent-orange-tint')
+    expect(deadline.classes()).toContain('text-accent-orange')
   })
 })

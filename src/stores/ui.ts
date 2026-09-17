@@ -2,6 +2,15 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { migrateStorageKey } from '@/lib/storageKey'
+import * as db from '@/lib/db'
+import {
+  WallpaperSettingsSchema,
+  parseWallpaperSettingsJson,
+  defaultWallpaperSettings,
+  type WallpaperSettings,
+} from '@/schemas/wallpaper'
+
+export const WALLPAPER_SETTINGS_KEY = 'wallpaper-settings'
 
 export type ViewMode = 'dashboard' | 'archived' | 'pomodoro' | 'settings'
 
@@ -87,12 +96,14 @@ export const useUiStore = defineStore('ui', () => {
   const habits = createEntityUi()
   const tasks = createEntityUi()
   const goals = createEntityUi()
+  const notes = createEntityUi()
 
   function setViewMode(mode: ViewMode) {
     viewMode.value = mode
     habits.closeMenu()
     tasks.closeMenu()
     goals.closeMenu()
+    notes.closeMenu()
   }
 
   function toggleSidebar() {
@@ -101,6 +112,53 @@ export const useUiStore = defineStore('ui', () => {
 
   function toggleEditMode() {
     editMode.value = !editMode.value
+  }
+
+  const wallpaperUrl = ref<string | null>(null)
+  const widgetGlassAlpha = ref(defaultWallpaperSettings.widgetGlassAlpha)
+
+  function applyGlassAlphaVar(alpha: number): void {
+    document.documentElement.style.setProperty('--glass-widget-alpha', String(alpha))
+  }
+
+  async function persistWallpaperSettings(settings: WallpaperSettings): Promise<void> {
+    await db.saveConfig(WALLPAPER_SETTINGS_KEY, JSON.stringify(settings))
+  }
+
+  async function loadWallpaper(): Promise<void> {
+    const raw = await db.loadConfig(WALLPAPER_SETTINGS_KEY)
+    const settings = parseWallpaperSettingsJson(raw)
+    wallpaperUrl.value = settings.dataUrl
+    widgetGlassAlpha.value = settings.widgetGlassAlpha
+    applyGlassAlphaVar(settings.widgetGlassAlpha)
+  }
+
+  async function setWallpaper(dataUrl: string): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl,
+      widgetGlassAlpha: widgetGlassAlpha.value,
+    })
+    await persistWallpaperSettings(settings)
+    wallpaperUrl.value = settings.dataUrl
+  }
+
+  async function removeWallpaper(): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl: null,
+      widgetGlassAlpha: widgetGlassAlpha.value,
+    })
+    await persistWallpaperSettings(settings)
+    wallpaperUrl.value = settings.dataUrl
+  }
+
+  async function setWidgetGlassAlpha(alpha: number): Promise<void> {
+    const settings = WallpaperSettingsSchema.parse({
+      dataUrl: wallpaperUrl.value,
+      widgetGlassAlpha: alpha,
+    })
+    await persistWallpaperSettings(settings)
+    widgetGlassAlpha.value = settings.widgetGlassAlpha
+    applyGlassAlphaVar(settings.widgetGlassAlpha)
   }
 
   return {
@@ -119,9 +177,19 @@ export const useUiStore = defineStore('ui', () => {
     createGoalOpen: goals.createOpen,
     editingGoalId: goals.editingId,
     menuOpenForGoalId: goals.menuOpenForId,
+    isEditingNote: notes.isEditing,
+    createNoteOpen: notes.createOpen,
+    editingNoteId: notes.editingId,
+    menuOpenForNoteId: notes.menuOpenForId,
     setViewMode,
     toggleSidebar,
     toggleEditMode,
+    wallpaperUrl,
+    widgetGlassAlpha,
+    loadWallpaper,
+    setWallpaper,
+    removeWallpaper,
+    setWidgetGlassAlpha,
     openCreate: habits.openCreate,
     openEdit: habits.openEdit,
     closeModal: habits.closeModal,
@@ -137,5 +205,10 @@ export const useUiStore = defineStore('ui', () => {
     closeGoalModal: goals.closeModal,
     toggleGoalMenu: goals.toggleMenu,
     closeGoalMenu: goals.closeMenu,
+    openCreateNote: notes.openCreate,
+    openEditNote: notes.openEdit,
+    closeNoteModal: notes.closeModal,
+    toggleNoteMenu: notes.toggleMenu,
+    closeNoteMenu: notes.closeMenu,
   }
 })

@@ -31,59 +31,43 @@ const intervalDays = computed({
   get: () => props.modelValue.interval_days ?? 3,
   set: (value) => updateIntervalDays(Number(value)),
 })
+
+const options: readonly { type: GoalFrequency['type']; label: string }[] = [
+  { type: 'daily', label: 'Diario' },
+  { type: 'weekly', label: 'Semanal' },
+  { type: 'interval', label: 'Intervalo' },
+]
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex gap-2">
       <button
+        v-for="option in options"
+        :key="option.type"
         type="button"
         :class="[
-          'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-          modelValue.type === 'daily'
-            ? 'bg-primary text-white'
-            : 'bg-surface-2 text-ink hover:bg-surface-3',
+          'rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+          modelValue.type === option.type
+            ? 'bg-primary text-on-primary shadow-sm'
+            : 'bg-surface-2 text-ink-muted hover:bg-surface-3 hover:text-ink',
         ]"
-        @click="selectFrequency('daily')"
+        @click="selectFrequency(option.type)"
       >
-        Diario
-      </button>
-      <button
-        type="button"
-        :class="[
-          'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-          modelValue.type === 'weekly'
-            ? 'bg-primary text-white'
-            : 'bg-surface-2 text-ink hover:bg-surface-3',
-        ]"
-        @click="selectFrequency('weekly')"
-      >
-        Semanal
-      </button>
-      <button
-        type="button"
-        :class="[
-          'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-          modelValue.type === 'interval'
-            ? 'bg-primary text-white'
-            : 'bg-surface-2 text-ink hover:bg-surface-3',
-        ]"
-        @click="selectFrequency('interval')"
-      >
-        Intervalo
+        {{ option.label }}
       </button>
     </div>
 
     <div v-if="modelValue.type === 'interval'" class="flex items-center gap-2">
-      <label class="text-sm text-ink-muted">Cada</label>
+      <label class="text-body-sm text-ink-muted">Cada</label>
       <input
         v-model="intervalDays"
         type="number"
         min="1"
         max="365"
-        class="w-20 rounded-md border border-hairline bg-surface-1 px-2 py-1 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/50"
+        class="w-20 rounded-md border border-hairline bg-surface-1 px-2 py-1 text-body-sm text-ink transition-colors hover:border-hairline-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
-      <label class="text-sm text-ink-muted">días</label>
+      <label class="text-body-sm text-ink-muted">días</label>
     </div>
   </div>
 </template>

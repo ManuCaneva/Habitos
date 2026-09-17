@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useWeeklyScheduleStore } from '@/stores/weeklySchedule'
 import { minutesToHHMM } from '@/stores/weeklySchedule'
 import WeeklyScheduleBlock from './WeeklyScheduleBlock.vue'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 import type { ScheduleBlockWithSlots, ScheduleSlot } from '@/schemas/weeklySchedule'
 
 const store = useWeeklyScheduleStore()
@@ -15,20 +16,41 @@ const dayGridStyle = computed(() => ({
 }))
 
 const containerRef = ref<HTMLElement | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
 const containerHeight = ref(400)
 const containerWidth = ref(800)
+const headerHeight = ref(0)
 
 let rafId: number | null = null
+
+const { transitioning, onEnd: onLayoutTransitionEnd } = useLayoutTransition()
+let stopTransitionListener: (() => void) | null = null
+
+function readRects() {
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect()
+    containerHeight.value = rect.height
+    containerWidth.value = rect.width
+  }
+  headerHeight.value = headerRef.value?.getBoundingClientRect().height ?? 0
+}
 
 function measure() {
   if (rafId !== null) return
   rafId = requestAnimationFrame(() => {
     rafId = null
-    if (containerRef.value) {
-      const rect = containerRef.value.getBoundingClientRect()
-      containerHeight.value = rect.height
-      containerWidth.value = rect.width
+    if (transitioning.value) {
+      // Durante una transición de layout (ej. colapso de sidebar) no medimos
+      // por frame: getBoundingClientRect fuerza reflow completo por frame.
+      // Una única medición al terminar la transición.
+      stopTransitionListener?.()
+      stopTransitionListener = onLayoutTransitionEnd(() => {
+        stopTransitionListener = null
+        measure()
+      })
+      return
     }
+    readRects()
   })
 }
 
@@ -37,15 +59,11 @@ function flushMeasure() {
     cancelAnimationFrame(rafId)
     rafId = null
   }
-  if (containerRef.value) {
-    const rect = containerRef.value.getBoundingClientRect()
-    containerHeight.value = rect.height
-    containerWidth.value = rect.width
-  }
+  readRects()
 }
 
 const labelWidthPx = computed(() => {
-  return Math.max(32, Math.min(64, containerWidth.value * 0.06))
+  return Math.max(44, Math.min(72, containerWidth.value * 0.07))
 })
 const labelWidthStyle = computed(() => labelWidthPx.value + 'px')
 
@@ -64,6 +82,8 @@ onUnmounted(() => {
     cancelAnimationFrame(rafId)
     rafId = null
   }
+  stopTransitionListener?.()
+  stopTransitionListener = null
 })
 
 watch(() => [store.settings, store.visibleWindow], measure, { deep: true })
@@ -74,11 +94,8 @@ const visibleRows = computed(() => {
 })
 
 const rowHeightPx = computed(() => {
-  const headerHeight = Math.max(24, Math.min(40, containerHeight.value * 0.06))
-  const avail = containerHeight.value - headerHeight
-  const calculated = avail / visibleRows.value
-  const minHeight = Math.max(20, Math.min(36, containerHeight.value * 0.045))
-  return Math.max(minHeight, calculated)
+  const avail = Math.max(0, containerHeight.value - headerHeight.value)
+  return avail / visibleRows.value
 })
 
 const minuteHeightPx = computed(() => rowHeightPx.value / store.settings.granularity_minutes)
@@ -136,8 +153,11 @@ function slotsForDay(day: number): VisibleSlot[] {
 
 <template>
   <div ref="containerRef" class="relative flex h-full min-h-0 w-full select-none flex-col">
-    <div class="scrollbar-gutter-stable relative min-h-0 flex-1 overflow-y-auto bg-canvas">
-      <div class="sticky top-0 z-20 flex flex-shrink-0 border-b border-hairline bg-surface-2">
+    <div class="relative min-h-0 flex-1 overflow-hidden bg-canvas">
+      <div
+        ref="headerRef"
+        class="schedule-header flex flex-shrink-0 border-b border-hairline bg-surface-2"
+      >
         <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 bg-surface-2" />
         <div class="grid flex-1 border-l border-hairline bg-surface-2" :style="dayGridStyle">
           <div
@@ -151,17 +171,14 @@ function slotsForDay(day: number): VisibleSlot[] {
       </div>
 
       <div class="flex" :style="{ height: gridHeightStyle }">
-        <div
-          :style="{ width: labelWidthStyle }"
-          class="flex-shrink-0 select-none border-r border-hairline bg-surface-1/50"
-        >
+        <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 select-none bg-surface-1/50">
           <div
             v-for="hl in hourLabels"
             :key="hl.minute"
             :style="{ height: rowHeightStyle }"
-            class="schedule-hour-label flex items-center justify-end border-b border-hairline/30 px-1 pr-2 font-mono text-[10px] text-ink-subtle"
+            class="schedule-hour-label flex items-center justify-center border-b border-hairline/30 px-1 text-ink-subtle"
           >
-            {{ hl.label }}
+            <span class="leading-3">{{ hl.label }}</span>
           </div>
         </div>
 

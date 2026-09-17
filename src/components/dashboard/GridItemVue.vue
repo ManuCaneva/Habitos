@@ -10,7 +10,7 @@ import {
   type FlipRect,
 } from '@/composables/flip'
 import { useDashDrag } from '@/composables/useDashDrag'
-import { COLS, ROWS } from '@/lib/grid'
+import { COLS, ROWS, itemZIndex } from '@/lib/grid'
 
 const props = defineProps<{
   item: LayoutItem
@@ -30,6 +30,16 @@ const gridStyle = computed(() => ({
   gridColumn: `${props.item.x + 1} / span ${props.item.w}`,
   gridRow: `${props.item.y + 1} / span ${props.item.h}`,
 }))
+
+const DRAGGING_Z_INDEX = COLS * ROWS + 1
+
+const itemStyle = computed(() => {
+  if (!props.editMode) return gridStyle.value
+  return {
+    ...gridStyle.value,
+    zIndex: isDragging.value ? DRAGGING_Z_INDEX : itemZIndex(props.item.x, props.item.y),
+  }
+})
 
 const editModeRef = computed(() => props.editMode)
 
@@ -188,9 +198,10 @@ useDashDrag(elRef, editModeRef, {
 <template>
   <div
     ref="elRef"
-    :style="gridStyle"
+    :style="itemStyle"
     :class="[
       'grid-item',
+      'min-h-0 min-w-0',
       editMode && 'grid-item--editable',
       isDragging && 'grid-item--dragging',
       isFlipping && 'grid-item--flip',
@@ -203,7 +214,7 @@ useDashDrag(elRef, editModeRef, {
 <style scoped>
 .grid-item {
   border-radius: 2px;
-  contain: layout paint;
+  contain: layout;
 }
 
 .grid-item--editable {

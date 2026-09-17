@@ -39,15 +39,15 @@ const isIndeterminate = computed(() => props.indeterminate && !props.modelValue)
       />
       <span
         :class="[
-          'flex h-4 w-4 items-center justify-center rounded border transition-colors duration-150',
+          'flex h-4 w-4 items-center justify-center rounded-xs border transition-colors duration-150',
           isChecked || isIndeterminate
             ? 'border-primary bg-primary'
             : 'border-hairline-strong bg-surface-1 peer-hover:border-primary/50',
-          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-focus/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
         ]"
       >
-        <Check v-if="isChecked" :size="12" class="text-white" stroke-width="3" />
-        <Minus v-else-if="isIndeterminate" :size="12" class="text-white" stroke-width="3" />
+        <Check v-if="isChecked" :size="12" class="text-on-primary" stroke-width="3" />
+        <Minus v-else-if="isIndeterminate" :size="12" class="text-on-primary" stroke-width="3" />
       </span>
     </span>
     <span v-if="label" class="text-body text-ink">{{ label }}</span>

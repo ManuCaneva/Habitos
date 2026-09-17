@@ -269,8 +269,9 @@ export const useHabitsStore = defineStore('habits', () => {
     try {
       const rows = await db.listHabits(true)
       habits.value = rows.map(rowToHabit)
+      // 364 días de grilla + 1: cubre todo el heatmap visible
       const fromDate = new Date()
-      fromDate.setDate(fromDate.getDate() - 90)
+      fromDate.setDate(fromDate.getDate() - 364)
       const from = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}-${String(fromDate.getDate()).padStart(2, '0')}`
       const to = todayLocalDate()
       const logRows = await db.listLogsInRange(from, to)

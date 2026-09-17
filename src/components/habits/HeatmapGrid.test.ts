@@ -15,6 +15,14 @@ function todayLocalStr(): string {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`
 }
 
+function cellAlphas(w: ReturnType<typeof mount>): number[] {
+  return w
+    .findAll("[data-testid='heat-cell']")
+    .map((el) => (el.element as HTMLElement).style.background)
+    .filter((bg) => bg.startsWith('rgba('))
+    .map((bg) => Number(bg.slice(bg.lastIndexOf(',') + 1, -1)))
+}
+
 describe('HeatmapGrid (column-major)', () => {
   it('usa repeat(cols, 10px) en grid-template-columns', () => {
     const w = mount(HeatmapGrid, { props: { logs: [], color: '#5e6ad2', days: 364 } })
@@ -86,7 +94,7 @@ describe('HeatmapGrid (column-major)', () => {
     expect(off).toBeTruthy()
   })
 
-  it('celda con progreso parcial usa shadeFor proporcional (4/8 → 50%)', () => {
+  it('celda con progreso parcial usa escala anclada a la base (4/8 → 57.5%)', () => {
     const today = todayLocalStr()
     const w = mount(HeatmapGrid, {
       props: {
@@ -106,10 +114,37 @@ describe('HeatmapGrid (column-major)', () => {
         target: 8,
       },
     })
-    const partial = w
-      .findAll("[data-testid='heat-cell']")
-      .find((el) => (el.element as HTMLElement).style.background === 'rgba(94, 106, 210, 0.5)')
-    expect(partial).toBeTruthy()
+    const alphas = cellAlphas(w)
+    const partial = alphas.filter((a) => a > 0.15)
+    expect(partial).toHaveLength(1)
+    expect(partial[0]).toBeCloseTo(0.575)
+  })
+
+  it('celda con progreso parcial arranca desde la tonalidad base (1/20 → ≈0.19, nunca más oscura que 0.15)', () => {
+    const today = todayLocalStr()
+    const w = mount(HeatmapGrid, {
+      props: {
+        logs: [
+          {
+            id: '1',
+            habit_id: 'h',
+            log_date: today,
+            completed_at: today,
+            note: null,
+            count: 1,
+            created_at: today,
+          },
+        ],
+        color: '#5e6ad2',
+        days: 364,
+        target: 20,
+      },
+    })
+    const alphas = cellAlphas(w)
+    expect(alphas).toContain(0.15)
+    const partial = alphas.filter((a) => a > 0.15)
+    expect(partial).toHaveLength(1)
+    expect(partial[0]).toBeCloseTo(0.1925)
   })
 
   it('con target=1 la intensidad colapsa al comportamiento binario (count 1 → 100%)', () => {

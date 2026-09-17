@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import WidgetPicker from './WidgetPicker.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockAddWidget = vi.fn()
 const layoutRef = ref([{ i: 'habits', x: 0, y: 0, w: 6, h: 4 }])
@@ -61,5 +62,11 @@ describe('WidgetPicker', () => {
     const tasksItem = wrapper.find("[data-widget-id='tasks']")
     await tasksItem.trigger('click')
     expect(mockAddWidget).toHaveBeenCalledWith('tasks')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', async () => {
+    const wrapper = mount(WidgetPicker)
+    await wrapper.find("[data-testid='widget-picker-toggle']").trigger('click')
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
   })
 })

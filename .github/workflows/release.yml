@@ -91,7 +91,7 @@ jobs:
         run: npm ci
 
       - name: Build and release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_GCAL_CLIENT_ID: ${{ secrets.VITE_GCAL_CLIENT_ID }}
@@ -99,7 +99,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'AEON v__VERSION__'
-          releaseBody: 'Descargá la versión para tu sistema operativo.'
+          releaseBody: 'Descargá la versión para tu sistema operativo. La app no está firmada: Windows puede mostrar un aviso de SmartScreen y macOS puede pedir clic derecho → Abrir la primera vez.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

@@ -53,8 +53,14 @@ const colorClass = computed(() => {
 })
 
 const weightClass = computed(() => {
-  if (props.weight) return `font-${props.weight}`
-  return ''
+  if (!props.weight) return ''
+  const weights = {
+    '400': 'font-normal',
+    '500': 'font-medium',
+    '600': 'font-semibold',
+    '700': 'font-bold',
+  }
+  return weights[props.weight]
 })
 </script>
 

@@ -30,7 +30,7 @@ defineEmits<{
 const iconSize = computed(() => (props.size === 'sm' ? 14 : props.size === 'lg' ? 18 : 16))
 
 const base =
-  'inline-flex items-center justify-center rounded-md transition-colors duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+  'inline-flex items-center justify-center rounded-md transition-colors duration-150 ease-out select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:cursor-not-allowed'
 
 const sizeClass = computed(() => {
   switch (props.size) {
@@ -46,11 +46,11 @@ const sizeClass = computed(() => {
 const variantClass = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-primary text-white hover:bg-primary-hover active:bg-primary-focus'
+      return 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover active:bg-primary-focus'
     case 'ghost':
       return 'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-1 active:bg-surface-2'
     default:
-      return 'bg-surface-1 text-ink border border-hairline hover:bg-surface-2 hover:border-hairline-strong'
+      return 'bg-surface-1 text-ink border border-hairline hover:bg-surface-2 hover:border-hairline-strong active:bg-surface-3'
   }
 })
 </script>

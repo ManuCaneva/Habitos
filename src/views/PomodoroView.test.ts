@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PomodoroView from './PomodoroView.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 function createStore(overrides: Record<string, unknown> = {}) {
   return {
@@ -101,6 +102,25 @@ describe('PomodoroView', () => {
     const style = (ring.attributes('style') ?? '') as string
     expect(style).toContain('rgb(var(--color-primary)')
     expect(style).toContain('rgb(var(--color-surface-3)')
+    wrapper.unmount()
+  })
+
+  it('usa eyebrow para la fase y no colores de paleta crudos', () => {
+    store = createStore()
+    const wrapper = mount(PomodoroView)
+    const phase = wrapper.get('[data-testid="pomodoro-phase"]')
+    expect(phase.classes()).toContain('text-eyebrow')
+    expect(phase.classes()).toContain('uppercase')
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('los dots de ciclo usan el acento primario', () => {
+    store = createStore()
+    const wrapper = mount(PomodoroView)
+    const dots = wrapper.findAll('[data-testid="cycle-dot"]')
+    expect(dots[0].classes()).toContain('bg-primary')
+    expect(dots[3].classes()).toContain('bg-surface-3')
     wrapper.unmount()
   })
 })

@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { computed, ref } from 'vue'
 import SettingsView from './SettingsView.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockTheme = {
   id: 'dark',
@@ -52,11 +53,6 @@ vi.mock('@/composables/useTheme', () => ({
         name: 'Claro',
         colors: { primary: '94 106 210' },
       },
-      {
-        id: 'popi',
-        name: 'Popi',
-        colors: { primary: '89 169 106' },
-      },
     ],
     setTheme: mockSetTheme,
   }),
@@ -90,6 +86,10 @@ const mockCalendarStore: {
 
 vi.mock('@/stores/calendar', () => ({
   useCalendarStore: () => mockCalendarStore,
+}))
+
+vi.mock('@/components/settings/WallpaperCard.vue', () => ({
+  default: { template: '<div data-testid="mock-wallpaper-card" />' },
 }))
 
 describe('SettingsView', () => {
@@ -206,5 +206,39 @@ describe('SettingsView', () => {
     const wrapper = mount(SettingsView)
     await wrapper.find('input[type="checkbox"]').setValue(false)
     expect(mockCalendarStore.setCalendarHidden).toHaveBeenCalledWith('primary', true)
+  })
+
+  it('organiza las secciones con eyebrows', () => {
+    const wrapper = mount(SettingsView)
+    const eyebrows = wrapper.findAll('.text-eyebrow')
+    expect(eyebrows.map((e) => e.text())).toEqual([
+      'Configuración',
+      'Apariencia',
+      'Integraciones',
+      'Datos',
+    ])
+  })
+
+  it('la sección Apariencia incluye la card de Fondo', () => {
+    const wrapper = mount(SettingsView)
+    expect(wrapper.find("[data-testid='mock-wallpaper-card']").exists()).toBe(true)
+  })
+
+  it('no usa colores de paleta crudos de Tailwind', () => {
+    mockCalendarStore.connected = true
+    mockCalendarStore.syncError = 'boom'
+    const wrapper = mount(SettingsView)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+  })
+
+  it('usa acentos semánticos para el estado de conexión', () => {
+    mockCalendarStore.connected = true
+    const connected = mount(SettingsView)
+    expect(connected.get("[data-testid='gcal-status']").classes()).toContain('text-accent-green')
+
+    mockCalendarStore.connected = false
+    mockCalendarStore.oauthStatus = 'idle'
+    const disconnected = mount(SettingsView)
+    expect(disconnected.get("[data-testid='gcal-status']").classes()).toContain('text-ink-muted')
   })
 })

@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleGrid from './WeeklyScheduleGrid.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 
-const mockStore = {
-  blocksWithSlots: [
+function defaultBlocksWithSlots() {
+  return [
     {
       id: '333e8400-e29b-41d4-a716-446655440000',
       title: 'Gimnasio',
@@ -24,14 +26,67 @@ const mockStore = {
         },
       ],
     },
-  ],
-  settings: {
-    granularity_minutes: 30,
-    week_starts_monday: true,
-    enabled_days: [0, 1, 2, 3, 4, 5, 6],
-  },
+  ]
+}
+
+const defaultSettings = () => ({
+  granularity_minutes: 30,
+  week_starts_monday: true,
+  enabled_days: [0, 1, 2, 3, 4, 5, 6],
+})
+
+const mockStore = {
+  blocksWithSlots: defaultBlocksWithSlots(),
+  settings: defaultSettings(),
   enabledDays: [0, 1, 2, 3, 4, 5, 6],
   visibleWindow: { start_minutes: 360, end_minutes: 1380 },
+}
+
+function stylePx(el: { attributes: (n: string) => string | undefined }, prop: string): number {
+  const style = el.attributes('style') ?? ''
+  const entry = style
+    .split(';')
+    .map((s) => s.trim())
+    .find((s) => s.startsWith(prop + ':'))
+  return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
+}
+
+function nextFrame(): Promise<unknown> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+}
+
+function stubResizeObserver() {
+  let resizeCallback: (() => void) | null = null
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: () => void) {
+        resizeCallback = callback
+      }
+      observe() {}
+      disconnect() {}
+    }
+  )
+  return () => resizeCallback?.()
+}
+
+async function mountMeasured(containerHeight: number, headerHeight = 0) {
+  const triggerResize = stubResizeObserver()
+  const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+  const container = wrapper.element as HTMLElement
+  vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+    height: containerHeight,
+    width: 900,
+  } as DOMRect)
+  const header = wrapper.find('.schedule-header').element as HTMLElement
+  vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({
+    height: headerHeight,
+    width: 900,
+  } as DOMRect)
+  triggerResize()
+  await nextFrame()
+  await wrapper.vm.$nextTick()
+  return wrapper
 }
 
 vi.mock('@/stores/weeklySchedule', () => ({
@@ -52,10 +107,22 @@ vi.mock('@/stores/ui', () => ({
 describe('WeeklyScheduleGrid', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockStore.blocksWithSlots = defaultBlocksWithSlots()
+    mockStore.settings = defaultSettings()
+    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    // El flag de transición de layout es global: si un test lo dejó activo,
+    // lo cerramos para no contaminar el siguiente.
+    useLayoutTransition().end()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(WeeklyScheduleGrid)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+    wrapper.unmount()
   })
 
   it('renderiza las columnas de los días de la semana', () => {
@@ -76,17 +143,7 @@ describe('WeeklyScheduleGrid', () => {
   })
 
   it('difiere measure() a rAF: el resize del contenedor no vuelve a medir en cada frame', async () => {
-    let resizeCallback: (() => void) | null = null
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        constructor(callback: () => void) {
-          resizeCallback = callback
-        }
-        observe() {}
-        disconnect() {}
-      }
-    )
+    const triggerResize = stubResizeObserver()
 
     const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
     const el = wrapper.element
@@ -95,21 +152,147 @@ describe('WeeklyScheduleGrid', () => {
 
     // Llamadas repetidas del RO dentro del mismo frame: sin rAF, la medición
     // volvería a correr cada vez. Con rAF, se coalescen en una sola.
-    ;(resizeCallback as unknown as () => void)()
-    ;(resizeCallback as unknown as () => void)()
-    ;(resizeCallback as unknown as () => void)()
+    triggerResize()
+    triggerResize()
+    triggerResize()
     await wrapper.vm.$nextTick()
 
     // Sin pasar un frame, la altura del container sigue siendo el valor por defecto
     const defaultHourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
     expect(defaultHourHeight).toContain('height:')
 
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+    await nextFrame()
     await wrapper.vm.$nextTick()
 
     // Tras el rAF, las filas de hora se recalcularon con la altura real
     const hourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
     expect(hourHeight).not.toBe(defaultHourHeight)
+    wrapper.unmount()
+  })
+
+  it('difiere la medición durante una transición de layout y mide una sola vez al terminar', async () => {
+    const triggerResize = stubResizeObserver()
+    const { start, end } = useLayoutTransition()
+
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const el = wrapper.element
+    const rect = { height: 500, width: 900 }
+    const rectSpy = vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+
+    // Medición inicial sin transición: la grilla se acomoda a 500px
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    const before = wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')
+
+    // Transición activa: resizes no miden (quedan deferidos)
+    start()
+    rectSpy.mockReturnValue({ height: 700, width: 900 } as DOMRect)
+    triggerResize()
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')).toBe(before)
+
+    // Al terminar la transición: una única medición final con el último tamaño
+    end()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+    const after = wrapper.findAll('.schedule-hour-label')[0]!.attributes('style')
+    expect(after).not.toBe(before)
+
+    wrapper.unmount()
+  })
+
+  it('no difiere la medición cuando no hay transición de layout', async () => {
+    const triggerResize = stubResizeObserver()
+
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const el = wrapper.element
+    const rect = { height: 500, width: 900 }
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+
+    const hourHeight = wrapper.findAll('.schedule-hour-label')[0]?.attributes('style')
+    expect(hourHeight).not.toContain('height: 400px')
+    expect(hourHeight).toContain('height:')
+
+    wrapper.unmount()
+  })
+
+  it('comprime la grilla a lo disponible sin piso mínimo: no scrollea con contenedor bajo', async () => {
+    const rows = Math.floor(
+      (mockStore.visibleWindow.end_minutes - mockStore.visibleWindow.start_minutes) /
+        mockStore.settings.granularity_minutes
+    )
+    const containerHeight = 240
+    const headerHeight = 32
+    const wrapper = await mountMeasured(containerHeight, headerHeight)
+
+    // La ventana visible no se recalcula al comprimir: siguen estando todas las filas
+    expect(wrapper.findAll('.schedule-hour-label')).toHaveLength(rows)
+
+    const first = wrapper.findAll('.schedule-hour-label')[0]!
+    const rowHeight = stylePx(first, 'height')
+    // Sin piso mínimo, cada fila mide exactamente (contenedor - header) / filas
+    expect(rowHeight).toBeCloseTo((containerHeight - headerHeight) / rows, 5)
+    // Header + grilla caben dentro del contenedor: no hay scroll posible
+    expect(headerHeight + rowHeight * rows).toBeLessThanOrEqual(containerHeight + 0.01)
+    expect(wrapper.find('.overflow-y-auto').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('centra el número de hora dentro de su celda', () => {
+    mockStore.visibleWindow = { start_minutes: 900, end_minutes: 1200 }
+    const wrapper = mount(WeeklyScheduleGrid)
+
+    const labels = wrapper.findAll('.schedule-hour-label')
+    expect(labels.length).toBeGreaterThan(0)
+    for (const label of labels) {
+      // El texto queda centrado verticalmente dentro de la franja horaria
+      expect(label.classes()).toContain('items-center')
+      expect(label.classes()).toContain('justify-center')
+      const text = label.find('span')
+      expect(text.exists()).toBe(true)
+      expect(text.classes()).not.toContain('-translate-y-1/2')
+    }
+
+    wrapper.unmount()
+  })
+
+  it('usa la misma familia tipográfica que el resto en las etiquetas de hora', () => {
+    const wrapper = mount(WeeklyScheduleGrid)
+    const labels = wrapper.findAll('.schedule-hour-label')
+    expect(labels.length).toBeGreaterThan(0)
+    for (const label of labels) {
+      expect(label.classes()).not.toContain('font-mono')
+    }
+    wrapper.unmount()
+  })
+
+  it('reserva un ancho mínimo para la columna de horas aunque el contenedor sea angosto', async () => {
+    const triggerResize = stubResizeObserver()
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const container = wrapper.element as HTMLElement
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      height: 500,
+      width: 500,
+    } as DOMRect)
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+
+    const label = wrapper.find('.schedule-hour-label')
+    const gutter = label.element.parentElement as HTMLElement
+    const width = Number.parseFloat(gutter.style.width)
+    // Mínimo legible para "15:00": con menos, el texto justificado a la
+    // derecha desborda hacia la izquierda y queda pegado al borde.
+    expect(width).toBeGreaterThanOrEqual(44)
+
     wrapper.unmount()
   })
 
@@ -152,15 +335,6 @@ describe('WeeklyScheduleGrid', () => {
     // Ambos slots son de la misma instancia AACSW
     blocks.forEach((b) => expect(b.text()).toContain('AACSW'))
 
-    function stylePx(el: { attributes: (n: string) => string | undefined }, prop: string): number {
-      const style = el.attributes('style') ?? ''
-      const entry = style
-        .split(';')
-        .map((s) => s.trim())
-        .find((s) => s.startsWith(prop + ':'))
-      return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
-    }
-
     // Posicionamiento vertical por minutos: el slot de Lunes (15:50) empieza
     // antes que el de Jueves (18:10), por lo que su `top` es menor.
     const monday = blocks[0]
@@ -170,29 +344,6 @@ describe('WeeklyScheduleGrid', () => {
     expect(stylePx(monday, 'height')).toBeGreaterThan(0)
     expect(stylePx(monday, 'height')).toBe(stylePx(thursday, 'height'))
     wrapper.unmount()
-
-    mockStore.blocksWithSlots = [
-      {
-        id: '333e8400-e29b-41d4-a716-446655440000',
-        title: 'Gimnasio',
-        color: 'lavender',
-        sort_order: 0,
-        created_at: '2026-07-12T19:00:00.000Z',
-        updated_at: '2026-07-12T19:00:00.000Z',
-        slots: [
-          {
-            id: '550e8400-e29b-41d4-a716-446655440001',
-            block_id: '333e8400-e29b-41d4-a716-446655440000',
-            day_of_week: 1,
-            start_minutes: 360,
-            end_minutes: 420,
-            created_at: '2026-07-12T19:00:00.000Z',
-            updated_at: '2026-07-12T19:00:00.000Z',
-          },
-        ],
-      },
-    ]
-    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
   })
 
   it('recorta en el borde un slot que cruza la Ventana visible en vez de ocultarlo', () => {
@@ -262,15 +413,6 @@ describe('WeeklyScheduleGrid', () => {
     const blocks = wrapper.findAll('.schedule-block')
     expect(blocks).toHaveLength(3)
 
-    function stylePx(el: { attributes: (n: string) => string | undefined }, prop: string): number {
-      const style = el.attributes('style') ?? ''
-      const entry = style
-        .split(';')
-        .map((s) => s.trim())
-        .find((s) => s.startsWith(prop + ':'))
-      return Number.parseFloat(entry?.split(':')[1]?.trim() ?? '')
-    }
-
     const byTitle = new Map(
       blocks.map((b) => [b.text().trim(), b] as [string, (typeof blocks)[number]])
     )
@@ -288,28 +430,5 @@ describe('WeeklyScheduleGrid', () => {
     expect(stylePx(crossesTop, 'top')).toBe(0)
     expect(stylePx(crossesTop, 'height')).toBe(insideHeight)
     wrapper.unmount()
-
-    mockStore.blocksWithSlots = [
-      {
-        id: '333e8400-e29b-41d4-a716-446655440000',
-        title: 'Gimnasio',
-        color: 'lavender',
-        sort_order: 0,
-        created_at: '2026-07-12T19:00:00.000Z',
-        updated_at: '2026-07-12T19:00:00.000Z',
-        slots: [
-          {
-            id: '550e8400-e29b-41d4-a716-446655440001',
-            block_id: '333e8400-e29b-41d4-a716-446655440000',
-            day_of_week: 1,
-            start_minutes: 360,
-            end_minutes: 420,
-            created_at: '2026-07-12T19:00:00.000Z',
-            updated_at: '2026-07-12T19:00:00.000Z',
-          },
-        ],
-      },
-    ]
-    mockStore.visibleWindow = { start_minutes: 360, end_minutes: 1380 }
   })
 })

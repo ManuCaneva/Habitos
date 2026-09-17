@@ -3,6 +3,7 @@ import { mount, VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import WeeklyScheduleSettingsModal from './WeeklyScheduleSettingsModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 const mockStore = {
   settings: {
@@ -119,5 +120,13 @@ describe('WeeklyScheduleSettingsModal', () => {
 
     expect(document.body.textContent).toContain('Seleccioná al menos un día')
     expect(lunes!.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    wrapper = mount(WeeklyScheduleSettingsModal, {
+      props: { open: true },
+      attachTo: document.body,
+    })
+    expect(hasRawPaletteColor(document.body.innerHTML)).toBe(false)
   })
 })

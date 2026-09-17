@@ -22,8 +22,6 @@ const expanded = ref(false)
 const completedSteps = computed(() => props.task.steps.filter((s) => s.done).length)
 const totalSteps = computed(() => props.task.steps.length)
 const hasSteps = computed(() => totalSteps.value > 0)
-const allStepsDone = computed(() => hasSteps.value && props.task.steps.every((s) => s.done))
-const canComplete = computed(() => !hasSteps.value || allStepsDone.value)
 const hasDeadline = computed(() => props.task.due_date !== null)
 
 const urgency = computed(() => urgencyLevel(props.task.due_date))
@@ -36,14 +34,14 @@ const urgencyLabel = computed(() => {
   return `Faltan ${days} día${days !== 1 ? 's' : ''}`
 })
 
-const urgencyColor = computed(() => {
+const urgencyPill = computed(() => {
   switch (urgency.value) {
     case 'overdue':
-      return 'text-red-500'
+      return 'bg-accent-red-tint text-accent-red'
     case 'warning':
-      return 'text-primary'
+      return 'bg-accent-orange-tint text-accent-orange'
     default:
-      return 'text-ink-tertiary'
+      return 'bg-surface-2 text-ink-muted'
   }
 })
 
@@ -53,7 +51,7 @@ const progress = computed(() => {
 })
 
 const progressColor = computed(() => {
-  if (urgency.value === 'overdue') return 'bg-red-500'
+  if (urgency.value === 'overdue') return 'bg-accent-red'
   return 'bg-primary'
 })
 
@@ -80,7 +78,7 @@ function handleComplete() {
     <div class="flex items-start gap-3">
       <div
         data-testid="task-color-indicator"
-        class="mt-0.5 h-10 w-1 shrink-0 rounded-sm"
+        class="mt-0.5 h-10 w-1 shrink-0 rounded-full"
         :style="{ backgroundColor: task.color }"
       />
 
@@ -92,10 +90,10 @@ function handleComplete() {
           <button
             data-testid="task-menu-button"
             :data-task-menu-trigger="task.id"
-            class="ml-auto rounded p-1 opacity-0 transition-opacity hover:bg-surface-2 group-hover:opacity-100"
+            class="ml-auto rounded-md p-1 text-ink-muted opacity-0 transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
             @click.stop="ui.toggleTaskMenu(task.id)"
           >
-            <MoreHorizontal :size="16" class="text-ink-muted" />
+            <MoreHorizontal :size="16" />
           </button>
         </div>
 
@@ -122,8 +120,8 @@ function handleComplete() {
           <div
             v-if="hasDeadline"
             data-testid="task-deadline"
-            class="flex items-center gap-1"
-            :class="urgencyColor"
+            class="flex items-center rounded-full px-2 py-0.5 font-medium"
+            :class="urgencyPill"
           >
             <span>{{ urgencyLabel }}</span>
           </div>
@@ -147,7 +145,7 @@ function handleComplete() {
                 v-for="step in task.steps"
                 :key="step.id"
                 data-testid="task-step-item"
-                class="flex items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-surface-2"
+                class="flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-surface-2"
               >
                 <label
                   class="relative inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center"
@@ -169,7 +167,7 @@ function handleComplete() {
                       'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-focus/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas',
                     ]"
                   >
-                    <Check v-if="step.done" :size="12" class="text-white" stroke-width="3" />
+                    <Check v-if="step.done" :size="12" class="text-on-primary" stroke-width="3" />
                   </span>
                 </label>
                 <Text
@@ -188,16 +186,10 @@ function handleComplete() {
       <div class="flex shrink-0 items-center">
         <button
           data-testid="task-complete-btn"
-          :disabled="!canComplete"
-          :class="[
-            'flex h-5 w-5 items-center justify-center rounded border transition-all duration-150',
-            canComplete
-              ? 'cursor-pointer border-hairline-strong bg-surface-1 hover:border-primary hover:bg-primary/20'
-              : 'border-hairline-light cursor-not-allowed bg-surface-1/50 opacity-30',
-          ]"
+          class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border border-hairline-strong bg-surface-1 text-transparent transition-all duration-150 hover:border-accent-green hover:bg-accent-green-tint hover:text-accent-green"
           @click.stop="handleComplete"
         >
-          <Check :size="14" stroke-width="3" class="text-transparent" />
+          <Check :size="14" stroke-width="3" />
         </button>
       </div>
     </div>

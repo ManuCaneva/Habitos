@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { reactive } from 'vue'
 import GcalVisibilityCard from './GcalVisibilityCard.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
 
 type TestCalendar = {
   id: string
@@ -175,5 +176,13 @@ describe('GcalVisibilityCard', () => {
 
     expect(wrapper.find("[data-testid='gcal-visibility-empty']").exists()).toBe(false)
     expect(wrapper.findAll("[data-testid='gcal-visibility-row']")).toHaveLength(0)
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    mockStore.calendars = [primaryCal, workCal, utnCal]
+    expect(hasRawPaletteColor(mount(GcalVisibilityCard).html())).toBe(false)
+
+    mockStore.connected = false
+    expect(hasRawPaletteColor(mount(GcalVisibilityCard).html())).toBe(false)
   })
 })

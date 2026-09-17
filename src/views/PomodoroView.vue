@@ -45,11 +45,17 @@ onBeforeUnmount(() => {
 <template>
   <main data-testid="pomodoro-view" class="h-full overflow-y-auto lg:overflow-hidden">
     <div
-      class="mx-auto flex h-full max-w-6xl flex-col gap-6 px-6 py-section lg:flex-row lg:items-center lg:justify-center lg:gap-8 lg:overflow-hidden"
+      class="mx-auto flex h-full max-w-6xl flex-col gap-6 px-6 py-12 lg:flex-row lg:items-center lg:justify-center lg:gap-10 lg:overflow-hidden"
     >
-      <div class="flex w-full flex-1 justify-center lg:max-w-[28rem]">
-        <Card class="flex w-full flex-col items-center gap-5 py-8" data-testid="pomodoro-card">
-          <Text data-testid="pomodoro-phase" variant="subhead" color="muted">{{ phaseLabel }}</Text>
+      <div class="flex w-full flex-1 justify-center lg:max-w-[30rem]">
+        <Card
+          variant="featured"
+          class="flex w-full flex-col items-center gap-6 py-10"
+          data-testid="pomodoro-card"
+        >
+          <Text data-testid="pomodoro-phase" variant="eyebrow" color="subtle" class="uppercase">
+            {{ phaseLabel }}
+          </Text>
           <div
             data-testid="pomodoro-progress"
             class="relative flex h-64 w-64 items-center justify-center rounded-full"
@@ -66,7 +72,7 @@ onBeforeUnmount(() => {
             >
               <span
                 data-testid="pomodoro-countdown"
-                class="font-mono text-5xl font-semibold tracking-tight"
+                class="font-mono text-5xl font-semibold tabular-nums tracking-tight"
               >
                 {{ formatRemainingTime(pomodoro.remainingMs) }}
               </span>
@@ -82,7 +88,7 @@ onBeforeUnmount(() => {
               v-for="dot in cycleDots"
               :key="dot"
               data-testid="cycle-dot"
-              class="h-2.5 w-2.5 rounded-full"
+              class="h-2.5 w-2.5 rounded-full transition-colors duration-150"
               :class="dot < pomodoro.session.completedFocusSessions ? 'bg-primary' : 'bg-surface-3'"
             />
           </div>
@@ -133,7 +139,7 @@ onBeforeUnmount(() => {
         </Card>
       </div>
 
-      <div class="w-full flex-1 lg:max-w-[28rem] lg:overflow-y-auto">
+      <div class="w-full flex-1 lg:max-w-[30rem] lg:overflow-y-auto">
         <PomodoroSettingsPanel
           :settings="pomodoro.settings"
           @update:settings="pomodoro.saveSettings"

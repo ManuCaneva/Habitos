@@ -53,6 +53,9 @@ test-results/
 # ── Issue tracker local (migrado a GitHub Issues) ────────────
 .scratch/
 
+# ── Referencias visuales locales (no se suben) ───────────────
+docs/ref-visuales/
+
 # ── Misc ─────────────────────────────────────────────────────
 *.bak
 *.tmp

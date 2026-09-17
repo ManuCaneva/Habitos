@@ -23,3 +23,12 @@ export const BUDGET = {
   maxFrameGapMs: 300, // baseline 216-250ms + headroom (~29%)
   settleMs: 350, // baseline 78-124ms, outliers ~270-283ms
 }
+
+// Referencia orientativa para el diagnóstico de colapso de sidebar
+// (scripts/perf-sidebar-collapse.mjs), medido con el mismo colector:
+// baseline sin defer: 5-6 long tasks por colapso+expansión, gaps 66-150ms.
+// El objetivo del defer es 0 long tasks y gaps < 100ms.
+export const SIDEBAR_COLLAPSE_REFERENCE = {
+  maxLongTasks: 0,
+  maxFrameGapMs: 100,
+}

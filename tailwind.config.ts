@@ -29,9 +29,20 @@ const config: Config = {
           hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
           focus: 'rgb(var(--color-primary-focus) / <alpha-value>)',
         },
+        'on-primary': 'rgb(var(--color-on-primary) / <alpha-value>)',
         'brand-secure': 'rgb(var(--color-brand-secure) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
         overlay: 'rgb(var(--color-overlay) / <alpha-value>)',
+        accent: {
+          green: 'rgb(var(--color-accent-green) / <alpha-value>)',
+          'green-tint': 'rgb(var(--color-accent-green-tint) / <alpha-value>)',
+          orange: 'rgb(var(--color-accent-orange) / <alpha-value>)',
+          'orange-tint': 'rgb(var(--color-accent-orange-tint) / <alpha-value>)',
+          red: 'rgb(var(--color-accent-red) / <alpha-value>)',
+          'red-tint': 'rgb(var(--color-accent-red-tint) / <alpha-value>)',
+          purple: 'rgb(var(--color-accent-purple) / <alpha-value>)',
+          'purple-tint': 'rgb(var(--color-accent-purple-tint) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: [
@@ -92,7 +103,7 @@ const config: Config = {
         section: '96px',
       },
       boxShadow: {
-        'focus-ring': '0 0 0 2px rgba(94, 106, 210, 0.5)',
+        'focus-ring': '0 0 0 2px rgb(var(--color-primary) / 0.5)',
       },
       keyframes: {
         'fade-in': {

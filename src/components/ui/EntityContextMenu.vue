@@ -56,12 +56,12 @@ onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
         left: `${position.left}px`,
         zIndex: 50,
       }"
-      class="w-44 animate-fade-in rounded-md border border-hairline-strong bg-surface-2 py-1 shadow-xl"
+      class="glass-overlay w-44 animate-fade-in rounded-lg py-1 shadow-xl"
       role="menu"
     >
       <button
         type="button"
-        class="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-ink transition-colors hover:bg-surface-3"
+        class="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-ink transition-colors hover:bg-surface-3 focus-visible:bg-surface-3 focus-visible:outline-none"
         role="menuitem"
         @click="emit('edit')"
       >
@@ -72,8 +72,8 @@ onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
         type="button"
         :class="[
           'flex w-full items-center gap-2 px-3 py-2 text-body-sm transition-colors',
-          'hover:bg-surface-3',
-          isArchived ? 'text-ink' : 'text-red-400',
+          'hover:bg-surface-3 focus-visible:bg-surface-3 focus-visible:outline-none',
+          isArchived ? 'text-ink' : 'text-accent-red',
         ]"
         role="menuitem"
         @click="emit('archive-toggle')"

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5731 1690" width="5731" height="1690">
+  <rect width="5731" height="1690" rx="120" fill="#0c0b0a"/>
+  <g fill="#6e56cf">
+    <path transform="translate(87 1566) scale(1 -1)" d="M13 0 545 1490H877L1407 0H1116L997 356H419L297 0ZM493 573H925L855 783Q822 886 787.5 998.0Q753 1110 711 1251Q669 1110 634.0 998.0Q599 886 565 783Z"/>
+    <path transform="translate(1462 1566) scale(1 -1)" d="M124 0V1490H1159V1261H388V869H1101V644H388V229H1159V0Z"/>
+    <path transform="translate(4280 1566) scale(1 -1)" d="M124 0V1490H409L932 659Q959 617 1003.0 540.0Q1047 463 1092 383Q1089 467 1087.5 550.5Q1086 634 1086 678V1490H1351V0H1065L593 748Q561 798 505.0 892.5Q449 987 381 1108Q386 984 387.0 891.0Q388 798 388 749V0Z"/>
+  </g>
+  <g>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(-85.8857 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(-34.4571 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(16.9714 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(68.4000 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(119.8286 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="#6e56cf" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(171.2571 3484 821)"/>
+    <circle cx="3484" cy="821" r="635.75" fill="none" stroke="rgba(110, 86, 207, 0.2)" stroke-width="266.5" stroke-linecap="butt" stroke-dasharray="479.34 3515.19" transform="rotate(222.6857 3484 821)"/>
+  </g>
+</svg>

@@ -31,7 +31,7 @@ function selectWidget(id: string) {
     <div class="relative">
       <div
         v-if="open"
-        class="absolute bottom-12 right-0 min-w-[180px] rounded-lg border border-hairline bg-surface-1 p-2 shadow-lg"
+        class="absolute bottom-12 right-0 min-w-[180px] rounded-xl border border-hairline bg-surface-1 p-2 shadow-lg"
       >
         <Text variant="caption" weight="600" class="px-2 py-1 text-ink-muted">Agregar widget</Text>
         <button
@@ -40,10 +40,10 @@ function selectWidget(id: string) {
           :data-widget-id="widget.id"
           data-testid="widget-picker-item"
           type="button"
-          class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-caption text-ink transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-caption text-ink-muted transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
           @click="selectWidget(widget.id)"
         >
-          <span class="text-primary">{{ widget.title }}</span>
+          <span>{{ widget.title }}</span>
         </button>
         <div v-if="availableWidgets.length === 0" class="px-2 py-1.5 text-caption text-ink-muted">
           Todos los widgets ya están agregados
@@ -52,7 +52,7 @@ function selectWidget(id: string) {
       <button
         data-testid="widget-picker-toggle"
         type="button"
-        class="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-colors duration-150 hover:bg-primary-hover active:bg-primary-focus"
+        class="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-colors duration-150 hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:bg-primary-focus"
         aria-label="Agregar widget"
         @click="toggleOpen"
       >

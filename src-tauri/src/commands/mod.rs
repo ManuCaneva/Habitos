@@ -7,6 +7,7 @@ pub mod goal_logs;
 pub mod goals;
 pub mod habits;
 pub mod logs;
+pub mod notes;
 pub mod oauth;
 pub mod tasks;
 pub mod weekly_schedule;

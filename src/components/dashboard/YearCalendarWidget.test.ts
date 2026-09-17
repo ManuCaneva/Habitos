@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import YearCalendarWidget from './YearCalendarWidget.vue'
 import MonthMini from '@/components/calendar/MonthMini.vue'
 import DayDetailsModal from '@/components/dashboard/DayDetailsModal.vue'
+import { hasRawPaletteColor } from '@/test/colorGuard'
+import { useLayoutTransition } from '@/composables/useLayoutTransition'
 
 function flushRaf() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
@@ -50,6 +52,13 @@ describe('YearCalendarWidget', () => {
     mockStore.syncing = false
     mockStore.eventsByDate = new Map()
     mockStore.syncError = null
+  })
+
+  afterEach(() => {
+    // El flag de transición de layout es global: si un test lo dejó activo,
+    // lo cerramos para no contaminar el siguiente.
+    const { end } = useLayoutTransition()
+    end()
   })
 
   it('renderiza 12 meses', async () => {
@@ -128,7 +137,7 @@ describe('YearCalendarWidget', () => {
     const wrapper = mount(YearCalendarWidget)
     const container = wrapper.find("[data-testid='year-calendar-widget']")
     expect(container.exists()).toBe(true)
-    expect(container.classes()).toContain('bg-surface-1')
+    expect(container.classes()).toContain('glass-soft')
     expect(container.classes()).toContain('border-hairline')
   })
 
@@ -176,6 +185,20 @@ describe('YearCalendarWidget', () => {
   it("muestra el título 'Calendario Anual' en el header", () => {
     const wrapper = mount(YearCalendarWidget)
     expect(wrapper.text()).toContain('Calendario Anual')
+  })
+
+  it('tiene el título alineado a la izquierda y conserva el spinner (ALINEACIÓN)', () => {
+    mockStore.syncing = true
+    const wrapper = mount(YearCalendarWidget)
+    const header = wrapper.get('.ycw__header')
+    const title = header.get('.ycw__title')
+
+    expect(header.classes()).not.toContain('justify-center')
+    expect(header.classes()).toContain('justify-start')
+    expect(title.classes()).not.toContain('text-center')
+    expect(title.classes()).toContain('text-left')
+    expect(header.element.firstElementChild?.textContent).toContain('Calendario Anual')
+    expect(header.find("[data-testid='sync-spinner']").exists()).toBe(true)
   })
 
   it('no muestra flechas de paginación cuando caben los 12 meses', () => {
@@ -302,5 +325,87 @@ describe('YearCalendarWidget', () => {
     expect(cols).toBeLessThanOrEqual(4)
 
     vi.unstubAllGlobals()
+  })
+
+  it('no usa colores de paleta cruda de Tailwind', () => {
+    const wrapper = mount(YearCalendarWidget)
+    expect(hasRawPaletteColor(wrapper.html())).toBe(false)
+  })
+
+  it('difiere el recompute durante una transición de layout y lo corre una sola vez al terminar', async () => {
+    let resizeCallback: (() => void) | null = null
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resizeCallback = callback
+        }
+        observe() {}
+        disconnect() {}
+      }
+    )
+
+    const { start, end } = useLayoutTransition()
+    start()
+
+    const fireResize = () => {
+      if (resizeCallback) (resizeCallback as () => void)()
+    }
+
+    const wrapper = mount(YearCalendarWidget, { attachTo: document.body })
+    const bodyEl = wrapper.find('.ycw__body').element as HTMLElement
+    Object.defineProperty(bodyEl, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 900, configurable: true })
+
+    // Resize durante la transición: el recompute queda deferido, el DOM no cambia
+    fireResize()
+    await flushRaf()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(0)
+
+    // Varios resizes más durante la transición: siguen deferidos
+    fireResize()
+    fireResize()
+    await flushRaf()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(0)
+
+    // Al terminar la transición: un único recompute con el último tamaño
+    end()
+    await flushRaf()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(12)
+
+    vi.unstubAllGlobals()
+    wrapper.unmount()
+  })
+
+  it('no difiere el recompute cuando no hay transición de layout', async () => {
+    let resizeCallback: (() => void) | null = null
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resizeCallback = callback
+        }
+        observe() {}
+        disconnect() {}
+      }
+    )
+
+    const wrapper = mount(YearCalendarWidget, { attachTo: document.body })
+    const bodyEl = wrapper.find('.ycw__body').element as HTMLElement
+    Object.defineProperty(bodyEl, 'clientWidth', { value: 1200, configurable: true })
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 900, configurable: true })
+
+    if (resizeCallback) {
+      ;(resizeCallback as () => void)()
+    }
+    await flushRaf()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll("[data-testid='month-mini']")).toHaveLength(12)
+
+    vi.unstubAllGlobals()
+    wrapper.unmount()
   })
 })

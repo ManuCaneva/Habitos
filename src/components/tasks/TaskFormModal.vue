@@ -163,7 +163,7 @@ async function handleSubmit(e: Event) {
               :class="[
                 'h-8 w-8 rounded-full transition-all duration-150',
                 'hover:scale-110 active:scale-95',
-                color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-surface-1' : '',
+                color === c.value ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface-1' : '',
               ]"
               @click="color = c.value"
             />

@@ -25,6 +25,7 @@ function openEdit(b: ScheduleBlockWithSlots) {
 <template>
   <Container
     variant="default"
+    glass
     padding="none"
     class="container-widget h-full overflow-hidden"
     style="container-type: inline-size"
@@ -32,10 +33,9 @@ function openEdit(b: ScheduleBlockWithSlots) {
   >
     <div class="flex h-full min-h-0 flex-col">
       <header
-        class="schedule-widget-header grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-hairline bg-surface-2 px-2 py-1"
+        class="schedule-widget-header flex flex-shrink-0 items-center justify-between border-b border-hairline bg-surface-2 px-2 py-1"
       >
-        <div></div>
-        <Text variant="card-title" weight="600" class="min-w-0 truncate text-center"
+        <Text variant="card-title" weight="600" class="min-w-0 truncate text-left"
           >Cronograma Semanal</Text
         >
         <div class="flex items-center justify-end gap-1">
@@ -49,7 +49,7 @@ function openEdit(b: ScheduleBlockWithSlots) {
       </header>
       <div
         v-if="store.lastError"
-        class="select-text whitespace-pre-wrap border-b border-red-500/20 bg-red-500/10 p-3 text-xs text-red-500"
+        class="select-text whitespace-pre-wrap border-b border-accent-red/25 bg-accent-red-tint p-3 text-xs text-accent-red"
       >
         Error al cargar: {{ store.lastError }}
       </div>

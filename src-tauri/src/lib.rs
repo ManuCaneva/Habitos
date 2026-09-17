@@ -11,6 +11,16 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Workaround: el renderer DMABUF de WebKitGTK deja bordes fantasma al mover
+    // widgets (capas transformadas) en Linux con NVIDIA/Wayland. Se desactiva
+    // solo si el usuario no lo configuró explícitamente.
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
@@ -43,6 +53,10 @@ pub fn run() {
             commands::tasks::delete_task,
             commands::tasks::archive_task,
             commands::tasks::restore_task,
+            commands::notes::create_note,
+            commands::notes::list_notes,
+            commands::notes::update_note,
+            commands::notes::delete_note,
             commands::goals::create_goal,
             commands::goals::list_goals,
             commands::goals::update_goal,

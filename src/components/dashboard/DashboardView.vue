@@ -23,13 +23,14 @@ function onRemoveWidget(id: string) {
 </script>
 
 <template>
-  <div data-testid="dashboard-view" class="h-full overflow-hidden">
+  <div data-testid="dashboard-view" class="h-full" :class="!ui.editMode && 'overflow-hidden'">
     <div
       class="dashboard-grid relative h-full"
+      :class="ui.editMode && 'isolate'"
       style="
         display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        grid-template-rows: repeat(10, 1fr);
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-template-rows: repeat(10, minmax(0, 1fr));
         gap: 4px;
       "
     >

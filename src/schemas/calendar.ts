@@ -83,10 +83,12 @@ export function toLocalDate(dateStr: string | undefined): string | null {
   }
 }
 
+export const DEFAULT_EVENT_COLOR = '#6e56cf'
+
 export function resolveEventColor(
   colorId: string | undefined,
   calendarColor: string | undefined
 ): string {
   if (colorId && CALENDAR_COLORS[colorId]) return CALENDAR_COLORS[colorId]
-  return calendarColor ?? '#5e6ad2'
+  return calendarColor ?? DEFAULT_EVENT_COLOR
 }

@@ -29,7 +29,7 @@ defineEmits<{
 }>()
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium text-button rounded-md transition-colors duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed select-none'
+  'inline-flex items-center justify-center gap-2 font-medium text-button rounded-md transition-colors duration-150 ease-out select-none focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed'
 
 const sizeClass = computed(() => {
   switch (props.size) {
@@ -45,17 +45,17 @@ const sizeClass = computed(() => {
 const variantClass = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-primary text-white hover:bg-primary-hover active:bg-primary-focus focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover active:bg-primary-focus focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     case 'secondary':
-      return 'bg-surface-1 text-ink border border-hairline hover:bg-surface-2 hover:border-hairline-strong active:bg-surface-3 focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-surface-1 text-ink border border-hairline hover:bg-surface-2 hover:border-hairline-strong active:bg-surface-3 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     case 'tertiary':
-      return 'bg-transparent text-ink hover:bg-surface-1 active:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-transparent text-ink hover:bg-surface-1 active:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     case 'inverse':
-      return 'bg-white text-canvas hover:bg-ink-muted active:bg-ink-subtle focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-ink text-canvas hover:bg-ink-muted active:bg-ink-subtle focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     case 'ghost':
-      return 'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-1 active:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-1 active:bg-surface-2 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     case 'danger':
-      return 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:bg-red-500/30 focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+      return 'bg-accent-red-tint text-accent-red border border-accent-red/25 hover:bg-accent-red/15 active:bg-accent-red/25 focus-visible:ring-2 focus-visible:ring-accent-red/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
     default:
       return ''
   }
