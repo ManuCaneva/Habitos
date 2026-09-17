@@ -4,6 +4,7 @@
     <img src="src/assets/logo/logo-wordmark-dark-1024.png" width="300" alt="AEON">
   </picture>
   <p>Dashboard de productividad <strong>local-first</strong> para escritorio.</p>
+  <img src="docs/screenshots/dashboard.png" width="900" alt="Dashboard de AEON con hábitos, cronograma y notas">
 </div>
 
 AEON reúne hábitos, tareas, objetivos, cronograma semanal, calendario anual y pomodoro en un solo dashboard configurable. Tus datos viven en tu máquina: sin cuentas, sin servidores y sin suscripción.
