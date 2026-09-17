@@ -8,7 +8,7 @@ AEON usa un canvas **warm-dark** — negro con tinte marrón/oliva (`{colors.can
 
 El único color de acción es el **violeta Attio** `{colors.primary}` (`#6e56cf`): CTAs primarios, foco, elementos activos y la marca. Alrededor vive una **escala de acentos semánticos** (verde, naranja, rojo, violeta) disponible en versión sólida y tintada para pills, badges, dots de estado y barras de progreso — el recurso visual que da vida al CRM de referencia sin gritar.
 
-El tema **Claro** es la misma familia en hueso/beige (`{colors.canvas}` `#f7f4ed`), no un claro frío. **Popi** queda intacto y conserva su identidad. Los tres temas consumen la misma capa de tokens; cambiar de tema no cambia la app, solo los valores.
+El tema **Claro** es la misma familia en hueso/beige (`{colors.canvas}` `#f3eee2`), no un claro frío. Los dos temas consumen la misma capa de tokens; cambiar de tema no cambia la app, solo los valores.
 
 La tipografía es **Inter** con jerarquía fuerte: títulos en 500/600 con tracking negativo, secundarios en grises cálidos. El layout se apoya en **paneles flotantes** con radios de 12–16px y padding generoso para que el contenido "flote" sobre el canvas.
 
@@ -40,19 +40,19 @@ La capa de tokens es el **único punto de cambio de color**. `applyTheme()` (`sr
 
 | Token | Oscuro | Claro | Uso |
 |---|---|---|---|
-| `{colors.canvas}` | `#0c0b0a` | `#f7f4ed` | Fondo general de la app |
-| `{colors.surface-1}` | `#161412` | `#fbf9f4` | Cards, paneles, sidebar |
-| `{colors.surface-2}` | `#201d1a` | `#f1ede5` | Paneles elevados, hover de filas, headers de listing |
-| `{colors.surface-3}` | `#2c2824` | `#e9e4db` | Estado activo, menu items hover, thumbs apagados |
-| `{colors.surface-4}` | `#3a352f` | `#dfd9ce` | Surface más elevada, scrollbar thumb |
+| `{colors.canvas}` | `#0c0b0a` | `#f3eee2` | Fondo general de la app |
+| `{colors.surface-1}` | `#161412` | `#f9f5ec` | Cards, paneles, sidebar |
+| `{colors.surface-2}` | `#201d1a` | `#ede7da` | Paneles elevados, hover de filas, headers de listing |
+| `{colors.surface-3}` | `#2c2824` | `#e2dbcc` | Estado activo, menu items hover, thumbs apagados, celdas del calendario anual |
+| `{colors.surface-4}` | `#3a352f` | `#d6cebf` | Surface más elevada, scrollbar thumb, hover de celda del calendario |
 
 ### Hairline
 
 | Token | Oscuro | Claro | Uso |
 |---|---|---|---|
-| `{colors.hairline}` | `#2e2a25` | `#e4ded3` | Borde por defecto de cards, paneles, inputs |
-| `{colors.hairline-strong}` | `#423c35` | `#cdc5b7` | Hover de borde, paneles flotantes, menús |
-| `{colors.hairline-tertiary}` | `#585047` | `#aca394` | Scrollbar hover y bordes terciarios |
+| `{colors.hairline}` | `#2e2a25` | `#e0d9cb` | Borde por defecto de cards, paneles, inputs |
+| `{colors.hairline-strong}` | `#423c35` | `#c7beae` | Hover de borde, paneles flotantes, menús |
+| `{colors.hairline-tertiary}` | `#585047` | `#a89e8d` | Scrollbar hover y bordes terciarios |
 
 ### Text
 
@@ -93,10 +93,6 @@ La paleta de bloques del calendario semanal (`--color-block-*`) y la de colores 
 | red | `#e55e54` | pink | `#e682af` |
 
 > El módulo `src/schemas/calendar.ts` conserva los 11 colores de la API de Google Calendar (`CALENDAR_COLORS`) y `DEFAULT_EVENT_COLOR = '#6e56cf'`: son datos de dominio que cruzan la frontera Tauri, no estética. Junto con `src/lib/habitColors.ts` forman las **excepciones permitidas** al grep de hex.
-
-### Popi
-
-Popi es intocable: conserva sus valores exactos (`canvas` `#474a2c`, `primary` `#59a96a`, etc.) y comparte la paleta de bloques cálida. No se documenta como sistema nuevo porque no forma parte del rediseño.
 
 ## Typography
 
@@ -318,7 +314,6 @@ Todos los componentes consumen tokens y acentos; ninguno hardcodea color. Los pr
 - No combines más de un acento saturado en el mismo bloque.
 - No agregues sombras pesadas donde alcanza una hairline.
 - No rompas el motion del dashboard (transform/opacity, easing actual).
-- No toques Popi ni la cantidad de temas.
 
 ## Verification
 
@@ -329,7 +324,7 @@ Esta certificación corre en CI vía la suite de tests:
   - El `content="#0c0b0a"` del `<meta name="theme-color">` en `index.html`: no puede leer CSS vars, así que fija el canvas warm-dark. Debe actualizarse a mano si cambia `{colors.canvas}`.
   - Los estilos inline que leen valores del tema (`rgb(${theme.colors.primary})` en `SettingsView.vue` para los swatches): consumen la definición de tema, no un literal nuevo.
 - **Guard de clases crudas** — `src/test/colorGuard.test.ts` cubre el helper `hasHardcodedColor` / `hasRawPaletteColor`.
-- **Tests de temas** — `src/lib/themes.test.ts` verifica valores y contrato de los tres temas (warm-dark, claro cálido, Popi intacto) y los acentos.
+- **Tests de temas** — `src/lib/themes.test.ts` verifica valores y contrato de los dos temas (warm-dark, claro cálido crema) y los acentos.
 - **Tests de componentes y vistas** — las assertions de clases se actualizaron al sistema nuevo; el comportamiento vía props/emits no cambió.
 - **Presupuesto de rendimiento** — `npm run test:perf` debe seguir verde (el rediseño no altera el motor de grilla).
 - **Gates** — `npm run test`, `npm run build`, `npm run lint`, `npm run format:check` y `npm run test:perf` verdes.
@@ -338,4 +333,3 @@ Esta certificación corre en CI vía la suite de tests:
 
 - Los 11 colores de `CALENDAR_COLORS` provienen de la API de Google Calendar y se mantienen como datos de dominio, no como tokens de tema; podrían re-tunarse a la familia cálida en una segunda pasada.
 - Los pulidos finos de espaciado y micro-interacciones quedan para tickets de refinamiento posteriores; esta pasada certifica cobertura total, no perfección por componente.
-- Popi no se documenta como sistema porque conserva su identidad original por decisión de producto.

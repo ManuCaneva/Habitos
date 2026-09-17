@@ -14,11 +14,11 @@ describe('migrateStorageKey', () => {
   })
 
   it('copia una clave legada cuando la nueva no existe', () => {
-    localStorage.setItem('habitos.theme', JSON.stringify('popi'))
+    localStorage.setItem('habitos.theme', JSON.stringify('dark'))
 
     migrateStorageKey('habitos.theme', 'aeon.theme')
 
-    expect(localStorage.getItem('aeon.theme')).toBe(JSON.stringify('popi'))
+    expect(localStorage.getItem('aeon.theme')).toBe(JSON.stringify('dark'))
   })
 
   it('conserva la clave nueva si ya tiene un valor', () => {

@@ -10,8 +10,8 @@ import {
 
 describe('themes', () => {
   describe('themes array', () => {
-    it('tiene exactamente 3 temas', () => {
-      expect(themes).toHaveLength(3)
+    it('tiene exactamente 2 temas', () => {
+      expect(themes).toHaveLength(2)
     })
 
     it('cada tema tiene id, name, colors y fonts', () => {
@@ -31,10 +31,6 @@ describe('themes', () => {
       expect(themes.some((t) => t.id === 'light')).toBe(true)
     })
 
-    it('incluye el tema popi', () => {
-      expect(themes.some((t) => t.id === 'popi')).toBe(true)
-    })
-
     it('cada tema tiene isDark como boolean', () => {
       for (const theme of themes) {
         expect(theme).toHaveProperty('isDark')
@@ -42,10 +38,9 @@ describe('themes', () => {
       }
     })
 
-    it('dark y popi son isDark true, light es isDark false', () => {
+    it('dark es isDark true, light es isDark false', () => {
       expect(getThemeById('dark')!.isDark).toBe(true)
       expect(getThemeById('light')!.isDark).toBe(false)
-      expect(getThemeById('popi')!.isDark).toBe(true)
     })
   })
 
@@ -114,12 +109,24 @@ describe('themes', () => {
       expect(luma(c.surface3)).toBeLessThan(luma(c.surface4))
     })
 
-    it('Claro es hueso/beige cálido (no blanco frío puro)', () => {
+    it('Claro es crema cálido (no blanco duro ni frío)', () => {
       const light = getThemeById('light')!.colors
       const [r, g, b] = light.canvas.split(' ').map(Number)
-      expect(r).toBeGreaterThanOrEqual(240)
-      expect(r).toBeGreaterThan(b)
-      expect(g).toBeGreaterThanOrEqual(b)
+      expect(r).toBeGreaterThan(g)
+      expect(g).toBeGreaterThan(b)
+      const luma = r + g + b
+      expect(luma).toBeLessThanOrEqual(710)
+    })
+
+    it('Claro: surface-3 y surface-4 se distinguen del canvas (celdas del calendario visibles)', () => {
+      const c = getThemeById('light')!.colors
+      const luma = (s: string) =>
+        s
+          .split(' ')
+          .slice(0, 3)
+          .reduce((a, v) => a + Number(v), 0)
+      expect(luma(c.surface3)).toBeLessThanOrEqual(660)
+      expect(luma(c.surface4)).toBeLessThanOrEqual(620)
     })
 
     it('el primario es violeta estilo Attio (#6E56CF ≈ 110 86 207)', () => {
@@ -146,39 +153,6 @@ describe('themes', () => {
       expect(warm(c.hairline)).toBe(true)
       expect(warm(c.hairlineStrong)).toBe(true)
       expect(warm(c.hairlineTertiary)).toBe(true)
-    })
-  })
-
-  describe('Popi queda intacto', () => {
-    it('conserva exactamente sus colores actuales', () => {
-      const popi = getThemeById('popi')!
-      expect(popi.name).toBe('Popi')
-      expect(popi.isDark).toBe(true)
-      expect(popi.colors).toEqual({
-        canvas: '71 74 44',
-        surface1: '80 84 52',
-        surface2: '99 105 64',
-        surface3: '89 169 106',
-        surface4: '155 222 172',
-        hairline: '90 96 56',
-        hairlineStrong: '99 105 64',
-        hairlineTertiary: '120 140 90',
-        ink: '180 231 206',
-        inkMuted: '155 222 172',
-        inkSubtle: '120 170 120',
-        inkTertiary: '100 130 85',
-        primary: '89 169 106',
-        primaryHover: '155 222 172',
-        primaryFocus: '89 169 106',
-        onPrimary: '24 40 28',
-        brandSecure: '99 105 64',
-        success: '155 222 172',
-        overlay: '0 0 0',
-      })
-    })
-
-    it('comparte la paleta de bloques por diseño (los 8 bloques son globales)', () => {
-      expect(getThemeById('popi')!.blockColors).toBe(getThemeById('dark')!.blockColors)
     })
   })
 
@@ -299,14 +273,9 @@ describe('themes', () => {
       expect(theme!.id).toBe('light')
     })
 
-    it('retorna el tema popi cuando busco "popi"', () => {
-      const theme = getThemeById('popi')
-      expect(theme).toBeDefined()
-      expect(theme!.id).toBe('popi')
-    })
-
     it('retorna undefined para un id inexistente', () => {
       expect(getThemeById('inexistente')).toBeUndefined()
+      expect(getThemeById('popi')).toBeUndefined()
     })
   })
 
@@ -374,11 +343,6 @@ describe('themes', () => {
 
     it('agrega clase "dark" cuando el tema es dark', () => {
       applyTheme(getThemeById('dark')!)
-      expect(root.classList.contains('dark')).toBe(true)
-    })
-
-    it('agrega clase "dark" cuando el tema es popi', () => {
-      applyTheme(getThemeById('popi')!)
       expect(root.classList.contains('dark')).toBe(true)
     })
 

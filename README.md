@@ -25,7 +25,7 @@ Los instaladores de cada sistema operativo están en la [página de releases](ht
 - **Cronograma semanal** — bloques por día y franja horaria, con drag & drop.
 - **Calendario anual** — los 12 meses en una grilla, con lectura opcional de Google Calendar.
 - **Pomodoro** — timer configurable con conteo de sesiones completadas.
-- **Dashboard** — grilla de widgets con drag, resize, temas claro / oscuro / Popi.
+- **Dashboard** — grilla de widgets con drag, resize, temas claro / oscuro.
 
 ## Stack
 
