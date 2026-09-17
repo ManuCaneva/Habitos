@@ -248,6 +248,18 @@
   padding-right: max(0.375rem, 1cqw);
 }
 
+/* Pomodoro widget - el círculo se achica con ambas dimensiones del widget */
+.container-widget .pomodoro-circle {
+  width: min(100cqw, 100cqh, 11rem);
+}
+.container-widget .pomodoro-disc {
+  width: calc(100% - max(8px, 4cqmin));
+  height: calc(100% - max(8px, 4cqmin));
+}
+.container-widget .pomodoro-countdown {
+  font-size: clamp(0.75rem, 14cqmin, 1.875rem);
+}
+
 /* Schedule widget header - proportional scaling */
 .container-widget .schedule-widget-header {
   padding: max(0.25rem, 0.5cqw) max(0.5rem, 1cqw);

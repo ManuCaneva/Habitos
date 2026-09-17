@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -175,6 +176,29 @@ describe('PomodoroWidget', () => {
     expect(mockPrepareAudio).toHaveBeenCalledOnce()
     await new Promise((r) => setTimeout(r, 0))
     expect(mockStart).toHaveBeenCalledOnce()
+  })
+
+  it('limita el círculo por ancho y alto del widget y escala su contenido', () => {
+    const wrapper = mount(PomodoroWidget)
+
+    const area = wrapper.get('[data-testid="pomodoro-widget-circle-area"]')
+    expect(area.attributes('style') ?? '').toContain('container-type: size')
+
+    expect(wrapper.get('[data-testid="pomodoro-widget-toggle"]').classes()).toContain(
+      'pomodoro-circle'
+    )
+    expect(wrapper.get('[data-testid="pomodoro-widget-disc"]').classes()).toContain('pomodoro-disc')
+    expect(wrapper.get('[data-testid="pomodoro-widget-countdown"]').classes()).toContain(
+      'pomodoro-countdown'
+    )
+
+    // Las reglas viven en tailwind.css (jsdom no parsea unidades cq* inline)
+    const css = readFileSync('src/styles/tailwind.css', 'utf-8')
+    expect(css).toMatch(
+      /\.container-widget \.pomodoro-circle\s*\{[^}]*min\(100cqw, 100cqh, 11rem\)/
+    )
+    expect(css).toMatch(/\.container-widget \.pomodoro-disc\s*\{[^}]*cqmin/)
+    expect(css).toMatch(/\.container-widget \.pomodoro-countdown\s*\{[^}]*clamp\([^)]*cqmin/)
   })
 
   it('no usa colores de paleta cruda de Tailwind', () => {

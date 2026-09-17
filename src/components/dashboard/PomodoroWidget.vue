@@ -66,11 +66,15 @@ onBeforeUnmount(() => {
       <Text variant="card-title" weight="600" class="text-left">Pomodoro</Text>
     </header>
 
-    <div class="flex min-h-0 flex-1 items-center justify-center p-4">
+    <div
+      data-testid="pomodoro-widget-circle-area"
+      class="pomodoro-circle-area flex min-h-0 flex-1 items-center justify-center p-4"
+      style="container-type: size"
+    >
       <button
         data-testid="pomodoro-widget-toggle"
         type="button"
-        class="group flex aspect-square w-[min(100%,11rem)] items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        class="pomodoro-circle group flex aspect-square items-center justify-center rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         :aria-label="toggleLabel"
         @click="toggle"
       >
@@ -86,11 +90,12 @@ onBeforeUnmount(() => {
           }"
         >
           <div
-            class="flex h-[calc(100%-8px)] w-[calc(100%-8px)] flex-col items-center justify-center gap-1.5 rounded-full bg-surface-1"
+            data-testid="pomodoro-widget-disc"
+            class="pomodoro-disc flex flex-col items-center justify-center gap-1.5 rounded-full bg-surface-1"
           >
             <span
               data-testid="pomodoro-widget-countdown"
-              class="font-mono text-3xl font-semibold tracking-tight"
+              class="pomodoro-countdown font-mono font-semibold tracking-tight"
             >
               {{ formatRemainingTime(displayedRemainingMs) }}
             </span>
