@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -13,6 +13,31 @@ import { useUiStore, type ViewMode } from '@/stores/ui'
 import Text from '@/components/ui/Text.vue'
 
 const ui = useUiStore()
+
+const SETTLE_DELAY_MS = 200
+
+const settled = ref(ui.sidebarCollapsed)
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(
+  () => ui.sidebarCollapsed,
+  (collapsed) => {
+    if (settleTimer) {
+      clearTimeout(settleTimer)
+      settleTimer = undefined
+    }
+    settled.value = false
+    if (!collapsed) return
+    settleTimer = setTimeout(() => {
+      settled.value = true
+      settleTimer = undefined
+    }, SETTLE_DELAY_MS)
+  }
+)
+
+onBeforeUnmount(() => {
+  if (settleTimer) clearTimeout(settleTimer)
+})
 
 interface NavRow {
   key: string
@@ -62,8 +87,17 @@ const systemRows = computed<NavRow[]>(() => [
 
 const collapseIcon = computed(() => (ui.sidebarCollapsed ? PanelLeftOpen : PanelLeftClose))
 
-const rowBase =
-  'group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-caption font-medium transition-colors duration-150'
+const fadeClass = computed(() => (ui.sidebarCollapsed && !settled.value ? 'opacity-0' : ''))
+const hideClass = computed(() => (ui.sidebarCollapsed && settled.value ? 'hidden' : ''))
+const textFade = computed(() => [fadeClass.value, hideClass.value])
+const centered = computed(() => ui.sidebarCollapsed && settled.value)
+
+const rowBase = computed(
+  () =>
+    `group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-caption font-medium transition-colors duration-150${
+      centered.value ? ' justify-center' : ''
+    }`
+)
 const rowIdle = 'text-ink-muted hover:bg-surface-2 hover:text-ink'
 const rowActive = 'bg-surface-3 text-ink'
 </script>
@@ -71,33 +105,43 @@ const rowActive = 'bg-surface-3 text-ink'
 <template>
   <aside
     :class="[
-      'flex h-full flex-col rounded-xl border border-hairline bg-surface-1 transition-all duration-200',
+      'flex h-full flex-col rounded-xl border border-hairline bg-surface-1 transition-[width] duration-150 ease-out',
       ui.sidebarCollapsed ? 'w-14' : 'w-56',
     ]"
   >
-    <div data-testid="sidebar-header" class="flex items-center gap-2 px-2 py-2.5">
+    <div
+      data-testid="sidebar-header"
+      class="flex items-center gap-2 px-2 py-2.5"
+      :class="centered && 'justify-center'"
+    >
       <Text
-        v-if="!ui.sidebarCollapsed"
+        data-testid="sidebar-title"
         variant="body-sm"
         weight="600"
-        class="min-w-0 flex-1 truncate"
+        class="min-w-0 flex-1 truncate transition-opacity duration-150"
+        :class="textFade"
       >
         AEON
       </Text>
       <button
         type="button"
         data-testid="sidebar-toggle"
-        class="flex shrink-0 items-center justify-center rounded-md px-1.5 py-1.5 text-ink-muted transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
+        class="flex shrink-0 items-center justify-center rounded-md px-2 py-1.5 text-ink-muted transition-colors duration-150 hover:bg-surface-2 hover:text-ink"
         aria-label="Colapsar sidebar"
         title="Colapsar sidebar"
         @click="ui.toggleSidebar()"
       >
-        <component :is="collapseIcon" :size="16" class="shrink-0" />
+        <component :is="collapseIcon" :size="18" class="shrink-0" />
       </button>
     </div>
 
     <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-1">
-      <Text v-if="!ui.sidebarCollapsed" variant="eyebrow" color="subtle" class="px-2 pb-1 pt-2">
+      <Text
+        variant="eyebrow"
+        color="subtle"
+        class="px-2 pb-1 pt-2 transition-opacity duration-150"
+        :class="textFade"
+      >
         Navegación
       </Text>
       <button
@@ -109,15 +153,31 @@ const rowActive = 'bg-surface-3 text-ink'
         @click="row.select()"
       >
         <component :is="row.icon" :size="18" class="shrink-0" />
-        <template v-if="!ui.sidebarCollapsed">
-          <span class="min-w-0 flex-1 truncate text-left">{{ row.label }}</span>
-          <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', row.dot]" aria-hidden="true" />
-        </template>
+        <span
+          :data-testid="`nav-label-${row.key}`"
+          class="min-w-0 flex-1 truncate text-left transition-opacity duration-150"
+          :class="textFade"
+        >
+          {{ row.label }}
+        </span>
+        <span
+          :class="[
+            'h-1.5 w-1.5 shrink-0 rounded-full transition-opacity duration-150',
+            row.dot,
+            textFade,
+          ]"
+          aria-hidden="true"
+        />
       </button>
     </nav>
 
     <div class="flex flex-col gap-1 border-t border-hairline px-2 py-2">
-      <Text v-if="!ui.sidebarCollapsed" variant="eyebrow" color="subtle" class="px-2 pb-1 pt-1">
+      <Text
+        variant="eyebrow"
+        color="subtle"
+        class="px-2 pb-1 pt-1 transition-opacity duration-150"
+        :class="textFade"
+      >
         Sistema
       </Text>
       <button
@@ -131,10 +191,21 @@ const rowActive = 'bg-surface-3 text-ink'
         @click="row.select()"
       >
         <component :is="row.icon" :size="18" class="shrink-0" />
-        <template v-if="!ui.sidebarCollapsed">
-          <span class="min-w-0 flex-1 truncate text-left">{{ row.label }}</span>
-          <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', row.dot]" aria-hidden="true" />
-        </template>
+        <span
+          :data-testid="`nav-label-${row.key}`"
+          class="min-w-0 flex-1 truncate text-left transition-opacity duration-150"
+          :class="textFade"
+        >
+          {{ row.label }}
+        </span>
+        <span
+          :class="[
+            'h-1.5 w-1.5 shrink-0 rounded-full transition-opacity duration-150',
+            row.dot,
+            textFade,
+          ]"
+          aria-hidden="true"
+        />
       </button>
     </div>
   </aside>
