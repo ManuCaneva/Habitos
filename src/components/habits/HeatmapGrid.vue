@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { HabitLog } from '@/schemas/habits'
 import { buildHeatmapGrid, HISTORY_ROWS } from '@/lib/buildHeatmapGrid'
-import { shadeFor } from '@/lib/habitColors'
+import { intensityFor, shadeFor } from '@/lib/habitColors'
 import { useHeatmapCols } from '@/composables/useHeatmapCols'
 
 const props = withDefaults(
@@ -51,7 +51,7 @@ function cellStyle(c: {
   if (c.isEmpty) {
     baseStyle.background = 'transparent'
   } else {
-    const intensity = c.count > 0 ? Math.min(1, c.count / Math.max(1, c.target)) : 0.15
+    const intensity = intensityFor(c.count, c.target)
     const base = shadeFor(props.color, intensity)
     const full = c.count > 0 && c.count >= c.target
     if (c.date === todayStr.value && full) {

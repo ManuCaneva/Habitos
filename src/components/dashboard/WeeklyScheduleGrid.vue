@@ -159,9 +159,9 @@ function slotsForDay(day: number): VisibleSlot[] {
             v-for="hl in hourLabels"
             :key="hl.minute"
             :style="{ height: rowHeightStyle }"
-            class="schedule-hour-label flex items-start justify-end border-b border-hairline/30 px-1 text-ink-subtle"
+            class="schedule-hour-label flex items-center justify-center border-b border-hairline/30 px-1 text-ink-subtle"
           >
-            <span class="-translate-y-1/2 leading-3">{{ hl.label }}</span>
+            <span class="leading-3">{{ hl.label }}</span>
           </div>
         </div>
 

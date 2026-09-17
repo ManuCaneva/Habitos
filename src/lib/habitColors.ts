@@ -16,6 +16,14 @@ export const HABIT_COLORS: readonly HabitColor[] = [
 
 export const DEFAULT_HABIT_COLOR = HABIT_COLORS[0].value
 
+export const HEATMAP_BASE_INTENSITY = 0.15
+
+export function intensityFor(count: number, target: number): number {
+  if (count <= 0) return HEATMAP_BASE_INTENSITY
+  const ratio = Math.min(1, count / Math.max(1, target))
+  return HEATMAP_BASE_INTENSITY + (1 - HEATMAP_BASE_INTENSITY) * ratio
+}
+
 export function shadeFor(color: string, intensity: number): string {
   const hex = color.replace('#', '')
   if (!/^[0-9a-fA-F]{6}$/.test(hex)) return 'rgba(0, 0, 0, 0)'

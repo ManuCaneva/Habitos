@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { shadeFor, HABIT_COLORS, DEFAULT_HABIT_COLOR } from './habitColors'
+import { shadeFor, intensityFor, HABIT_COLORS, DEFAULT_HABIT_COLOR } from './habitColors'
 
 describe('HABIT_COLORS', () => {
   it('mantiene 8 colores con los mismos nombres', () => {
@@ -40,5 +40,33 @@ describe('shadeFor', () => {
   })
   it('maneja color sin #', () => {
     expect(shadeFor('5e6ad2', 1)).toBe('rgba(94, 106, 210, 1)')
+  })
+})
+
+describe('intensityFor', () => {
+  it('sin progreso (0/target) devuelve la tonalidad base 0.15', () => {
+    expect(intensityFor(0, 20)).toBe(0.15)
+  })
+
+  it('con progreso parcial arranca desde la base y sube (1/20 ≈ 0.1925, nunca por debajo de 0.15)', () => {
+    const intensity = intensityFor(1, 20)
+    expect(intensity).toBeCloseTo(0.1925)
+    expect(intensity).toBeGreaterThan(0.15)
+  })
+
+  it('a mitad de camino queda en el punto medio del rango [0.15, 1] (4/8 → 0.575)', () => {
+    expect(intensityFor(4, 8)).toBeCloseTo(0.575)
+  })
+
+  it('progreso completo (target/target) devuelve 1', () => {
+    expect(intensityFor(20, 20)).toBe(1)
+  })
+
+  it('con target=1 mantiene el comportamiento binario (1/1 → 1)', () => {
+    expect(intensityFor(1, 1)).toBe(1)
+  })
+
+  it('clampea cuando el count supera al target', () => {
+    expect(intensityFor(25, 20)).toBe(1)
   })
 })

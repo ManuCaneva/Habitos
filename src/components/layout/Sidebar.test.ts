@@ -54,14 +54,14 @@ describe('Sidebar', () => {
     expect(setViewMode).toHaveBeenCalledWith('pomodoro')
   })
 
-  it('renders a section eyebrow per group and a color dot per row', () => {
+  it('renders a section eyebrow per group and no decorative dots', () => {
     const wrapper = mountSidebar()
     const eyebrows = wrapper.findAll('.text-eyebrow')
     expect(eyebrows.map((e) => e.text())).toEqual(['Navegación', 'Sistema'])
 
     for (const key of ['dashboard', 'archived', 'pomodoro', 'edit-mode', 'settings']) {
       const row = wrapper.get(`[data-testid="nav-${key}"]`)
-      expect(row.find('span.rounded-full').exists()).toBe(true)
+      expect(row.find('span.rounded-full').exists()).toBe(false)
     }
   })
 
@@ -84,7 +84,7 @@ describe('Sidebar', () => {
     expect(toggleEditMode).toHaveBeenCalled()
   })
 
-  it('collapsed settled: oculta labels y dots y centra las filas', () => {
+  it('collapsed settled: oculta labels y centra las filas', () => {
     uiState.sidebarCollapsed = true
     const wrapper = mountSidebar()
 
@@ -94,7 +94,6 @@ describe('Sidebar', () => {
     for (const key of ['dashboard', 'archived', 'pomodoro', 'edit-mode', 'settings']) {
       const row = wrapper.get(`[data-testid="nav-${key}"]`)
       expect(row.classes()).toContain('justify-center')
-      expect(row.get('span.rounded-full').classes()).toContain('hidden')
     }
   })
 
@@ -152,13 +151,15 @@ describe('Sidebar', () => {
 
   it('keeps the collapsed and expanded widths unchanged', () => {
     const expanded = mountSidebar()
-    expect(expanded.get('aside').classes()).toContain('w-56')
+    expect(expanded.get('aside').classes()).toContain('w-44')
+    expect(expanded.get('aside').classes()).not.toContain('w-56')
     expect(expanded.get('aside').classes()).not.toContain('w-14')
 
     uiState.sidebarCollapsed = true
     const collapsed = mountSidebar()
     expect(collapsed.get('aside').classes()).toContain('w-14')
     expect(collapsed.get('aside').classes()).not.toContain('w-56')
+    expect(collapsed.get('aside').classes()).not.toContain('w-44')
   })
 
   it('anima solo el width del panel, no todas las propiedades', () => {
@@ -175,7 +176,7 @@ describe('Sidebar', () => {
     expect(wrapper.get('[data-testid="sidebar-title"]').classes()).toContain('hidden')
   })
 
-  it('colapsando: fadea labels y dots sin centrar hasta el settle', async () => {
+  it('colapsando: fadea labels sin centrar hasta el settle', async () => {
     vi.useFakeTimers()
     const wrapper = mountWithReactiveUi(false)
 
@@ -184,13 +185,10 @@ describe('Sidebar', () => {
 
     const aside = wrapper.get('aside')
     const row = wrapper.get('[data-testid="nav-pomodoro"]')
-    const dot = row.get('span.rounded-full')
     const label = row.get('[data-testid="nav-label-pomodoro"]')
 
     expect(aside.classes()).toContain('w-14')
-    expect(dot.classes()).toContain('opacity-0')
     expect(label.classes()).toContain('opacity-0')
-    expect(dot.classes()).not.toContain('hidden')
     expect(label.classes()).not.toContain('hidden')
     expect(row.classes()).not.toContain('justify-center')
     expect(wrapper.get('[data-testid="sidebar-header"]').classes()).not.toContain('justify-center')
@@ -198,7 +196,6 @@ describe('Sidebar', () => {
     vi.advanceTimersByTime(200)
     await nextTick()
 
-    expect(dot.classes()).toContain('hidden')
     expect(label.classes()).toContain('hidden')
     expect(row.classes()).toContain('justify-center')
     expect(wrapper.get('[data-testid="sidebar-header"]').classes()).toContain('justify-center')
@@ -212,11 +209,8 @@ describe('Sidebar', () => {
     await nextTick()
 
     const row = wrapper.get('[data-testid="nav-pomodoro"]')
-    const dot = row.get('span.rounded-full')
-    expect(wrapper.get('aside').classes()).toContain('w-56')
+    expect(wrapper.get('aside').classes()).toContain('w-44')
     expect(row.classes()).not.toContain('justify-center')
-    expect(dot.classes()).not.toContain('opacity-0')
-    expect(dot.classes()).not.toContain('hidden')
   })
 
   it('expandir antes del settle cancela el layout colapsado pendiente', async () => {
@@ -231,9 +225,6 @@ describe('Sidebar', () => {
     await nextTick()
 
     const row = wrapper.get('[data-testid="nav-pomodoro"]')
-    const dot = row.get('span.rounded-full')
     expect(row.classes()).not.toContain('justify-center')
-    expect(dot.classes()).not.toContain('hidden')
-    expect(dot.classes()).not.toContain('opacity-0')
   })
 })

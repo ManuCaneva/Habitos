@@ -189,18 +189,19 @@ describe('WeeklyScheduleGrid', () => {
     wrapper.unmount()
   })
 
-  it('centra el número de hora sobre su línea (mitad por encima del borde superior)', () => {
+  it('centra el número de hora dentro de su celda', () => {
     mockStore.visibleWindow = { start_minutes: 900, end_minutes: 1200 }
     const wrapper = mount(WeeklyScheduleGrid)
 
     const labels = wrapper.findAll('.schedule-hour-label')
     expect(labels.length).toBeGreaterThan(0)
     for (const label of labels) {
-      // La celda arranca en la línea (border-b) y el texto se corre media línea arriba
-      expect(label.classes()).toContain('items-start')
+      // El texto queda centrado verticalmente dentro de la franja horaria
+      expect(label.classes()).toContain('items-center')
+      expect(label.classes()).toContain('justify-center')
       const text = label.find('span')
       expect(text.exists()).toBe(true)
-      expect(text.classes()).toContain('-translate-y-1/2')
+      expect(text.classes()).not.toContain('-translate-y-1/2')
     }
 
     wrapper.unmount()

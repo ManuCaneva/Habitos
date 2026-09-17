@@ -43,24 +43,21 @@ interface NavRow {
   key: string
   label: string
   icon: typeof CheckSquare
-  dot: string
   active: boolean
   select: () => void
 }
 
-const navItems: readonly { id: ViewMode; label: string; icon: typeof CheckSquare; dot: string }[] =
-  [
-    { id: 'dashboard', label: 'Dashboard', icon: CheckSquare, dot: 'bg-primary' },
-    { id: 'archived', label: 'Archivados', icon: Archive, dot: 'bg-accent-orange' },
-    { id: 'pomodoro', label: 'Pomodoro', icon: Timer, dot: 'bg-accent-green' },
-  ] as const
+const navItems: readonly { id: ViewMode; label: string; icon: typeof CheckSquare }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: CheckSquare },
+  { id: 'archived', label: 'Archivados', icon: Archive },
+  { id: 'pomodoro', label: 'Pomodoro', icon: Timer },
+] as const
 
 const navRows = computed<NavRow[]>(() =>
   navItems.map((item) => ({
     key: item.id,
     label: item.label,
     icon: item.icon,
-    dot: item.dot,
     active: ui.viewMode === item.id,
     select: () => ui.setViewMode(item.id),
   }))
@@ -71,7 +68,6 @@ const systemRows = computed<NavRow[]>(() => [
     key: 'edit-mode',
     label: 'Modo Edición',
     icon: Pencil,
-    dot: ui.editMode ? 'bg-accent-orange' : 'bg-ink-tertiary',
     active: ui.editMode,
     select: () => ui.toggleEditMode(),
   },
@@ -79,7 +75,6 @@ const systemRows = computed<NavRow[]>(() => [
     key: 'settings',
     label: 'Settings',
     icon: Settings,
-    dot: 'bg-accent-purple',
     active: ui.viewMode === 'settings',
     select: () => ui.setViewMode('settings'),
   },
@@ -106,7 +101,7 @@ const rowActive = 'bg-surface-3 text-ink'
   <aside
     :class="[
       'flex h-full flex-col rounded-xl border border-hairline bg-surface-1 transition-[width] duration-150 ease-out',
-      ui.sidebarCollapsed ? 'w-14' : 'w-56',
+      ui.sidebarCollapsed ? 'w-14' : 'w-44',
     ]"
   >
     <div
@@ -160,14 +155,6 @@ const rowActive = 'bg-surface-3 text-ink'
         >
           {{ row.label }}
         </span>
-        <span
-          :class="[
-            'h-1.5 w-1.5 shrink-0 rounded-full transition-opacity duration-150',
-            row.dot,
-            textFade,
-          ]"
-          aria-hidden="true"
-        />
       </button>
     </nav>
 
@@ -198,14 +185,6 @@ const rowActive = 'bg-surface-3 text-ink'
         >
           {{ row.label }}
         </span>
-        <span
-          :class="[
-            'h-1.5 w-1.5 shrink-0 rounded-full transition-opacity duration-150',
-            row.dot,
-            textFade,
-          ]"
-          aria-hidden="true"
-        />
       </button>
     </div>
   </aside>
