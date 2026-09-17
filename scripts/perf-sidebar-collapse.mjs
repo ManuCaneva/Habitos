@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from '@playwright/test'
+import { SIDEBAR_COLLAPSE_REFERENCE } from '../tests/perf/perf-constants.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const STUB_PATH = path.join(ROOT, 'tests', 'perf', 'inject-stub.js')
@@ -106,8 +107,8 @@ async function runIteration(browser, iteration) {
   const red = '\x1b[31m'
   const green = '\x1b[32m'
   const reset = '\x1b[0m'
-  // Referencia orientativa (no budget): el resize medía ~14 long tasks.
-  const ok = longTasks === 0 && sample.maxFrameGap < 100
+  const ref = SIDEBAR_COLLAPSE_REFERENCE
+  const ok = longTasks <= ref.maxLongTasks && sample.maxFrameGap < ref.maxFrameGapMs
   const color = ok ? green : red
   const status = ok ? 'OK (limpio)' : 'con long tasks'
 

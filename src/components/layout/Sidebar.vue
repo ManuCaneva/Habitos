@@ -39,15 +39,17 @@ watch(
 )
 
 function handleTransitionEnd(event: TransitionEvent) {
+  if (event.target !== event.currentTarget) return
   if (event.propertyName !== 'width') return
   if (!transitioning.value) return
   end()
 }
 
 onBeforeUnmount(() => {
+  // Solo cancelamos el settle local: la transición global sigue su curso y
+  // termina sola (transitionend o fallback), sin cerrar la de otros consumidores.
   stopSettle?.()
   stopSettle = undefined
-  end()
 })
 
 interface NavRow {

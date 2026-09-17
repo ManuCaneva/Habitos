@@ -141,22 +141,19 @@ describe('useLayoutTransition', () => {
     expect(first).toHaveBeenCalledTimes(1)
   })
 
-  it('transitioning es reactivo y consume el flag diferido dentro de un watcher', async () => {
+  it('transitioning es reactivo: consume el flag diferido dentro de un watcher', async () => {
     const { transitioning, start, end } = useLayoutTransition()
-    let deferCount = 0
+    const seen: boolean[] = []
 
     watch(transitioning, (active) => {
-      if (active) deferCount += 0
+      seen.push(active)
     })
-    expect(transitioning.value).toBe(false)
 
     start()
     await nextTick()
-    expect(transitioning.value).toBe(true)
-
     end()
     await nextTick()
-    expect(transitioning.value).toBe(false)
-    expect(deferCount).toBe(0)
+
+    expect(seen).toEqual([true, false])
   })
 })
