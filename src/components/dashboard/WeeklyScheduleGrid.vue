@@ -48,7 +48,7 @@ function flushMeasure() {
 }
 
 const labelWidthPx = computed(() => {
-  return Math.max(32, Math.min(64, containerWidth.value * 0.06))
+  return Math.max(44, Math.min(72, containerWidth.value * 0.07))
 })
 const labelWidthStyle = computed(() => labelWidthPx.value + 'px')
 
@@ -154,15 +154,12 @@ function slotsForDay(day: number): VisibleSlot[] {
       </div>
 
       <div class="flex" :style="{ height: gridHeightStyle }">
-        <div
-          :style="{ width: labelWidthStyle }"
-          class="flex-shrink-0 select-none border-r border-hairline bg-surface-1/50"
-        >
+        <div :style="{ width: labelWidthStyle }" class="flex-shrink-0 select-none bg-surface-1/50">
           <div
             v-for="hl in hourLabels"
             :key="hl.minute"
             :style="{ height: rowHeightStyle }"
-            class="schedule-hour-label flex items-start justify-end border-b border-hairline/30 px-1 pr-2 font-mono text-[10px] text-ink-subtle"
+            class="schedule-hour-label flex items-start justify-end border-b border-hairline/30 px-1 text-ink-subtle"
           >
             <span class="-translate-y-1/2 leading-3">{{ hl.label }}</span>
           </div>

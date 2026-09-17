@@ -9,5 +9,5 @@ export function blockColorRgb(c: BlockColorToken): string {
 }
 
 export function blockColorTint(c: BlockColorToken, alpha: number): string {
-  return `rgba(var(--color-block-${c}), ${alpha})`
+  return `rgb(var(--color-block-${c}) / ${alpha})`
 }

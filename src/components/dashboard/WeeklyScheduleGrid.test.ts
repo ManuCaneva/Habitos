@@ -206,6 +206,38 @@ describe('WeeklyScheduleGrid', () => {
     wrapper.unmount()
   })
 
+  it('usa la misma familia tipográfica que el resto en las etiquetas de hora', () => {
+    const wrapper = mount(WeeklyScheduleGrid)
+    const labels = wrapper.findAll('.schedule-hour-label')
+    expect(labels.length).toBeGreaterThan(0)
+    for (const label of labels) {
+      expect(label.classes()).not.toContain('font-mono')
+    }
+    wrapper.unmount()
+  })
+
+  it('reserva un ancho mínimo para la columna de horas aunque el contenedor sea angosto', async () => {
+    const triggerResize = stubResizeObserver()
+    const wrapper = mount(WeeklyScheduleGrid, { attachTo: document.body })
+    const container = wrapper.element as HTMLElement
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      height: 500,
+      width: 500,
+    } as DOMRect)
+    triggerResize()
+    await nextFrame()
+    await wrapper.vm.$nextTick()
+
+    const label = wrapper.find('.schedule-hour-label')
+    const gutter = label.element.parentElement as HTMLElement
+    const width = Number.parseFloat(gutter.style.width)
+    // Mínimo legible para "15:00": con menos, el texto justificado a la
+    // derecha desborda hacia la izquierda y queda pegado al borde.
+    expect(width).toBeGreaterThanOrEqual(44)
+
+    wrapper.unmount()
+  })
+
   it('muestra un solo bloque con dos slots (lunes 15:50 y jueves 18:10) como un único título', () => {
     mockStore.blocksWithSlots = [
       {

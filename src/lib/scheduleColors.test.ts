@@ -23,9 +23,9 @@ describe('scheduleColors', () => {
   })
 
   describe('blockColorTint', () => {
-    it('devuelve el tinte translúcido como rgba(var(...))', () => {
-      expect(blockColorTint('lavender', 0.15)).toBe('rgba(var(--color-block-lavender), 0.15)')
-      expect(blockColorTint('bone', 1)).toBe('rgba(var(--color-block-bone), 1)')
+    it('devuelve el tinte translúcido como rgb(var(...) / alpha)', () => {
+      expect(blockColorTint('lavender', 0.15)).toBe('rgb(var(--color-block-lavender) / 0.15)')
+      expect(blockColorTint('bone', 1)).toBe('rgb(var(--color-block-bone) / 1)')
     })
   })
 })

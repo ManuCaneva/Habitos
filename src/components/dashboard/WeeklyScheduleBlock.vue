@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { blockColorRgb, blockColorTint } from '@/lib/scheduleColors'
+import { blockColorTint } from '@/lib/scheduleColors'
 import type { BlockColorToken } from '@/schemas/weeklySchedule'
 
 const props = defineProps<{
@@ -13,8 +13,8 @@ const emit = defineEmits<{
 }>()
 
 const blockStyle = computed(() => ({
-  backgroundColor: blockColorTint(props.color, 0.15),
-  borderColor: blockColorRgb(props.color),
+  backgroundColor: blockColorTint(props.color, 0.16),
+  borderColor: blockColorTint(props.color, 0.8),
   color: 'var(--color-ink)',
 }))
 </script>
@@ -22,12 +22,12 @@ const blockStyle = computed(() => ({
 <template>
   <button
     :class="[
-      'absolute cursor-pointer overflow-hidden truncate rounded-sm border text-left transition-all duration-150',
+      'absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-sm border text-center transition-all duration-150',
       'schedule-block',
     ]"
     :style="blockStyle"
     @click="emit('click')"
   >
-    <div class="schedule-block-title truncate font-medium leading-tight">{{ title }}</div>
+    <div class="schedule-block-title break-words font-medium leading-tight">{{ title }}</div>
   </button>
 </template>
