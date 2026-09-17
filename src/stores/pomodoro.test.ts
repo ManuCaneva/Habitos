@@ -9,6 +9,20 @@ vi.mock('@/lib/db', () => ({
   saveConfig: vi.fn().mockResolvedValue(undefined),
 }))
 
+const { prepareFromUserGesture, playFocusEndChime, playBreakEndChime } = vi.hoisted(() => ({
+  prepareFromUserGesture: vi.fn().mockResolvedValue({ available: true, state: 'running' }),
+  playFocusEndChime: vi.fn(() => true),
+  playBreakEndChime: vi.fn(() => true),
+}))
+
+vi.mock('@/lib/pomodoroSounds', () => ({
+  createPomodoroSoundPlayer: () => ({
+    prepareFromUserGesture,
+    playFocusEndChime,
+    playBreakEndChime,
+  }),
+}))
+
 const start = '2026-09-01T12:00:00.000Z'
 
 function session(overrides: Partial<ActivePomodoroSession> = {}): ActivePomodoroSession {
@@ -26,6 +40,7 @@ describe('pomodoro store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    prepareFromUserGesture.mockResolvedValue(undefined)
     vi.mocked(db.loadConfig).mockResolvedValue(null)
     vi.mocked(db.saveConfig).mockResolvedValue(undefined)
     vi.useFakeTimers()
@@ -116,6 +131,36 @@ describe('pomodoro store', () => {
     expect(second.settings.muted).toBe(true)
     expect(second.session.phase).toBe('shortBreak')
     expect(second.session.completedFocusSessions).toBe(1)
+  })
+
+  it('plays chimes on natural completion, stays silent on skip, and playTestSound previews focus chime', async () => {
+    const store = usePomodoroStore()
+    await store.load()
+    await store.saveSettings({ autoStartBreak: false, autoStartFocus: false })
+
+    expect(store.playTestSound()).toBe(true)
+    expect(playFocusEndChime).toHaveBeenCalledTimes(1)
+    expect(playFocusEndChime).toHaveBeenCalledWith(store.settings)
+
+    playFocusEndChime.mockReturnValueOnce(false)
+    expect(store.playTestSound()).toBe(false)
+
+    await store.start()
+    vi.setSystemTime(new Date('2026-09-01T12:25:00.000Z'))
+    await store.advanceIfExpired()
+    expect(playFocusEndChime).toHaveBeenCalledTimes(3)
+    expect(playBreakEndChime).not.toHaveBeenCalled()
+
+    await store.start()
+    vi.setSystemTime(new Date('2026-09-01T12:30:00.000Z'))
+    await store.advanceIfExpired()
+    expect(playBreakEndChime).toHaveBeenCalledTimes(1)
+
+    await store.reset()
+    await store.start()
+    await store.skip()
+    expect(playFocusEndChime).toHaveBeenCalledTimes(3)
+    expect(playBreakEndChime).toHaveBeenCalledTimes(1)
   })
 
   it('loads a still-running session and computes its current remaining time', async () => {

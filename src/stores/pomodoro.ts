@@ -111,6 +111,10 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     await player().prepareFromUserGesture()
   }
 
+  function playTestSound(): boolean {
+    return player().playFocusEndChime(settings.value)
+  }
+
   async function load(): Promise<void> {
     const [rawSettings, rawSession] = await Promise.all([
       db.loadConfig(POMODORO_SETTINGS_KEY),
@@ -197,6 +201,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     skip,
     reset,
     saveSettings,
+    playTestSound,
     advanceIfExpired,
     prepareAudio,
   }
