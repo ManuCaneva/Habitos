@@ -88,7 +88,7 @@ describe('Sidebar', () => {
     uiState.sidebarCollapsed = true
     const wrapper = mountSidebar()
 
-    expect(wrapper.get('[data-testid="sidebar-title"]').classes()).toContain('hidden')
+    expect(wrapper.get('[data-testid="sidebar-logo"]').classes()).toContain('hidden')
     expect(wrapper.findAll('.text-eyebrow').every((e) => e.classes().includes('hidden'))).toBe(true)
 
     for (const key of ['dashboard', 'archived', 'pomodoro', 'edit-mode', 'settings']) {
@@ -97,11 +97,11 @@ describe('Sidebar', () => {
     }
   })
 
-  it('renders AEON without a decorative logo in the header', () => {
+  it('renders the wordmark logo instead of a text title in the header', () => {
     const wrapper = mountSidebar()
     const header = wrapper.get('[data-testid="sidebar-header"]')
-    expect(header.text()).toBe('AEON')
-    expect(header.findAll('svg')).toHaveLength(1)
+    expect(header.get('[data-testid="sidebar-logo"]').exists()).toBe(true)
+    expect(header.findAll('svg')).toHaveLength(2)
     expect(header.get('[data-testid="sidebar-toggle"]').find('svg').exists()).toBe(true)
   })
 
@@ -117,7 +117,7 @@ describe('Sidebar', () => {
   it('collapsed: keeps only the collapse toggle inside the panel', async () => {
     uiState.sidebarCollapsed = true
     const wrapper = mountSidebar()
-    expect(wrapper.get('[data-testid="sidebar-title"]').classes()).toContain('hidden')
+    expect(wrapper.get('[data-testid="sidebar-logo"]').classes()).toContain('hidden')
 
     const header = wrapper.get('[data-testid="sidebar-header"]')
     expect(header.findAll('button')).toHaveLength(1)
@@ -173,7 +173,7 @@ describe('Sidebar', () => {
     uiState.sidebarCollapsed = true
     const wrapper = mountSidebar()
     expect(wrapper.get('[data-testid="nav-dashboard"]').classes()).toContain('justify-center')
-    expect(wrapper.get('[data-testid="sidebar-title"]').classes()).toContain('hidden')
+    expect(wrapper.get('[data-testid="sidebar-logo"]').classes()).toContain('hidden')
   })
 
   it('colapsando: fadea labels sin centrar hasta el settle', async () => {

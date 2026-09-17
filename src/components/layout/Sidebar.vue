@@ -11,6 +11,7 @@ import {
 } from 'lucide-vue-next'
 import { useUiStore, type ViewMode } from '@/stores/ui'
 import Text from '@/components/ui/Text.vue'
+import logoWordmark from '@/assets/logo/logo-wordmark-current.svg?raw'
 
 const ui = useUiStore()
 
@@ -85,6 +86,7 @@ const collapseIcon = computed(() => (ui.sidebarCollapsed ? PanelLeftOpen : Panel
 const fadeClass = computed(() => (ui.sidebarCollapsed && !settled.value ? 'opacity-0' : ''))
 const hideClass = computed(() => (ui.sidebarCollapsed && settled.value ? 'hidden' : ''))
 const textFade = computed(() => [fadeClass.value, hideClass.value])
+const logoFade = computed(() => [fadeClass.value, hideClass.value, 'text-ink'])
 const centered = computed(() => ui.sidebarCollapsed && settled.value)
 
 const rowBase = computed(
@@ -106,18 +108,16 @@ const rowActive = 'bg-surface-3 text-ink'
   >
     <div
       data-testid="sidebar-header"
-      class="flex items-center gap-2 px-2 py-2.5"
-      :class="centered && 'justify-center'"
+      class="relative flex items-center gap-2 px-2 py-2.5"
+      :class="centered ? 'justify-center' : 'justify-end'"
     >
-      <Text
-        data-testid="sidebar-title"
-        variant="body-sm"
-        weight="600"
-        class="min-w-0 flex-1 truncate transition-opacity duration-150"
-        :class="textFade"
-      >
-        AEON
-      </Text>
+      <span
+        data-testid="sidebar-logo"
+        aria-hidden="true"
+        class="pointer-events-none absolute left-1/2 top-1/2 h-5 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-150 [&>svg]:h-full [&>svg]:w-auto"
+        :class="logoFade"
+        v-html="logoWordmark"
+      />
       <button
         type="button"
         data-testid="sidebar-toggle"
