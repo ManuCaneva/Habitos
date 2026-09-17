@@ -17,7 +17,7 @@ withDefaults(
 
 const goals = useGoalsStore()
 
-const list = computed(() => goals.goals)
+const list = computed(() => goals.activeGoals)
 </script>
 
 <template>
