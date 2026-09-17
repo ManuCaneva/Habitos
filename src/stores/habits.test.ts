@@ -140,7 +140,7 @@ describe('habits store - checkIn', () => {
     expect(store.isCompletedToday('sin-log')).toBe(false)
   })
 
-  it('loadInitialData pide rango de 91 días', async () => {
+  it('loadInitialData pide rango de 365 días (cubre la grilla de 364)', async () => {
     vi.mocked(db.listLogsInRange).mockResolvedValue([])
     vi.mocked(db.listHabits).mockResolvedValue([])
     const store = useHabitsStore()
@@ -149,7 +149,7 @@ describe('habits store - checkIn', () => {
     const [fromArg, toArg] = call as [string, string]
     const days =
       Math.round((new Date(toArg).getTime() - new Date(fromArg).getTime()) / 86400000) + 1
-    expect(days).toBe(91)
+    expect(days).toBe(365)
   })
 
   it('streakFor cuenta días consecutivos', async () => {
