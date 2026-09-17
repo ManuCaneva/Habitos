@@ -89,6 +89,13 @@ describe('DashboardView', () => {
     expect(root.classes()).toContain('overflow-hidden')
   })
 
+  it('en modo edición el root no recorta para que la cruz pueda sobresalir del borde de la vista', () => {
+    editModeValue = true
+    const wrapper = mount(DashboardView)
+    const root = wrapper.find("[data-testid='dashboard-view']")
+    expect(root.classes()).not.toContain('overflow-hidden')
+  })
+
   it('no renderiza WidgetPicker si editMode es false', () => {
     editModeValue = false
     const wrapper = mount(DashboardView)
@@ -120,11 +127,11 @@ describe('DashboardView', () => {
     expect(removeButtons.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('en modo edición deja aire en los bordes de la grilla para que la cruz sobresalga sin recortarse', () => {
+  it('al entrar en modo edición los widgets conservan su tamaño (sin padding)', () => {
     editModeValue = true
     const wrapper = mount(DashboardView)
     const root = wrapper.find("[data-testid='dashboard-view']")
-    expect(root.classes()).toContain('p-3')
+    expect(root.classes()).not.toContain('p-3')
   })
 
   it('en reposo la vista no agrega padding', () => {

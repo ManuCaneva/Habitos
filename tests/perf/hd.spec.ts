@@ -110,7 +110,7 @@ test.describe('HD (1280×720)', () => {
     expect(persisted).toEqual(layout)
   })
 
-  test('la cruz de quitar widget sobresale del widget sin recortarse y queda encima del vecino', async ({
+  test('la cruz de quitar widget se centra en la esquina del widget sin recortarse y remueve el correcto', async ({
     page,
   }) => {
     const layout = [
@@ -131,33 +131,31 @@ test.describe('HD (1280×720)', () => {
     expect(crossBox, 'cruz renderizada').not.toBeNull()
     expect(itemBox, 'widget renderizado').not.toBeNull()
 
-    // Sobresale por arriba a la derecha (offset hacia afuera).
-    expect(crossBox!.y).toBeLessThan(itemBox!.y)
+    // Centrada en el vértice superior derecho: mitad adentro, mitad afuera.
+    const crossCx = crossBox!.x + crossBox!.width / 2
+    const crossCy = crossBox!.y + crossBox!.height / 2
+    expect(Math.abs(crossCx - (itemBox!.x + itemBox!.width))).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(crossCy - itemBox!.y)).toBeLessThanOrEqual(1.5)
     expect(crossBox!.x + crossBox!.width).toBeGreaterThan(itemBox!.x + itemBox!.width)
+    expect(crossBox!.y).toBeLessThan(itemBox!.y)
 
     const hit = await cross.evaluate((el) => {
       const r = el.getBoundingClientRect()
-      const targets = {
-        center: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2),
-        topOverhang: document.elementFromPoint(r.left + r.width / 2, r.top + 2),
-        rightOverhang: document.elementFromPoint(r.right - 2, r.top + r.height / 2),
-      }
       const owns = (target: Element | null) =>
         target !== null && (el === target || el.contains(target))
       const style = getComputedStyle(el)
       return {
-        centerOwned: owns(targets.center),
-        topOverhangOwned: owns(targets.topOverhang),
-        rightOverhangOwned: owns(targets.rightOverhang),
+        centerOwned: owns(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
+        topOverhangOwned: owns(document.elementFromPoint(r.left + r.width / 2, r.top + 2)),
+        rightOverhangOwned: owns(document.elementFromPoint(r.right - 2, r.top + r.height / 2)),
         borderTopWidth: style.borderTopWidth,
         backgroundColor: style.backgroundColor,
       }
     })
 
-    // Sin recorte en la zona que sobresale del widget.
-    expect(hit.centerOwned, 'centro de la cruz sin recorte').toBe(true)
-    expect(hit.topOverhangOwned, 'overhang superior sin recorte').toBe(true)
-    expect(hit.rightOverhangOwned, 'overhang derecho sin recorte (sobre el vecino)').toBe(true)
+    expect(hit.centerOwned, 'centro de la cruz visible y hitteable sin recorte').toBe(true)
+    expect(hit.topOverhangOwned, 'mitad superior de la cruz sin recorte').toBe(true)
+    expect(hit.rightOverhangOwned, 'mitad derecha de la cruz por encima del vecino').toBe(true)
 
     // Contorno y fondo propios.
     expect(parseFloat(hit.borderTopWidth)).toBeGreaterThan(0)
@@ -169,7 +167,7 @@ test.describe('HD (1280×720)', () => {
     await expect(page.locator('[data-testid="tasks-widget"]')).toHaveCount(1)
   })
 
-  test('la cruz de un widget pegado al borde derecho no se recorta contra la vista', async ({
+  test('la cruz de un widget pegado al borde derecho sobresale sin recortarse contra la vista', async ({
     page,
   }) => {
     const layout = [
@@ -181,31 +179,33 @@ test.describe('HD (1280×720)', () => {
     await page.click('[data-testid="nav-edit-mode"]')
     await page.waitForSelector('.grid-item--editable')
 
-    // tasks ocupa la última columna: su cruz desborda sobre el aire de la
-    // vista (p-3), fuera de la grilla pero dentro del root con overflow-hidden.
+    // tasks ocupa la última columna: su cruz desborda la grilla hacia el aire
+    // del panel (p-4) y el root en edición no debe recortarla.
     const probe = await page.evaluate(() => {
       const grid = document.querySelector('.dashboard-grid') as HTMLElement
       const gridRect = grid.getBoundingClientRect()
-      const cross = document.querySelector(
-        '.grid-item:has([data-testid="tasks-widget"]) [data-testid="widget-remove-button"]'
+      const item = document.querySelector(
+        '.grid-item:has([data-testid="tasks-widget"])'
       ) as HTMLElement
+      const cross = item.querySelector('[data-testid="widget-remove-button"]') as HTMLElement
+      const itemRect = item.getBoundingClientRect()
       const r = cross.getBoundingClientRect()
-      const rightOverhang = document.elementFromPoint(r.right - 2, r.top + r.height / 2)
-      const topOverhang = document.elementFromPoint(r.left + r.width / 2, r.top + 2)
+      const owns = (target: Element | null) =>
+        target !== null && (target === cross || cross.contains(target))
       return {
-        rightOverhangOwned:
-          rightOverhang !== null && (rightOverhang === cross || cross.contains(rightOverhang)),
-        topOverhangOwned:
-          topOverhang !== null && (topOverhang === cross || cross.contains(topOverhang)),
         beyondGrid: r.right > gridRect.right,
+        centerOwned: owns(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)),
+        rightOverhangOwned: owns(document.elementFromPoint(r.right - 2, r.top + r.height / 2)),
+        topOverhangOwned: owns(document.elementFromPoint(r.left + r.width / 2, r.top + 2)),
+        insideItem: r.left >= itemRect.left - 1,
       }
     })
 
-    // El overhang derecho cae fuera de la grilla (sobre el padding de la vista)
-    // y sigue siendo de la cruz: no lo recorta el overflow-hidden del root.
     expect(probe.beyondGrid, 'la cruz desborda el borde derecho de la grilla').toBe(true)
-    expect(probe.rightOverhangOwned, 'overhang derecho visible y hitteable').toBe(true)
-    expect(probe.topOverhangOwned, 'overhang superior visible y hitteable').toBe(true)
+    expect(probe.insideItem, 'la cruz no desborda el widget hacia la izquierda').toBe(true)
+    expect(probe.centerOwned, 'centro de la cruz visible y hitteable').toBe(true)
+    expect(probe.rightOverhangOwned, 'mitad derecha de la cruz sin recorte').toBe(true)
+    expect(probe.topOverhangOwned, 'mitad superior de la cruz sin recorte').toBe(true)
   })
 
   test('la cruz de goals se apila por encima del widget vecino que invade hacia arriba', async ({
@@ -220,8 +220,8 @@ test.describe('HD (1280×720)', () => {
     await page.click('[data-testid="nav-edit-mode"]')
     await page.waitForSelector('.grid-item--editable')
 
-    // La cruz de goals (fila 4) sobresale hacia arriba sobre la fila 3, que
-    // ocupa tasks: debe quedar pintada por encima y ganar el hit-test.
+    // La cruz de goals (fila 4) sobresale hacia arriba sobre tasks: debe
+    // quedar pintada por encima y ganar el hit-test.
     const probe = await page.evaluate(() => {
       const cross = document.querySelector(
         '.grid-item:has([data-testid="goals-widget"]) [data-testid="widget-remove-button"]'
@@ -246,5 +246,46 @@ test.describe('HD (1280×720)', () => {
     expect(probe.crossZ, 'el item de goals apila por encima del de tasks').toBeGreaterThan(
       probe.tasksZ
     )
+  })
+
+  test('entrar en modo edición no achica la grilla ni los widgets', async ({ page }) => {
+    const layout = [
+      { i: 'habits', x: 0, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'tasks', x: 6, y: 0, w: 6, h: 4, minW: 1, minH: 1 },
+      { i: 'goals', x: 0, y: 4, w: 12, h: 3, minW: 1, minH: 1 },
+    ]
+    await openDashboard(page, layout)
+
+    const measure = () =>
+      page.evaluate(() => {
+        const grid = document.querySelector('.dashboard-grid') as HTMLElement
+        const item = document.querySelector(
+          '.grid-item:has([data-testid="habits-widget"])'
+        ) as HTMLElement
+        const gridRect = grid.getBoundingClientRect()
+        const itemRect = item.getBoundingClientRect()
+        return {
+          gridW: gridRect.width,
+          gridH: gridRect.height,
+          itemW: itemRect.width,
+          itemH: itemRect.height,
+        }
+      })
+
+    const before = await measure()
+    await page.click('[data-testid="nav-edit-mode"]')
+    await page.waitForSelector('.grid-item--editable')
+    const after = await measure()
+
+    expect(after.gridW, 'ancho de la grilla estable al editar').toBeCloseTo(before.gridW, 1)
+    expect(after.gridH, 'alto de la grilla estable al editar').toBeCloseTo(before.gridH, 1)
+    expect(after.itemW, 'ancho del widget estable al editar').toBeCloseTo(before.itemW, 1)
+    expect(after.itemH, 'alto del widget estable al editar').toBeCloseTo(before.itemH, 1)
+
+    await expect(
+      page.locator(
+        '.grid-item:has([data-testid="habits-widget"]) [data-testid="widget-remove-button"]'
+      )
+    ).toBeVisible()
   })
 })

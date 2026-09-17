@@ -43,7 +43,7 @@ El contenedor es `display: grid` con `grid-template-columns: repeat(12, minmax(0
 - `interactjs` entrega posición y tamaño en píxeles durante el gesto (el widget se mueve con `transform` / se redimensiona con px absolutos).
 - Al soltar, `gridSnap` (`pxToCells`) convierte a celdas enteras y el widget vuelve a la grilla nativa.
 - La animación FLIP (transform-only, ~180ms, `cubic-bezier(0.16,1,0.3,1)`) suaviza el snap final (ver `src/composables/flip.ts`).
-- Los ítems de la grilla usan `contain: layout` para aislar el costo de layout sin recortar la pintura: la cruz del modo edición sobresale por arriba a la derecha (ver «Modo edición»).
+- Los ítems de la grilla usan `contain: layout` para aislar el costo de layout sin recortar la pintura: la cruz del modo edición se centra en la esquina superior derecha del widget y la mitad que sobresale queda visible (ver «Modo edición»).
 - El store valida, clampa y rechaza colisiones reales (acepta bordes tocándose), y persiste cada cambio.
 - El botón de reset restaura las posiciones declaradas por cada widget.
 - `WidgetPicker` controla qué widgets están visibles.
@@ -79,12 +79,12 @@ Los widgets se adaptan al tamaño de su celda sin desbordar el panel:
 
 ## Modo edición
 
-- Cada widget muestra una cruz para quitarlo, anclada a su esquina superior derecha pero **desbordando hacia afuera** (`-right-2 -top-2`): por eso el ítem de grilla usa `contain: layout` (sin `paint`) y no la recorta.
+- Cada widget muestra una cruz para quitarlo, **centrada en el vértice superior derecho** (`-right-3 -top-3`, que desplaza media cruz de 24px): mitad adentro, mitad afuera, sin pisar el contenido ni encoger el widget. Por eso el ítem de grilla usa `contain: layout` (sin `paint`) y no la recorta.
 - La cruz tiene contorno y fondo propios (`border-hairline-strong`, `bg-surface-2`, `rounded-full`) y `shadow-sm` por ser un control flotante.
 - Para que la cruz quede pintada por encima de los widgets vecinos que invade, cada ítem recibe un `z-index` derivado de su celda (`itemZIndex`: crece hacia abajo y hacia la izquierda, de modo que el overhang superior derecho gana sobre el vecino de la derecha). Solo aplica en modo edición.
 - Mientras se arrastra o redimensiona, el ítem activo sube al tope de la grilla (`DRAGGING_Z_INDEX`) para no quedar debajo de un vecino con mayor `z` de celda.
 - La grilla lleva `isolate` en modo edición: los `z-index` de los ítems quedan contenidos bajo el `WidgetPicker` y los modales, que siguen por encima (`z-50`).
-- El panel del dashboard agrega `p-3` en modo edición para que la cruz de los widgets del borde no se recorte contra el `overflow-hidden` de la vista. En reposo no hay padding extra.
+- En modo edición el root del dashboard suelta su `overflow-hidden` para que la mitad de la cruz que sobresale no se recorte contra el borde de la vista; el `p-4` del panel da el aire necesario. En reposo conserva `overflow-hidden` y los widgets miden exactamente igual en ambos modos (sin padding extra).
 
 ## Archivos relacionados
 

@@ -13,14 +13,14 @@ describe('WidgetRemoveButton', () => {
     expect(btn.attributes('aria-label')).toBeTruthy()
   })
 
-  it('sobresale por arriba a la derecha del widget (offset hacia afuera)', () => {
+  it('se centra sobre el vértice superior derecho del widget para no pisar el contenido', () => {
     const wrapper = mount(WidgetRemoveButton, {
       props: { widgetId: 'habits' },
     })
     const btn = wrapper.find('button')
     expect(btn.classes()).toContain('absolute')
-    expect(btn.classes()).toContain('-right-2')
-    expect(btn.classes()).toContain('-top-2')
+    expect(btn.classes()).toContain('-right-3')
+    expect(btn.classes()).toContain('-top-3')
     expect(btn.classes()).not.toContain('right-1')
     expect(btn.classes()).not.toContain('top-1')
   })
