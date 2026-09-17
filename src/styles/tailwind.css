@@ -68,7 +68,7 @@
 
   /* Widgets del dashboard: translucidez sutil, sin blur */
   .glass-soft {
-    @apply border border-hairline bg-surface-1/90;
+    @apply border border-hairline bg-surface-1/80;
   }
 
   /* Overlays flotantes (modales, context menus, dropdowns):

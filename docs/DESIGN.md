@@ -175,7 +175,7 @@ Sobre ese fondo, los paneles ganan translucidez con tres clases en `src/styles/t
 | Clase | Tratamiento | Uso |
 |---|---|---|
 | `.glass-strong` | `bg-surface-1/65` + hairline | Sidebar, panel contenedor de contenido |
-| `.glass-soft` | `bg-surface-1/90` + hairline, **sin blur** | Widgets del dashboard (Container `glass`) |
+| `.glass-soft` | `bg-surface-1/80` + hairline, **sin blur** | Widgets del dashboard (Container `glass`) |
 | `.glass-overlay` | `bg-surface-1/80` + `backdrop-blur-md` | Overlays: modales, context menus, dropdown de temas |
 
 Los overlays usan blur real porque son chicos y flotan sobre contenido; los widgets no (el fondo ya llega pre-borroso). Todo el color sale de tokens CSS vars, así el glass se adapta a los tres temas sin tocar valores. El usuario puede quitar el wallpaper desde Settings y vuelve al gradiente.
